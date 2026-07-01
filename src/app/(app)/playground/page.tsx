@@ -41,6 +41,7 @@ export default async function PlaygroundPage() {
         <PlaygroundPanel
           presentes={(presentes ?? []).map((p) => ({
             id: p.id,
+            criancaId: p.crianca?.id ?? '',
             entrada: p.entrada,
             tempoContratadoMin: p.tempo_contratado_min,
             nome: p.crianca?.nome ?? '—',

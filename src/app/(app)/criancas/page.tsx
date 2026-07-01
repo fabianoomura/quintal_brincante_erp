@@ -5,20 +5,64 @@ import { input, pill } from '@/lib/ui'
 export default async function CriancasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; status?: string; tipo?: string }>
 }) {
-  const { q } = await searchParams
-  const busca = (q ?? '').trim()
+  const sp = await searchParams
+  const busca = (sp.q ?? '').trim()
+  const status = sp.status ?? 'ativa' // ativa | inativa | todas
+  const tipo = sp.tipo ?? 'todos' // todos | mensalista
 
   const supabase = await createClient()
-  let query = supabase
-    .from('crianca')
-    .select('id, nome, nascimento, ativo')
-    .order('nome', { ascending: true })
-    .limit(100)
-  if (busca !== '') query = query.ilike('nome', `%${busca}%`)
 
-  const { data: criancas, error } = await query
+  let criancas: { id: string; nome: string; ativo: boolean }[] | null = null
+  let error: { message: string } | null = null
+
+  if (tipo === 'mensalista') {
+    let q = supabase
+      .from('crianca')
+      .select('id, nome, ativo, mensalidade!inner(id)')
+      .eq('mensalidade.ativo', true)
+      .order('nome', { ascending: true })
+      .limit(200)
+    if (busca !== '') q = q.ilike('nome', `%${busca}%`)
+    if (status === 'ativa') q = q.eq('ativo', true)
+    else if (status === 'inativa') q = q.eq('ativo', false)
+    const res = await q
+    error = res.error
+    criancas = (res.data ?? []).map((c) => ({ id: c.id, nome: c.nome, ativo: c.ativo }))
+  } else {
+    let q = supabase
+      .from('crianca')
+      .select('id, nome, ativo')
+      .order('nome', { ascending: true })
+      .limit(200)
+    if (busca !== '') q = q.ilike('nome', `%${busca}%`)
+    if (status === 'ativa') q = q.eq('ativo', true)
+    else if (status === 'inativa') q = q.eq('ativo', false)
+    const res = await q
+    error = res.error
+    criancas = res.data
+  }
+
+  const chip = (campo: string, valor: string, atual: string, txt: string) => {
+    const params = new URLSearchParams()
+    if (busca) params.set('q', busca)
+    params.set('status', campo === 'status' ? valor : status)
+    params.set('tipo', campo === 'tipo' ? valor : tipo)
+    const ativo = atual === valor
+    return (
+      <Link
+        href={`/criancas?${params.toString()}`}
+        className={`rounded-full px-3 py-1.5 text-sm font-semibold ring-1 ${
+          ativo
+            ? 'bg-emerald-600 text-white ring-emerald-600'
+            : 'bg-white text-slate-500 ring-slate-200'
+        }`}
+      >
+        {txt}
+      </Link>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -37,7 +81,18 @@ export default async function CriancasPage({
           placeholder="🔎 Buscar por nome…"
           className={input}
         />
+        <input type="hidden" name="status" value={status} />
+        <input type="hidden" name="tipo" value={tipo} />
       </form>
+
+      <div className="flex flex-wrap gap-2">
+        {chip('status', 'ativa', status, 'Ativas')}
+        {chip('status', 'inativa', status, 'Inativas')}
+        {chip('status', 'todas', status, 'Todas')}
+        <span className="w-px self-stretch bg-slate-200" />
+        {chip('tipo', 'todos', tipo, 'Todos os tipos')}
+        {chip('tipo', 'mensalista', tipo, '🎟️ Mensalistas')}
+      </div>
 
       {error && (
         <p className="text-sm font-semibold text-rose-500">
