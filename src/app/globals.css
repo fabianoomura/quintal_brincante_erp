@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #f1f5f9; /* slate-100: base clara de ERP */
+  --foreground: #1e293b; /* slate-800 */
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  background-color: var(--background);
+  /* Tinta suave nos cantos — colorido sem competir com os cards. */
+  background-image:
+    radial-gradient(at 100% 0%, rgba(125, 211, 252, 0.18) 0px, transparent 40%),
+    radial-gradient(at 0% 100%, rgba(196, 181, 253, 0.18) 0px, transparent 40%);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pop {
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
+  }
+  .pop:active {
+    transform: scale(0.98);
+  }
 }
