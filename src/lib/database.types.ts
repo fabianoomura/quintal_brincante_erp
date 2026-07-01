@@ -131,6 +131,7 @@ export type Database = {
           conciliacao_automatica: boolean
           created_at: string
           id: number
+          valor_feriado: number | null
         }
         Insert: {
           aviso_tempo_ativo?: boolean
@@ -138,6 +139,7 @@ export type Database = {
           conciliacao_automatica?: boolean
           created_at?: string
           id?: number
+          valor_feriado?: number | null
         }
         Update: {
           aviso_tempo_ativo?: boolean
@@ -145,6 +147,7 @@ export type Database = {
           conciliacao_automatica?: boolean
           created_at?: string
           id?: number
+          valor_feriado?: number | null
         }
         Relationships: []
       }
@@ -240,6 +243,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feriado: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       grade_play: {
         Row: {

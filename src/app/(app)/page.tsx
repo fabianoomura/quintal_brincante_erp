@@ -11,6 +11,7 @@ const TILES: Tile[] = [
   { href: '/financeiro', label: 'Financeiro', desc: 'Lançamentos e conciliação', icon: '💰', cor: 'from-emerald-500 to-teal-600' },
   { href: '/gerencial', label: 'Gerencial', desc: 'Indicadores do dia', icon: '📊', cor: 'from-indigo-500 to-blue-600', adminOnly: true },
   { href: '/grade', label: 'Grade do play', desc: 'Horários e valores do play', icon: '🎠', cor: 'from-fuchsia-500 to-purple-600', adminOnly: true },
+  { href: '/calendario', label: 'Calendário', desc: 'Valores por dia e feriados', icon: '📅', cor: 'from-orange-500 to-amber-600', adminOnly: true },
   { href: '/planos', label: 'Planos', desc: 'Mensalidade por frequência', icon: '🎟️', cor: 'from-pink-500 to-rose-600', adminOnly: true },
   { href: '/ambientes', label: 'Ambientes', desc: 'Salas e espaços', icon: '🏠', cor: 'from-lime-500 to-green-600', adminOnly: true },
   { href: '/colaboradores', label: 'Colaboradores', desc: 'Equipe e acessos', icon: '🧑‍🏫', cor: 'from-teal-500 to-cyan-700', adminOnly: true },

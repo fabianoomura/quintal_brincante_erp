@@ -26,3 +26,11 @@ export function encontrarSlot(
   }
   return null
 }
+
+// Está dentro de ALGUMA janela de horário da grade (qualquer dia)? Usado em feriado,
+// que tem valor único mas ainda respeita os horários de funcionamento do play.
+export function dentroDeAlgumPeriodo(horaMin: number, grade: SlotGrade[]): boolean {
+  return grade.some(
+    (s) => horaMin >= horaParaMinutos(s.hora_inicio) && horaMin < horaParaMinutos(s.hora_fim),
+  )
+}

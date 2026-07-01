@@ -58,7 +58,7 @@ if (antigas?.length) {
 }
 
 // ─── config: capacidade do dia ──────────────────────────────────────────────
-await sb.from('config_sistema').update({ capacidade_dia: 25 }).eq('id', 1)
+await sb.from('config_sistema').update({ capacidade_dia: 25, valor_feriado: 30 }).eq('id', 1)
 
 // ─── planos (só se ainda não houver) ────────────────────────────────────────
 const { count: qPlanos } = await sb.from('plano_mensalidade').select('id', { count: 'exact', head: true })

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { encontrarSlot, type SlotGrade } from './grade'
+import { encontrarSlot, dentroDeAlgumPeriodo, type SlotGrade } from './grade'
 import { horaParaMinutos } from './datas'
 
 const grade: SlotGrade[] = [
@@ -37,4 +37,10 @@ test('dia sem grade → null', () => {
 test('borda: início inclui, fim exclui', () => {
   assert.ok(encontrarSlot(1, min('11:00'), grade)) // 11:00 entra
   assert.equal(encontrarSlot(1, min('14:00'), grade), null) // 14:00 já saiu
+})
+
+test('dentroDeAlgumPeriodo: horário de funcionamento (feriado)', () => {
+  assert.equal(dentroDeAlgumPeriodo(min('12:00'), grade), true) // dentro do almoço
+  assert.equal(dentroDeAlgumPeriodo(min('19:00'), grade), true) // dentro do jantar
+  assert.equal(dentroDeAlgumPeriodo(min('22:00'), grade), false) // fora de qualquer janela
 })
