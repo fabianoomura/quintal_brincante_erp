@@ -9,6 +9,7 @@ import EditForm from './edit-form'
 import ContatosManager from './contatos-manager'
 import OcorrenciaForm from './ocorrencia-form'
 import MatriculaSection from './matricula-section'
+import MensalistaControle from './mensalista-controle'
 
 const ORIGEM_LABEL: Record<string, string> = {
   mensalista: '🎟️ Mensalista',
@@ -50,6 +51,7 @@ export default async function FichaPage({
     { data: historico },
     { data: inscricoes },
     { data: origens },
+    { data: reposicoes },
   ] = await Promise.all([
     getColaboradorAtual(),
     supabase
@@ -79,6 +81,11 @@ export default async function FichaPage({
       .order('created_at', { ascending: false }),
     // Tipos de atendimento que a criança já usou (para os selos).
     supabase.from('presenca').select('origem').eq('crianca_id', id).limit(500),
+    supabase
+      .from('reposicao')
+      .select('id, data_falta, data_reposicao, obs')
+      .eq('crianca_id', id)
+      .order('data_falta', { ascending: false }),
   ])
 
   const origensUsadas = new Set((origens ?? []).map((r) => r.origem))
@@ -149,6 +156,16 @@ export default async function FichaPage({
         planos={(planos ?? []).map((p) => ({ ...p, valor: Number(p.valor) }))}
         ehAdmin={colaborador?.papel_acesso === 'admin'}
       />
+
+      {matricula && (
+        <MensalistaControle
+          criancaId={crianca.id}
+          mensalidadeId={matricula.id}
+          diasIniciais={matricula.dias_semana ?? []}
+          reposicoes={reposicoes ?? []}
+          ehAdmin={colaborador?.papel_acesso === 'admin'}
+        />
+      )}
 
       {(inscricoes?.length ?? 0) > 0 && (
         <section className="space-y-2">

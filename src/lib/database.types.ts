@@ -603,6 +603,41 @@ export type Database = {
           },
         ]
       }
+      reposicao: {
+        Row: {
+          created_at: string
+          crianca_id: string
+          data_falta: string
+          data_reposicao: string | null
+          id: string
+          obs: string | null
+        }
+        Insert: {
+          created_at?: string
+          crianca_id: string
+          data_falta: string
+          data_reposicao?: string | null
+          id?: string
+          obs?: string | null
+        }
+        Update: {
+          created_at?: string
+          crianca_id?: string
+          data_falta?: string
+          data_reposicao?: string | null
+          id?: string
+          obs?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reposicao_crianca_id_fkey"
+            columns: ["crianca_id"]
+            isOneToOne: false
+            referencedRelation: "crianca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tarifa: {
         Row: {
           ativo: boolean
