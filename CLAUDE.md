@@ -55,9 +55,12 @@ o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular
    a InfiniteSmart. Conciliação é **manual** (baixa na mão) ou **automática via Checkout/webhook**,
    esta atrás de `config_sistema.conciliacao_automatica` (default `false`). Não tente integrar a
    maquininha física.
-4. **Tarifador do play:** piso de 1 hora; depois horas cheias + fração arredondada **pra cima**;
-   valor calculado no **check-out**. Função **pura** + testes. (Confirmar com o dono se a 1ª hora
-   tem preço próprio — hoje assume-se preço único por hora.)
+4. **Play por PERÍODO (grade), não por hora.** Decisão do dono (2026-07-01): o play tem
+   **valor fixo por período**, variando por dia da semana + janela de horário (almoço/jantar) —
+   ex.: 2ª–4ª R$8, 5ª–6ª R$15, sáb/dom R$20. Tabela `grade_play` (dias + horário + valor +
+   capacidade opcional), gerida em `/grade`. O valor é fixado no **check-in** pela hora de
+   entrada (`encontrarSlot`, função pura + testes); capacidade limita vagas do período. O
+   antigo tarifador "estacionamento" (`calcularValorPlay`) foi **substituído** para o play.
 5. **Dinheiro:** `numeric`, nunca `float`. **Telefone:** E.164 (`+55DDDNUMERO`).
 6. **Segredos** (chaves Supabase, token WhatsApp, credencial InfinitePay) só em variáveis de
    ambiente. Nunca commitados.
