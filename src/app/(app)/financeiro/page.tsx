@@ -38,6 +38,34 @@ export default async function FinanceiroPage({
 
   const total = (lancamentos ?? []).reduce((s, l) => s + Number(l.valor), 0)
 
+  // Recebido por MODALIDADE (pagos no período), independente do filtro de status.
+  let pagosQ = supabase.from('lancamento').select('valor, capture_method').eq('status', 'pago')
+  if (de) pagosQ = pagosQ.gte('vencimento', de)
+  if (ate) pagosQ = pagosQ.lte('vencimento', ate)
+  const { data: pagos } = await pagosQ
+
+  function bucket(cm: string | null): string {
+    if (cm === 'pix') return 'pix'
+    if (cm === 'dinheiro') return 'dinheiro'
+    if (cm === 'maquininha') return 'maquininha'
+    if (cm && ['cartao', 'credit', 'debit', 'credit_card'].includes(cm)) return 'cartao'
+    return 'outros'
+  }
+  const porModalidade: Record<string, number> = {}
+  let totalRecebido = 0
+  for (const p of pagos ?? []) {
+    const v = Number(p.valor)
+    totalRecebido += v
+    const b = bucket(p.capture_method)
+    porModalidade[b] = (porModalidade[b] ?? 0) + v
+  }
+  const MODALIDADES: { k: string; label: string; cls: string }[] = [
+    { k: 'dinheiro', label: '💵 Dinheiro', cls: 'bg-emerald-100 text-emerald-800' },
+    { k: 'pix', label: '📱 Pix', cls: 'bg-sky-100 text-sky-800' },
+    { k: 'cartao', label: '💳 Cartão', cls: 'bg-violet-100 text-violet-800' },
+    { k: 'maquininha', label: '🏧 Maquininha', cls: 'bg-amber-100 text-amber-800' },
+  ]
+
   const qs = new URLSearchParams({ status, ...(de && { de }), ...(ate && { ate }) })
 
   return (
@@ -48,6 +76,25 @@ export default async function FinanceiroPage({
         </Link>
         <h1 className="text-2xl font-bold text-slate-700">💰 Financeiro</h1>
       </div>
+
+      {/* Recebido por modalidade (no período) */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="rounded-2xl bg-slate-800 p-4 text-white shadow-sm">
+          <div className="text-xs font-semibold opacity-80">Todos (recebido)</div>
+          <div className="font-display text-xl font-bold">{formatBRL(totalRecebido)}</div>
+        </div>
+        {MODALIDADES.map((m) => (
+          <div key={m.k} className={`rounded-2xl p-4 shadow-sm ring-1 ring-black/5 ${m.cls}`}>
+            <div className="text-xs font-semibold opacity-80">{m.label}</div>
+            <div className="font-display text-xl font-bold">{formatBRL(porModalidade[m.k] ?? 0)}</div>
+          </div>
+        ))}
+      </div>
+      {(porModalidade['outros'] ?? 0) > 0 && (
+        <p className="text-xs text-slate-400">
+          Outros (sem modalidade): {formatBRL(porModalidade['outros'])}
+        </p>
+      )}
 
       <form method="get" className={`space-y-3 ${card}`}>
         <div className="flex flex-wrap gap-2">
