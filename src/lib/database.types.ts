@@ -241,6 +241,42 @@ export type Database = {
           },
         ]
       }
+      grade_play: {
+        Row: {
+          ativo: boolean
+          capacidade: number | null
+          created_at: string
+          dias_semana: number[]
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          nome: string
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          capacidade?: number | null
+          created_at?: string
+          dias_semana: number[]
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          nome: string
+          valor: number
+        }
+        Update: {
+          ativo?: boolean
+          capacidade?: number | null
+          created_at?: string
+          dias_semana?: number[]
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          nome?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       inscricao_colonia: {
         Row: {
           colonia_id: string

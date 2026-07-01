@@ -2,25 +2,16 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ConfigToggle from './config-toggle'
 import CapacidadeInput from './capacidade-input'
-import TarifaForm from './tarifa-form'
 import { requireAdmin } from '@/lib/colaborador'
 
 export default async function ConfiguracoesPage() {
   await requireAdmin()
   const supabase = await createClient()
-  const [{ data: cfg }, { data: tarifa }] = await Promise.all([
-    supabase
-      .from('config_sistema')
-      .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia')
-      .eq('id', 1)
-      .maybeSingle(),
-    supabase
-      .from('tarifa')
-      .select('valor_hora, valor_fracao, tamanho_fracao_min, minimo_minutos, aviso_antecedencia_min')
-      .eq('ativo', true)
-      .limit(1)
-      .maybeSingle(),
-  ])
+  const { data: cfg } = await supabase
+    .from('config_sistema')
+    .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia')
+    .eq('id', 1)
+    .maybeSingle()
 
   return (
     <div className="space-y-4">
@@ -47,17 +38,16 @@ export default async function ConfiguracoesPage() {
 
       <CapacidadeInput inicial={cfg?.capacidade_dia ?? null} />
 
-      {tarifa && (
-        <TarifaForm
-          inicial={{
-            valor_hora: Number(tarifa.valor_hora),
-            valor_fracao: Number(tarifa.valor_fracao),
-            tamanho_fracao_min: tarifa.tamanho_fracao_min,
-            minimo_minutos: tarifa.minimo_minutos,
-            aviso_antecedencia_min: tarifa.aviso_antecedencia_min,
-          }}
-        />
-      )}
+      <Link
+        href="/grade"
+        className="pop flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
+      >
+        <div>
+          <div className="font-display text-base font-bold text-slate-700">🎠 Preços do play</div>
+          <p className="text-sm text-slate-500">Horários e valores por período (grade).</p>
+        </div>
+        <span className="text-slate-300">›</span>
+      </Link>
     </div>
   )
 }

@@ -2,7 +2,8 @@
 // Usa service role (bypassa RLS — é dev). Idempotente: limpa as crianças [seed] e recria.
 // Rodar: npm run seed:dev
 import { createClient } from '@supabase/supabase-js'
-import { calcularValorPlay } from '../src/lib/tarifador'
+import { encontrarSlot, type SlotGrade } from '../src/lib/grade'
+import { diaDaSemana, horaParaMinutos } from '../src/lib/datas'
 import { FakeSender } from '../src/lib/whatsapp/adapter'
 import { enviarNotificacao } from '../src/lib/whatsapp/notificar'
 import { tplOcorrencia } from '../src/lib/whatsapp/templates'
@@ -59,20 +60,6 @@ if (antigas?.length) {
 // ─── config: capacidade do dia ──────────────────────────────────────────────
 await sb.from('config_sistema').update({ capacidade_dia: 25 }).eq('id', 1)
 
-// ─── tarifa ativa (p/ calcular valores de play) ─────────────────────────────
-const { data: tarifaRow } = await sb
-  .from('tarifa')
-  .select('minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao')
-  .eq('ativo', true)
-  .limit(1)
-  .single()
-const T = {
-  minimo_minutos: tarifaRow!.minimo_minutos,
-  valor_hora: Number(tarifaRow!.valor_hora),
-  tamanho_fracao_min: tarifaRow!.tamanho_fracao_min,
-  valor_fracao: Number(tarifaRow!.valor_fracao),
-}
-
 // ─── planos (só se ainda não houver) ────────────────────────────────────────
 const { count: qPlanos } = await sb.from('plano_mensalidade').select('id', { count: 'exact', head: true })
 if (!qPlanos) {
@@ -114,6 +101,13 @@ const { data: colonia } = await sb
   .eq('ativo', true)
   .limit(1)
   .maybeSingle()
+
+// grade do play (para precificar as presenças de play pelo período)
+const { data: gradeRows } = await sb
+  .from('grade_play')
+  .select('id, nome, dias_semana, hora_inicio, hora_fim, valor, capacidade')
+  .eq('ativo', true)
+const grade: SlotGrade[] = (gradeRows ?? []).map((g) => ({ ...g, valor: Number(g.valor) }))
 
 // ─── crianças ───────────────────────────────────────────────────────────────
 const NOMES = [
@@ -230,20 +224,25 @@ for (let d = 14; d >= 0; d--) {
 
   for (const k of escolhidos) {
     const origem = pick(ORIGENS)
-    const hEntrada = int(8, 15)
+    // play cai num período da grade (almoço/jantar); demais em horário livre
+    const hEntrada = origem === 'espaco_kids' ? pick([11, 12, 13, 18, 19, 20]) : int(8, 15)
     const mEntrada = pick([0, 15, 30, 45])
     const entrada = hhmm(hEntrada, mEntrada)
     const ambiente_id = origem === 'espaco_kids' && ambientes?.length && chance(0.6) ? pick(ambientes).id : null
 
+    // valor fixo do período (grade) — fixado no "check-in"
+    let valor: number | null = null
+    if (origem === 'espaco_kids') {
+      valor = encontrarSlot(diaDaSemana(data), horaParaMinutos(entrada), grade)?.valor ?? null
+    }
+
     // hoje: ~metade fica em aberto (aparece em "quem está aqui")
     const aberta = hojeMesmo && chance(0.5)
     let saida: string | null = null
-    let valor: number | null = null
     if (!aberta) {
       const dur = int(20, 200)
       const totalMin = hEntrada * 60 + mEntrada + dur
-      saida = hhmm(Math.min(20, Math.floor(totalMin / 60)), totalMin % 60)
-      if (origem === 'espaco_kids') valor = calcularValorPlay(entrada, saida, T).valor
+      saida = hhmm(Math.min(23, Math.floor(totalMin / 60)), totalMin % 60)
     }
 
     const { data: pre } = await sb

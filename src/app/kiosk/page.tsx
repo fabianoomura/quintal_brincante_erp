@@ -15,21 +15,15 @@ export default async function KioskPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }, { data: tarifa }] = await Promise.all([
+  const [{ data: presentes }, { data: criancas }] = await Promise.all([
     supabase
       .from('presenca')
-      .select('id, entrada, tempo_contratado_min, crianca:crianca_id (id, nome, foto)')
+      .select('id, entrada, tempo_contratado_min, valor, crianca:crianca_id (id, nome, foto)')
       .eq('data', hoje)
       .eq('origem', 'espaco_kids')
       .is('saida', null)
       .order('entrada', { ascending: true }),
     supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
-    supabase
-      .from('tarifa')
-      .select('minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao')
-      .eq('ativo', true)
-      .limit(1)
-      .maybeSingle(),
   ])
 
   return (
@@ -50,29 +44,18 @@ export default async function KioskPage() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
-        {!tarifa ? (
-          <p className="rounded-2xl bg-rose-100 p-4 text-sm font-semibold text-rose-700">
-            Nenhuma tarifa ativa configurada — o valor não será calculado.
-          </p>
-        ) : (
-          <PlaygroundPanel
-            presentes={(presentes ?? []).map((p) => ({
-              id: p.id,
-              criancaId: p.crianca?.id ?? '',
-              entrada: p.entrada,
-              tempoContratadoMin: p.tempo_contratado_min,
-              nome: p.crianca?.nome ?? '—',
-              foto: p.crianca?.foto ?? null,
-            }))}
-            criancas={criancas ?? []}
-            tarifa={{
-              minimo_minutos: tarifa.minimo_minutos,
-              valor_hora: Number(tarifa.valor_hora),
-              tamanho_fracao_min: tarifa.tamanho_fracao_min,
-              valor_fracao: Number(tarifa.valor_fracao),
-            }}
-          />
-        )}
+        <PlaygroundPanel
+          presentes={(presentes ?? []).map((p) => ({
+            id: p.id,
+            criancaId: p.crianca?.id ?? '',
+            entrada: p.entrada,
+            tempoContratadoMin: p.tempo_contratado_min,
+            nome: p.crianca?.nome ?? '—',
+            foto: p.crianca?.foto ?? null,
+            valor: p.valor != null ? Number(p.valor) : null,
+          }))}
+          criancas={criancas ?? []}
+        />
 
         <div className="mt-6">
           <ConcluidasHoje />

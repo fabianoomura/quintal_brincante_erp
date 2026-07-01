@@ -32,3 +32,8 @@ export function horaParaMinutos(t: string): number {
   const [h, m] = t.split(':')
   return Number(h) * 60 + Number(m)
 }
+
+// Dia da semana (0=dom..6=sáb) de uma data 'YYYY-MM-DD'. Meio-dia evita borda de fuso.
+export function diaDaSemana(dataISO: string): number {
+  return new Date(`${dataISO}T12:00:00`).getDay()
+}

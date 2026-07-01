@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
 import { cadastroRapido } from '../criancas/actions'
-import { calcularValorPlay, duracaoMinutos, type TarifaCalculo } from '@/lib/tarifador'
+import { duracaoMinutos } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos from '../avisos-rapidos'
 import FotoInput from '../foto-input'
@@ -16,6 +16,7 @@ type Presente = {
   tempoContratadoMin: number | null
   nome: string
   foto: string | null
+  valor: number | null // valor fixo do período (grade)
 }
 
 function agoraHHMM() {
@@ -32,11 +33,9 @@ function fmtDuracao(min: number) {
 export default function PlaygroundPanel({
   presentes,
   criancas,
-  tarifa,
 }: {
   presentes: Presente[]
   criancas: { id: string; nome: string }[]
-  tarifa: TarifaCalculo
 }) {
   const router = useRouter()
   const [agora, setAgora] = useState(agoraHHMM())
@@ -211,7 +210,7 @@ export default function PlaygroundPanel({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {presentes.map((p) => {
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
-          const { valor } = calcularValorPlay(p.entrada, agora, tarifa)
+          const valor = p.valor
           const restante =
             p.tempoContratadoMin != null ? p.tempoContratadoMin - decorrido : null
           const estourou = restante != null && restante <= 0
@@ -243,7 +242,7 @@ export default function PlaygroundPanel({
                   {fmtDuracao(decorrido)}
                 </span>
                 <span className="font-display text-xl font-bold text-emerald-700">
-                  {formatBRL(valor)}
+                  {valor != null ? formatBRL(valor) : '—'}
                 </span>
               </div>
               {restante != null && p.tempoContratadoMin != null && (
@@ -274,7 +273,7 @@ export default function PlaygroundPanel({
                 disabled={ocupado === p.id}
                 className="pop w-full rounded-xl bg-slate-800 py-2.5 font-bold text-white disabled:opacity-60"
               >
-                {ocupado === p.id ? '…' : `Check-out · ${formatBRL(valor)}`}
+                {ocupado === p.id ? '…' : valor != null ? `Check-out · ${formatBRL(valor)}` : 'Check-out'}
               </button>
 
               <div className="border-t border-slate-100 pt-2">

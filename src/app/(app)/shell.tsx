@@ -28,6 +28,7 @@ const GRUPOS: Grupo[] = [
     titulo: 'Gestão',
     itens: [
       { href: '/gerencial', label: 'Gerencial', icon: '📊', cor: 'bg-indigo-500', adminOnly: true },
+      { href: '/grade', label: 'Grade do play', icon: '🎠', cor: 'bg-fuchsia-600', adminOnly: true },
       { href: '/planos', label: 'Planos', icon: '🎟️', cor: 'bg-pink-500', adminOnly: true },
       { href: '/ambientes', label: 'Ambientes', icon: '🏠', cor: 'bg-lime-500', adminOnly: true },
       { href: '/colaboradores', label: 'Colaboradores', icon: '🧑‍🏫', cor: 'bg-teal-500', adminOnly: true },

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { hojeISO, agoraHora } from '@/lib/datas'
-import { calcularValorPlay } from '@/lib/tarifador'
+import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
+import { encontrarSlot } from '@/lib/grade'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -26,68 +26,89 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   if (!input.entrada) return { ok: false, erro: 'Informe o horário de entrada.' }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const data = hojeISO()
+
+  // Play: preço FIXO do período pela grade (dia + hora) + capacidade do período.
+  let valor: number | null = null
+  if (input.origem === 'espaco_kids') {
+    const { data: grade } = await supabase
+      .from('grade_play')
+      .select('id, nome, dias_semana, hora_inicio, hora_fim, valor, capacidade')
+      .eq('ativo', true)
+    const slot = encontrarSlot(
+      diaDaSemana(data),
+      horaParaMinutos(input.entrada),
+      (grade ?? []).map((g) => ({ ...g, valor: Number(g.valor) })),
+    )
+    if (slot) {
+      valor = slot.valor
+      if (slot.capacidade != null) {
+        const { data: doDia } = await supabase
+          .from('presenca')
+          .select('entrada')
+          .eq('data', data)
+          .eq('origem', 'espaco_kids')
+        const ini = horaParaMinutos(slot.hora_inicio)
+        const fim = horaParaMinutos(slot.hora_fim)
+        const noPeriodo = (doDia ?? []).filter((p) => {
+          const m = horaParaMinutos(p.entrada)
+          return m >= ini && m < fim
+        }).length
+        if (noPeriodo >= slot.capacidade) {
+          return { ok: false, erro: `Período "${slot.nome}" lotado (${noPeriodo}/${slot.capacidade}).` }
+        }
+      }
+    }
+  }
+
+  const { data: novo, error } = await supabase
     .from('presenca')
     .insert({
       crianca_id: input.criancaId,
-      data: hojeISO(),
+      data,
       entrada: input.entrada,
       origem: input.origem,
       tempo_contratado_min:
         input.origem === 'espaco_kids' ? input.tempoContratadoMin : null,
       ambiente_id: input.ambienteId ?? null,
+      valor,
     })
     .select('id')
     .single()
   if (error) return { ok: false, erro: error.message }
 
   revalidatePath('/presenca')
-  return { ok: true, id: data.id }
+  revalidatePath('/playground')
+  revalidatePath('/kiosk')
+  return { ok: true, id: novo.id }
 }
 
-// Check-out: marca a saída. Para o play (espaco_kids), calcula o valor pelo tarifador
-// (tarifa ativa), grava em presenca.valor e gera um lançamento pendente.
+// Check-out: marca a saída. O valor do play já foi fixado no check-in (grade do período);
+// aqui só registramos a saída e geramos o lançamento pendente.
 export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
   const supabase = await createClient()
   const saida = agoraHora()
 
   const { data: p, error: errP } = await supabase
     .from('presenca')
-    .select('id, crianca_id, data, entrada, origem, saida')
+    .select('id, crianca_id, data, origem, saida, valor')
     .eq('id', presencaId)
     .maybeSingle()
   if (errP) return { ok: false, erro: errP.message }
   if (!p) return { ok: false, erro: 'Presença não encontrada.' }
   if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
-  let valor: number | null = null
-
-  if (p.origem === 'espaco_kids') {
-    const { data: tarifa, error: errT } = await supabase
-      .from('tarifa')
-      .select('minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao')
-      .eq('ativo', true)
-      .limit(1)
-      .maybeSingle()
-    if (errT) return { ok: false, erro: errT.message }
-    if (!tarifa) return { ok: false, erro: 'Nenhuma tarifa ativa configurada.' }
-
-    valor = calcularValorPlay(p.entrada, saida, {
-      minimo_minutos: tarifa.minimo_minutos,
-      valor_hora: Number(tarifa.valor_hora),
-      tamanho_fracao_min: tarifa.tamanho_fracao_min,
-      valor_fracao: Number(tarifa.valor_fracao),
-    }).valor
-  }
+  const valor: number | null =
+    p.origem === 'espaco_kids' && p.valor != null ? Number(p.valor) : null
 
   const { error: errU } = await supabase
     .from('presenca')
-    .update({ saida, valor })
+    .update({ saida })
     .eq('id', presencaId)
     .is('saida', null)
   if (errU) return { ok: false, erro: errU.message }
 
-  // Gera lançamento pendente para as presenças pagas com valor calculado (play).
+  // Gera lançamento pendente para o play (valor fixado no check-in).
   if (valor !== null) {
     const { error: errL } = await supabase.from('lancamento').insert({
       crianca_id: p.crianca_id,
