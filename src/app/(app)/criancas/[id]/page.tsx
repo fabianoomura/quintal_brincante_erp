@@ -27,7 +27,7 @@ export default async function FichaPage({
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('id, nome, nascimento, saude, ativo')
+    .select('id, nome, nascimento, saude, ativo, foto')
     .eq('id', id)
     .maybeSingle()
 

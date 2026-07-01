@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO } from '@/lib/datas'
 import PlaygroundPanel from './panel'
+import ConcluidasHoje from './concluidas-hoje'
 
 export default async function PlaygroundPage() {
   const supabase = await createClient()
@@ -10,7 +11,7 @@ export default async function PlaygroundPage() {
   const [{ data: presentes }, { data: criancas }, { data: tarifa }] = await Promise.all([
     supabase
       .from('presenca')
-      .select('id, entrada, tempo_contratado_min, crianca:crianca_id (id, nome)')
+      .select('id, entrada, tempo_contratado_min, crianca:crianca_id (id, nome, foto)')
       .eq('data', hoje)
       .eq('origem', 'espaco_kids')
       .is('saida', null)
@@ -26,11 +27,14 @@ export default async function PlaygroundPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link href="/" className="text-sm font-semibold text-slate-500">
-          ← Início
-        </Link>
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold text-slate-700">🎠 Playground</h1>
+        <Link
+          href="/kiosk"
+          className="pop rounded-full bg-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
+        >
+          ⛶ Modo quiosque
+        </Link>
       </div>
 
       {!tarifa ? (
@@ -45,6 +49,7 @@ export default async function PlaygroundPage() {
             entrada: p.entrada,
             tempoContratadoMin: p.tempo_contratado_min,
             nome: p.crianca?.nome ?? '—',
+            foto: p.crianca?.foto ?? null,
           }))}
           criancas={criancas ?? []}
           tarifa={{
@@ -55,6 +60,8 @@ export default async function PlaygroundPage() {
           }}
         />
       )}
+
+      <ConcluidasHoje />
     </div>
   )
 }

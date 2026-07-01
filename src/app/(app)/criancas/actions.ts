@@ -23,6 +23,46 @@ export type CriancaInput = {
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 
+// Cadastro RÁPIDO (a partir do play): só o essencial, mas na MESMA tabela `crianca`.
+// Opcionalmente já cria o responsável (telefone p/ os avisos) e a foto.
+export async function cadastroRapido(input: {
+  nome: string
+  respNome: string
+  telefone: string
+  foto: string | null
+}): Promise<Resultado> {
+  if (input.nome.trim() === '') return { ok: false, erro: 'Informe o nome.' }
+
+  const supabase = await createClient()
+  const { data: crianca, error } = await supabase
+    .from('crianca')
+    .insert({ nome: input.nome.trim(), foto: input.foto })
+    .select('id')
+    .single()
+  if (error) return { ok: false, erro: error.message }
+
+  if (input.telefone.trim() !== '') {
+    const telefone = normalizeE164BR(input.telefone)
+    if (!telefone) return { ok: false, erro: 'Telefone inválido.' }
+    const { data: contato, error: errC } = await supabase
+      .from('contato')
+      .insert({ nome: input.respNome.trim() || 'Responsável', telefone })
+      .select('id')
+      .single()
+    if (errC) return { ok: false, erro: errC.message }
+    await supabase.from('crianca_contato').insert({
+      crianca_id: crianca.id,
+      contato_id: contato.id,
+      papel: 'responsavel',
+    })
+  }
+
+  revalidatePath('/playground')
+  revalidatePath('/kiosk')
+  revalidatePath('/criancas')
+  return { ok: true, id: crianca.id }
+}
+
 // Insere um contato e o vínculo com a criança. Lança em caso de erro.
 async function inserirContato(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -84,7 +124,7 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
 
 export async function updateCrianca(
   id: string,
-  input: { nome: string; nascimento: string; saude: string; ativo: boolean },
+  input: { nome: string; nascimento: string; saude: string; ativo: boolean; foto: string | null },
 ): Promise<Resultado> {
   if (input.nome.trim() === '') return { ok: false, erro: 'Nome é obrigatório.' }
 
@@ -96,6 +136,7 @@ export async function updateCrianca(
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
       ativo: input.ativo,
+      foto: input.foto,
     })
     .eq('id', id)
   if (error) return { ok: false, erro: error.message }

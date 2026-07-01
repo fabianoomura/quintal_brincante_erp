@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateCrianca } from '../actions'
 import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
+import FotoInput from '../../foto-input'
 
 type Crianca = {
   id: string
@@ -11,6 +12,7 @@ type Crianca = {
   nascimento: string | null
   saude: string | null
   ativo: boolean
+  foto: string | null
 }
 
 export default function EditForm({ crianca }: { crianca: Crianca }) {
@@ -19,6 +21,7 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
   const [nascimento, setNascimento] = useState(crianca.nascimento ?? '')
   const [saude, setSaude] = useState(crianca.saude ?? '')
   const [ativo, setAtivo] = useState(crianca.ativo)
+  const [foto, setFoto] = useState<string | null>(crianca.foto)
   const [erro, setErro] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -28,7 +31,7 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
     setErro(null)
     setMsg(null)
     setSalvando(true)
-    const res = await updateCrianca(crianca.id, { nome, nascimento, saude, ativo })
+    const res = await updateCrianca(crianca.id, { nome, nascimento, saude, ativo, foto })
     setSalvando(false)
     if (!res.ok) {
       setErro(res.erro)
@@ -40,6 +43,10 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
 
   return (
     <form onSubmit={salvar} className={`space-y-3 ${card}`}>
+      <div className={label}>
+        <span className={labelText}>Foto</span>
+        <FotoInput value={foto} onChange={setFoto} />
+      </div>
       <label className={label}>
         <span className={labelText}>Nome *</span>
         <input

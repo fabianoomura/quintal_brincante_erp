@@ -14,13 +14,13 @@ export default async function CriancasPage({
 
   const supabase = await createClient()
 
-  let criancas: { id: string; nome: string; ativo: boolean }[] | null = null
+  let criancas: { id: string; nome: string; ativo: boolean; foto: string | null }[] | null = null
   let error: { message: string } | null = null
 
   if (tipo === 'mensalista') {
     let q = supabase
       .from('crianca')
-      .select('id, nome, ativo, mensalidade!inner(id)')
+      .select('id, nome, ativo, foto, mensalidade!inner(id)')
       .eq('mensalidade.ativo', true)
       .order('nome', { ascending: true })
       .limit(200)
@@ -29,11 +29,11 @@ export default async function CriancasPage({
     else if (status === 'inativa') q = q.eq('ativo', false)
     const res = await q
     error = res.error
-    criancas = (res.data ?? []).map((c) => ({ id: c.id, nome: c.nome, ativo: c.ativo }))
+    criancas = (res.data ?? []).map((c) => ({ id: c.id, nome: c.nome, ativo: c.ativo, foto: c.foto }))
   } else {
     let q = supabase
       .from('crianca')
-      .select('id, nome, ativo')
+      .select('id, nome, ativo, foto')
       .order('nome', { ascending: true })
       .limit(200)
     if (busca !== '') q = q.ilike('nome', `%${busca}%`)
@@ -126,8 +126,13 @@ export default async function CriancasPage({
                 href={`/criancas/${c.id}`}
                 className="pop flex items-center gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 hover:shadow-md"
               >
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${cor} font-display font-bold text-white`}>
-                  {iniciais}
+                <span className={`grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full ${cor} font-display font-bold text-white`}>
+                  {c.foto ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.foto} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    iniciais
+                  )}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display font-semibold text-slate-800">

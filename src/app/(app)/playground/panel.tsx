@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
+import { cadastroRapido } from '../criancas/actions'
 import { calcularValorPlay, duracaoMinutos, type TarifaCalculo } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos from '../avisos-rapidos'
+import FotoInput from '../foto-input'
 
 type Presente = {
   id: string
@@ -13,6 +15,7 @@ type Presente = {
   entrada: string // 'HH:MM:SS'
   tempoContratadoMin: number | null
   nome: string
+  foto: string | null
 }
 
 function agoraHHMM() {
@@ -41,6 +44,33 @@ export default function PlaygroundPanel({
   const [tempo, setTempo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+
+  // cadastro rápido
+  const [cadastro, setCadastro] = useState(false)
+  const [nNome, setNNome] = useState('')
+  const [nResp, setNResp] = useState('')
+  const [nTel, setNTel] = useState('')
+  const [nFoto, setNFoto] = useState<string | null>(null)
+  const [cadErro, setCadErro] = useState<string | null>(null)
+
+  async function salvarCadastro(e: React.FormEvent) {
+    e.preventDefault()
+    setCadErro(null)
+    setOcupado('cadastro')
+    const res = await cadastroRapido({ nome: nNome, respNome: nResp, telefone: nTel, foto: nFoto })
+    setOcupado(null)
+    if (!res.ok) {
+      setCadErro(res.erro)
+      return
+    }
+    setCriancaId(res.id) // já seleciona p/ o check-in
+    setCadastro(false)
+    setNNome('')
+    setNResp('')
+    setNTel('')
+    setNFoto(null)
+    router.refresh()
+  }
 
   // Relógio: re-renderiza a cada 20s p/ atualizar cronômetros e custos.
   useEffect(() => {
@@ -115,6 +145,60 @@ export default function PlaygroundPanel({
           </button>
         </div>
         {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
+
+        {!cadastro ? (
+          <button
+            type="button"
+            onClick={() => setCadastro(true)}
+            className="text-sm font-semibold text-fuchsia-700"
+          >
+            + Não encontrou? Cadastro rápido
+          </button>
+        ) : (
+          <form onSubmit={salvarCadastro} className="space-y-2 rounded-xl bg-fuchsia-50 p-3">
+            <div className="text-sm font-bold text-fuchsia-700">🧒 Cadastro rápido</div>
+            <FotoInput value={nFoto} onChange={setNFoto} />
+            <input
+              required
+              placeholder="Nome da criança"
+              value={nNome}
+              onChange={(e) => setNNome(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+            />
+            <div className="flex gap-2">
+              <input
+                placeholder="Responsável (nome)"
+                value={nResp}
+                onChange={(e) => setNResp(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+              />
+              <input
+                type="tel"
+                placeholder="WhatsApp"
+                value={nTel}
+                onChange={(e) => setNTel(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+              />
+            </div>
+            {cadErro && <p className="text-sm font-semibold text-rose-500">{cadErro}</p>}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={ocupado === 'cadastro'}
+                className="pop flex-1 rounded-xl bg-fuchsia-600 py-2 font-semibold text-white disabled:opacity-60"
+              >
+                {ocupado === 'cadastro' ? 'Salvando…' : 'Cadastrar e selecionar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCadastro(false)}
+                className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-600"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {presentes.length === 0 && (
@@ -124,7 +208,7 @@ export default function PlaygroundPanel({
       )}
 
       {/* Cards com cronômetro ao vivo */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {presentes.map((p) => {
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
           const { valor } = calcularValorPlay(p.entrada, agora, tarifa)
@@ -140,9 +224,19 @@ export default function PlaygroundPanel({
                 estourou ? 'bg-rose-50' : acabando ? 'bg-amber-50' : 'bg-white'
               }`}
             >
-              <div className="flex items-baseline justify-between">
-                <span className="font-display text-lg font-bold">{p.nome}</span>
-                <span className="text-xs text-slate-400">entrou {p.entrada.slice(0, 5)}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                    {p.foto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.foto} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-lg">🧒</span>
+                    )}
+                  </span>
+                  <span className="truncate font-display text-lg font-bold">{p.nome}</span>
+                </div>
+                <span className="shrink-0 text-xs text-slate-400">entrou {p.entrada.slice(0, 5)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-display text-2xl font-bold text-slate-700">
