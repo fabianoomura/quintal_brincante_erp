@@ -13,7 +13,7 @@ const PAPEIS = [
 ] as const
 
 function contatoVazio(papel: ContatoInput['papel']): ContatoInput {
-  return { nome: '', telefone: '', email: '', papel }
+  return { nome: '', telefone: '', email: '', cpf: '', rg: '', papel }
 }
 
 export default function NovaCriancaPage() {
@@ -144,6 +144,21 @@ export default function NovaCriancaPage() {
               onChange={(e) => atualizarContato(i, { email: e.target.value })}
               className={input}
             />
+            <div className="flex gap-2">
+              <input
+                inputMode="numeric"
+                placeholder="CPF (preferencial)"
+                value={c.cpf}
+                onChange={(e) => atualizarContato(i, { cpf: e.target.value })}
+                className={input}
+              />
+              <input
+                placeholder="RG (opcional)"
+                value={c.rg}
+                onChange={(e) => atualizarContato(i, { rg: e.target.value })}
+                className={input}
+              />
+            </div>
           </div>
         ))}
       </section>

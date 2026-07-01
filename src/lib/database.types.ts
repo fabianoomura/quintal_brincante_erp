@@ -150,24 +150,30 @@ export type Database = {
       }
       contato: {
         Row: {
+          cpf: string | null
           created_at: string
           email: string | null
           id: string
           nome: string
+          rg: string | null
           telefone: string | null
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome: string
+          rg?: string | null
           telefone?: string | null
         }
         Update: {
+          cpf?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome?: string
+          rg?: string | null
           telefone?: string | null
         }
         Relationships: []

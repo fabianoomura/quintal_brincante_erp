@@ -13,6 +13,8 @@ type Contato = {
   nome: string
   telefone: string | null
   email: string | null
+  cpf: string | null
+  rg: string | null
 }
 
 const PAPEL_LABEL: Record<Papel, string> = {
@@ -33,6 +35,8 @@ export default function ContatosManager({
     nome: '',
     telefone: '',
     email: '',
+    cpf: '',
+    rg: '',
     papel: 'responsavel',
   })
   const [erro, setErro] = useState<string | null>(null)
@@ -48,7 +52,7 @@ export default function ContatosManager({
       setErro(res.erro)
       return
     }
-    setNovo({ nome: '', telefone: '', email: '', papel: 'responsavel' })
+    setNovo({ nome: '', telefone: '', email: '', cpf: '', rg: '', papel: 'responsavel' })
     router.refresh()
   }
 
@@ -78,6 +82,7 @@ export default function ContatosManager({
               <div className="text-xs text-slate-500">
                 {PAPEL_LABEL[c.papel]}
                 {c.telefone ? ` · ${c.telefone}` : ''}
+                {c.cpf ? ` · CPF ${c.cpf}` : c.rg ? ` · RG ${c.rg}` : ''}
               </div>
             </div>
             <button
@@ -126,6 +131,21 @@ export default function ContatosManager({
           onChange={(e) => setNovo({ ...novo, email: e.target.value })}
           className={input}
         />
+        <div className="flex gap-2">
+          <input
+            inputMode="numeric"
+            placeholder="CPF (preferencial)"
+            value={novo.cpf}
+            onChange={(e) => setNovo({ ...novo, cpf: e.target.value })}
+            className={input}
+          />
+          <input
+            placeholder="RG (opcional)"
+            value={novo.rg}
+            onChange={(e) => setNovo({ ...novo, rg: e.target.value })}
+            className={input}
+          />
+        </div>
         {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
         <button type="submit" disabled={ocupado} className={btnGrape}>
           Adicionar contato

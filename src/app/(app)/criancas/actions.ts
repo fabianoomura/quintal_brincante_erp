@@ -11,6 +11,8 @@ export type ContatoInput = {
   nome: string
   telefone: string
   email: string
+  cpf: string
+  rg: string
   papel: PapelContato
 }
 
@@ -80,6 +82,8 @@ async function inserirContato(
       nome: c.nome.trim(),
       telefone,
       email: c.email.trim() === '' ? null : c.email.trim(),
+      cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),
+      rg: c.rg.trim() === '' ? null : c.rg.trim(),
     })
     .select('id')
     .single()

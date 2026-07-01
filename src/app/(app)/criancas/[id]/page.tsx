@@ -36,7 +36,7 @@ export default async function FichaPage({
 
   const { data: vinculos } = await supabase
     .from('crianca_contato')
-    .select('papel, contato:contato_id (id, nome, telefone, email)')
+    .select('papel, contato:contato_id (id, nome, telefone, email, cpf, rg)')
     .eq('crianca_id', id)
 
   const contatos = (vinculos ?? []).map((v) => ({
