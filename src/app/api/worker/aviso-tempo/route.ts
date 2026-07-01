@@ -23,20 +23,14 @@ export async function POST(request: Request) {
 
   const { data: cfg } = await sb
     .from('config_sistema')
-    .select('aviso_tempo_ativo')
+    .select('aviso_tempo_ativo, aviso_antecedencia_min')
     .eq('id', 1)
     .maybeSingle()
   if (!cfg?.aviso_tempo_ativo) {
     return Response.json({ skipped: true, motivo: 'aviso_tempo_ativo=false' })
   }
 
-  const { data: tarifa } = await sb
-    .from('tarifa')
-    .select('aviso_antecedencia_min')
-    .eq('ativo', true)
-    .limit(1)
-    .maybeSingle()
-  const antecedencia = tarifa?.aviso_antecedencia_min ?? 15
+  const antecedencia = cfg?.aviso_antecedencia_min ?? 15
 
   // Override opcional p/ teste determinístico (?agora=HH:MM&data=YYYY-MM-DD).
   const url = new URL(request.url)

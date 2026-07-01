@@ -23,8 +23,9 @@ export default async function GradePage() {
       </div>
 
       <p className="text-sm text-slate-500">
-        Preço fixo por período (dia + horário). O sistema cobra o valor do período pela hora de
-        entrada. Capacidade é opcional.
+        Cada período define o <strong>valor/hora</strong> (dia + horário). A cobrança tem
+        <strong> piso de 1 hora</strong> e é proporcional depois (ex.: 20/h → 1h15 = R$25).
+        Capacidade é opcional.
       </p>
 
       <div className="space-y-2">

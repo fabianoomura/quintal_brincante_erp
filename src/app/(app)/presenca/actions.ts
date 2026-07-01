@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { encontrarSlot, dentroDeAlgumPeriodo } from '@/lib/grade'
 import { feriadosNacionais } from '@/lib/feriados'
+import { precoProporcional, duracaoMinutos } from '@/lib/tarifador'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -29,8 +30,9 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   const supabase = await createClient()
   const data = hojeISO()
 
-  // Play: preço FIXO por período (grade) — ou valor único de FERIADO (nacional ou local).
-  let valor: number | null = null
+  // Play: trava a TARIFA/HORA do período (grade) — ou a tarifa/hora de FERIADO.
+  // O valor final (piso 1h + proporcional) é calculado no check-out.
+  let tarifaHora: number | null = null
   if (input.origem === 'espaco_kids') {
     const horaMin = horaParaMinutos(input.entrada)
     const [{ data: gradeRows }, { data: cfg }, { data: fl }] = await Promise.all([
@@ -46,12 +48,12 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     const ehFeriado = !!fl || feriadosNacionais(Number(data.slice(0, 4))).has(data)
 
     if (ehFeriado && valorFeriado != null && dentroDeAlgumPeriodo(horaMin, grade)) {
-      // feriado: valor único, respeitando o horário de funcionamento (sem cap por período)
-      valor = valorFeriado
+      // feriado: tarifa/hora única, respeitando o horário de funcionamento (sem cap por período)
+      tarifaHora = valorFeriado
     } else {
       const slot = encontrarSlot(diaDaSemana(data), horaMin, grade)
       if (slot) {
-        valor = slot.valor
+        tarifaHora = slot.valor
         if (slot.capacidade != null) {
           const { data: doDia } = await supabase
             .from('presenca')
@@ -82,7 +84,7 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       tempo_contratado_min:
         input.origem === 'espaco_kids' ? input.tempoContratadoMin : null,
       ambiente_id: input.ambienteId ?? null,
-      valor,
+      tarifa_hora: tarifaHora,
     })
     .select('id')
     .single()
@@ -94,15 +96,15 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   return { ok: true, id: novo.id }
 }
 
-// Check-out: marca a saída. O valor do play já foi fixado no check-in (grade do período);
-// aqui só registramos a saída e geramos o lançamento pendente.
+// Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela
+// tarifa/hora travada no check-in. Gera o lançamento pendente.
 export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
   const supabase = await createClient()
   const saida = agoraHora()
 
   const { data: p, error: errP } = await supabase
     .from('presenca')
-    .select('id, crianca_id, data, origem, saida, valor')
+    .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora')
     .eq('id', presencaId)
     .maybeSingle()
   if (errP) return { ok: false, erro: errP.message }
@@ -110,11 +112,13 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
   if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
   const valor: number | null =
-    p.origem === 'espaco_kids' && p.valor != null ? Number(p.valor) : null
+    p.origem === 'espaco_kids' && p.tarifa_hora != null
+      ? precoProporcional(Math.ceil(duracaoMinutos(p.entrada, saida)), Number(p.tarifa_hora))
+      : null
 
   const { error: errU } = await supabase
     .from('presenca')
-    .update({ saida })
+    .update({ saida, valor })
     .eq('id', presencaId)
     .is('saida', null)
   if (errU) return { ok: false, erro: errU.message }

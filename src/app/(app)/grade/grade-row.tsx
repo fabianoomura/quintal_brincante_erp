@@ -66,7 +66,7 @@ export default function GradeRow({
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <label className="text-xs font-semibold text-slate-500">
-          Valor
+          Valor/hora
           <div className="mt-0.5 flex items-center gap-1">
             <span className="text-slate-400">R$</span>
             <input type="number" min={0} step="0.01" value={val} onChange={(e) => setVal(e.target.value)} className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />

@@ -3,6 +3,7 @@
 // Rodar: npm run seed:dev
 import { createClient } from '@supabase/supabase-js'
 import { encontrarSlot, type SlotGrade } from '../src/lib/grade'
+import { precoProporcional } from '../src/lib/tarifador'
 import { diaDaSemana, horaParaMinutos } from '../src/lib/datas'
 import { FakeSender } from '../src/lib/whatsapp/adapter'
 import { enviarNotificacao } from '../src/lib/whatsapp/notificar'
@@ -230,19 +231,21 @@ for (let d = 14; d >= 0; d--) {
     const entrada = hhmm(hEntrada, mEntrada)
     const ambiente_id = origem === 'espaco_kids' && ambientes?.length && chance(0.6) ? pick(ambientes).id : null
 
-    // valor fixo do período (grade) — fixado no "check-in"
-    let valor: number | null = null
-    if (origem === 'espaco_kids') {
-      valor = encontrarSlot(diaDaSemana(data), horaParaMinutos(entrada), grade)?.valor ?? null
-    }
+    // tarifa/hora do período (grade), travada no "check-in"
+    const tarifaHora =
+      origem === 'espaco_kids'
+        ? (encontrarSlot(diaDaSemana(data), horaParaMinutos(entrada), grade)?.valor ?? null)
+        : null
 
     // hoje: ~metade fica em aberto (aparece em "quem está aqui")
     const aberta = hojeMesmo && chance(0.5)
     let saida: string | null = null
+    let valor: number | null = null
     if (!aberta) {
       const dur = int(20, 200)
       const totalMin = hEntrada * 60 + mEntrada + dur
       saida = hhmm(Math.min(23, Math.floor(totalMin / 60)), totalMin % 60)
+      if (tarifaHora != null) valor = precoProporcional(dur, tarifaHora)
     }
 
     const { data: pre } = await sb
@@ -254,6 +257,7 @@ for (let d = 14; d >= 0; d--) {
         saida,
         origem,
         tempo_contratado_min: origem === 'espaco_kids' && chance(0.5) ? pick([60, 90, 120]) : null,
+        tarifa_hora: tarifaHora,
         valor,
         ambiente_id,
       })

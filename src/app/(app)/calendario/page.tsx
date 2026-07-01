@@ -104,11 +104,11 @@ export default async function CalendarioPage({
                 {ehFeriado ? (
                   <div className="text-[10px] leading-tight text-amber-700">
                     <div className="truncate font-semibold" title={nomeFeriado}>{nomeFeriado}</div>
-                    <div>{valorFeriado != null ? formatBRL(valorFeriado) : 'sem valor'}</div>
+                    <div>{valorFeriado != null ? `${formatBRL(valorFeriado)}/h` : 'sem valor'}</div>
                   </div>
                 ) : (
                   <div className="text-[10px] leading-tight text-slate-500">
-                    {valores.length > 0 ? valores.map((v) => formatBRL(v)).join(' / ') : '—'}
+                    {valores.length > 0 ? valores.map((v) => `${formatBRL(v)}/h`).join(' / ') : '—'}
                   </div>
                 )}
               </div>
@@ -118,7 +118,8 @@ export default async function CalendarioPage({
       </div>
 
       <p className="text-xs text-slate-400">
-        🎉 = feriado (valor único). Dias normais mostram o valor da grade daquele dia da semana.
+        🎉 = feriado (valor/hora único). Dias normais mostram o valor/hora da grade. A cobrança
+        tem piso de 1h e é proporcional depois.
       </p>
 
       {ehAdmin && (

@@ -70,7 +70,7 @@ export default function GradeForm() {
           <input type="time" value={fim} onChange={(e) => setFim(e.target.value)} className={input} />
         </label>
         <label className={label}>
-          <span className={labelText}>Valor (R$)</span>
+          <span className={labelText}>Valor/hora (R$)</span>
           <input type="number" min={0} step="0.01" required value={valor} onChange={(e) => setValor(e.target.value)} className={input} />
         </label>
         <label className={label}>

@@ -126,6 +126,7 @@ export type Database = {
       }
       config_sistema: {
         Row: {
+          aviso_antecedencia_min: number
           aviso_tempo_ativo: boolean
           capacidade_dia: number | null
           conciliacao_automatica: boolean
@@ -134,6 +135,7 @@ export type Database = {
           valor_feriado: number | null
         }
         Insert: {
+          aviso_antecedencia_min?: number
           aviso_tempo_ativo?: boolean
           capacidade_dia?: number | null
           conciliacao_automatica?: boolean
@@ -142,6 +144,7 @@ export type Database = {
           valor_feriado?: number | null
         }
         Update: {
+          aviso_antecedencia_min?: number
           aviso_tempo_ativo?: boolean
           capacidade_dia?: number | null
           conciliacao_automatica?: boolean
@@ -626,6 +629,7 @@ export type Database = {
           obs: string | null
           origem: Database["public"]["Enums"]["origem_presenca"]
           saida: string | null
+          tarifa_hora: number | null
           tempo_contratado_min: number | null
           valor: number | null
         }
@@ -639,6 +643,7 @@ export type Database = {
           obs?: string | null
           origem: Database["public"]["Enums"]["origem_presenca"]
           saida?: string | null
+          tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
         }
@@ -652,6 +657,7 @@ export type Database = {
           obs?: string | null
           origem?: Database["public"]["Enums"]["origem_presenca"]
           saida?: string | null
+          tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
         }

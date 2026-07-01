@@ -11,7 +11,7 @@ export default async function PlaygroundPage() {
   const [{ data: presentes }, { data: criancas }] = await Promise.all([
     supabase
       .from('presenca')
-      .select('id, entrada, tempo_contratado_min, valor, crianca:crianca_id (id, nome, foto)')
+      .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto)')
       .eq('data', hoje)
       .eq('origem', 'espaco_kids')
       .is('saida', null)
@@ -39,7 +39,7 @@ export default async function PlaygroundPage() {
           tempoContratadoMin: p.tempo_contratado_min,
           nome: p.crianca?.nome ?? '—',
           foto: p.crianca?.foto ?? null,
-          valor: p.valor != null ? Number(p.valor) : null,
+          tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
         }))}
         criancas={criancas ?? []}
       />

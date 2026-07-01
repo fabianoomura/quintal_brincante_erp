@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
 import { cadastroRapido } from '../criancas/actions'
-import { duracaoMinutos } from '@/lib/tarifador'
+import { duracaoMinutos, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos from '../avisos-rapidos'
 import FotoInput from '../foto-input'
@@ -16,7 +16,7 @@ type Presente = {
   tempoContratadoMin: number | null
   nome: string
   foto: string | null
-  valor: number | null // valor fixo do período (grade)
+  tarifaHora: number | null // valor/hora do período travado no check-in
 }
 
 function agoraHHMM() {
@@ -210,7 +210,7 @@ export default function PlaygroundPanel({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {presentes.map((p) => {
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
-          const valor = p.valor
+          const valor = p.tarifaHora != null ? precoProporcional(decorrido, p.tarifaHora) : null
           const restante =
             p.tempoContratadoMin != null ? p.tempoContratadoMin - decorrido : null
           const estourou = restante != null && restante <= 0

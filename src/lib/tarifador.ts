@@ -24,6 +24,14 @@ function reaisParaCentavos(reais: number): number {
   return Math.round(reais * 100)
 }
 
+// Preço do play: piso de 1 hora ao valor/hora, depois PROPORCIONAL (linear).
+// Ex. (valorHora=20): 40min→20 · 1h→20 · 1h15→25 · 2h→40. Dinheiro em centavos.
+export function precoProporcional(minutos: number, valorHora: number): number {
+  const efetivos = Math.max(minutos, 60) // piso de 1 hora
+  const centavos = Math.round((reaisParaCentavos(valorHora) * efetivos) / 60)
+  return centavos / 100
+}
+
 export type ResultadoPlay = {
   minutosCobrados: number
   valorCentavos: number

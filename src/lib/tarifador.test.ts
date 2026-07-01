@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularValorPlay, duracaoMinutos, type TarifaCalculo } from './tarifador'
+import { calcularValorPlay, duracaoMinutos, precoProporcional, type TarifaCalculo } from './tarifador'
 
 // FIXTURE — valores fictícios só para o teste (NÃO são a tarifa real; essa vem da tabela
 // `tarifa` e ainda está pendente de confirmação do dono). Aqui: X=valor_hora, Y=valor_fracao.
@@ -18,6 +18,23 @@ const valor = (entrada: string, saida: string) =>
 
 test('duracaoMinutos: diferença simples', () => {
   assert.equal(duracaoMinutos('14:00', '15:10'), 70)
+})
+
+// Preço proporcional (piso 1h + proporcional), valor/hora = 20 — exemplos do dono
+test('precoProporcional: 40min → piso 1h = 20', () => {
+  assert.equal(precoProporcional(40, 20), 20)
+})
+test('precoProporcional: 1h = 20', () => {
+  assert.equal(precoProporcional(60, 20), 20)
+})
+test('precoProporcional: 1h15 = 25', () => {
+  assert.equal(precoProporcional(75, 20), 25)
+})
+test('precoProporcional: 2h = 40', () => {
+  assert.equal(precoProporcional(120, 20), 40)
+})
+test('precoProporcional: rate diferente (8/h), 1h30 = 12', () => {
+  assert.equal(precoProporcional(90, 8), 12)
 })
 
 // Tabela da spec §6 / §11
