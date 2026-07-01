@@ -1,62 +1,91 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { input, pill } from '@/lib/ui'
+import { pill } from '@/lib/ui'
+import CriancasLista from './criancas-lista'
+
+type Row = { id: string; nome: string; ativo: boolean; foto: string | null }
 
 export default async function CriancasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; tipo?: string }>
+  searchParams: Promise<{ status?: string; tipo?: string }>
 }) {
   const sp = await searchParams
-  const busca = (sp.q ?? '').trim()
   const status = sp.status ?? 'ativa' // ativa | inativa | todas
-  const tipo = sp.tipo ?? 'todos' // todos | mensalista
+  const tipo = sp.tipo ?? 'todos' // todos | mensalista | colonia | play | diaria
 
   const supabase = await createClient()
 
-  let criancas: { id: string; nome: string; ativo: boolean; foto: string | null }[] | null = null
+  function aplicaStatus<T extends { eq: (c: 'ativo', v: boolean) => T }>(q: T): T {
+    if (status === 'ativa') return q.eq('ativo', true)
+    if (status === 'inativa') return q.eq('ativo', false)
+    return q
+  }
+
+  let rows: Row[] = []
   let error: { message: string } | null = null
 
   if (tipo === 'mensalista') {
-    let q = supabase
-      .from('crianca')
-      .select('id, nome, ativo, foto, mensalidade!inner(id)')
-      .eq('mensalidade.ativo', true)
-      .order('nome', { ascending: true })
-      .limit(200)
-    if (busca !== '') q = q.ilike('nome', `%${busca}%`)
-    if (status === 'ativa') q = q.eq('ativo', true)
-    else if (status === 'inativa') q = q.eq('ativo', false)
-    const res = await q
+    const res = await aplicaStatus(
+      supabase.from('crianca').select('id, nome, ativo, foto, mensalidade!inner(id)').eq('mensalidade.ativo', true).order('nome').limit(500),
+    )
     error = res.error
-    criancas = (res.data ?? []).map((c) => ({ id: c.id, nome: c.nome, ativo: c.ativo, foto: c.foto }))
+    rows = res.data ?? []
+  } else if (tipo === 'colonia') {
+    const res = await aplicaStatus(
+      supabase.from('crianca').select('id, nome, ativo, foto, inscricao_colonia!inner(id)').order('nome').limit(500),
+    )
+    error = res.error
+    rows = res.data ?? []
+  } else if (tipo === 'play' || tipo === 'diaria') {
+    const origem = tipo === 'play' ? 'espaco_kids' : 'diaria'
+    const res = await aplicaStatus(
+      supabase.from('crianca').select('id, nome, ativo, foto, presenca!inner(id)').eq('presenca.origem', origem).order('nome').limit(500),
+    )
+    error = res.error
+    rows = res.data ?? []
   } else {
-    let q = supabase
-      .from('crianca')
-      .select('id, nome, ativo, foto')
-      .order('nome', { ascending: true })
-      .limit(200)
-    if (busca !== '') q = q.ilike('nome', `%${busca}%`)
-    if (status === 'ativa') q = q.eq('ativo', true)
-    else if (status === 'inativa') q = q.eq('ativo', false)
-    const res = await q
+    const res = await aplicaStatus(
+      supabase.from('crianca').select('id, nome, ativo, foto').order('nome').limit(500),
+    )
     error = res.error
-    criancas = res.data
+    rows = res.data ?? []
   }
 
-  const chip = (campo: string, valor: string, atual: string, txt: string) => {
-    const params = new URLSearchParams()
-    if (busca) params.set('q', busca)
-    params.set('status', campo === 'status' ? valor : status)
-    params.set('tipo', campo === 'tipo' ? valor : tipo)
-    const ativo = atual === valor
+  // inner join pode repetir a criança (1 linha por presença/inscrição) → dedupe por id
+  const vistos = new Set<string>()
+  const criancas: Row[] = []
+  for (const r of rows) {
+    if (!vistos.has(r.id)) {
+      vistos.add(r.id)
+      criancas.push({ id: r.id, nome: r.nome, ativo: r.ativo, foto: r.foto })
+    }
+  }
+
+  const TIPOS = [
+    { v: 'todos', t: 'Todos os tipos' },
+    { v: 'mensalista', t: '🎟️ Mensalista' },
+    { v: 'play', t: '🎠 Play' },
+    { v: 'diaria', t: '☀️ Diária' },
+    { v: 'colonia', t: '🏕️ Colônia' },
+  ]
+  const STATUS = [
+    { v: 'ativa', t: 'Ativas' },
+    { v: 'inativa', t: 'Inativas' },
+    { v: 'todas', t: 'Todas' },
+  ]
+
+  function chip(campo: 'status' | 'tipo', valor: string, atual: string, txt: string) {
+    const params = new URLSearchParams({
+      status: campo === 'status' ? valor : status,
+      tipo: campo === 'tipo' ? valor : tipo,
+    })
     return (
       <Link
+        key={campo + valor}
         href={`/criancas?${params.toString()}`}
         className={`rounded-full px-3 py-1.5 text-sm font-semibold ring-1 ${
-          ativo
-            ? 'bg-emerald-600 text-white ring-emerald-600'
-            : 'bg-white text-slate-500 ring-slate-200'
+          atual === valor ? 'bg-emerald-600 text-white ring-emerald-600' : 'bg-white text-slate-500 ring-slate-200'
         }`}
       >
         {txt}
@@ -73,81 +102,15 @@ export default async function CriancasPage({
         </Link>
       </div>
 
-      <form method="get" className="flex gap-2">
-        <input
-          type="search"
-          name="q"
-          defaultValue={busca}
-          placeholder="🔎 Buscar por nome…"
-          className={input}
-        />
-        <input type="hidden" name="status" value={status} />
-        <input type="hidden" name="tipo" value={tipo} />
-      </form>
-
-      <div className="flex flex-wrap gap-2">
-        {chip('status', 'ativa', status, 'Ativas')}
-        {chip('status', 'inativa', status, 'Inativas')}
-        {chip('status', 'todas', status, 'Todas')}
-        <span className="w-px self-stretch bg-slate-200" />
-        {chip('tipo', 'todos', tipo, 'Todos os tipos')}
-        {chip('tipo', 'mensalista', tipo, '🎟️ Mensalistas')}
+      <div className="flex flex-wrap items-center gap-2">
+        {STATUS.map((s) => chip('status', s.v, status, s.t))}
+        <span className="mx-1 h-5 w-px bg-slate-200" />
+        {TIPOS.map((t) => chip('tipo', t.v, tipo, t.t))}
       </div>
 
-      {error && (
-        <p className="text-sm font-semibold text-rose-500">
-          Erro ao carregar: {error.message}
-        </p>
-      )}
+      {error && <p className="text-sm font-semibold text-rose-500">Erro ao carregar: {error.message}</p>}
 
-      {criancas && criancas.length === 0 && (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-slate-200">
-          {busca
-            ? 'Nenhuma criança encontrada. 🙈'
-            : 'Nenhuma criança cadastrada ainda. Toque em “+ Nova”! 🎈'}
-        </p>
-      )}
-
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {criancas?.map((c, i) => {
-          const cores = ['bg-rose-500', 'bg-sky-500', 'bg-amber-500', 'bg-violet-500', 'bg-emerald-500']
-          const cor = cores[i % cores.length]
-          const iniciais = c.nome
-            .replace(/\[seed\]/g, '')
-            .trim()
-            .split(' ')
-            .map((p) => p[0])
-            .slice(0, 2)
-            .join('')
-            .toUpperCase()
-          return (
-            <li key={c.id}>
-              <Link
-                href={`/criancas/${c.id}`}
-                className="pop flex items-center gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200 hover:shadow-md"
-              >
-                <span className={`grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full ${cor} font-display font-bold text-white`}>
-                  {c.foto ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.foto} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    iniciais
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-display font-semibold text-slate-800">
-                    {c.nome.replace(/\[seed\]/g, '').trim()}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {c.ativo ? 'ativa' : 'inativa'}
-                  </span>
-                </span>
-                <span className="text-slate-300">›</span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+      <CriancasLista criancas={criancas} />
     </div>
   )
 }
