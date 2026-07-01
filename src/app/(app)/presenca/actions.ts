@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
-import { encontrarSlot, dentroDeAlgumPeriodo } from '@/lib/grade'
-import { feriadosNacionais } from '@/lib/feriados'
+import { valorHoraPlay } from '@/lib/grade'
 import { precoProporcional, duracaoMinutos } from '@/lib/tarifador'
 import type { Database } from '@/lib/database.types'
 
@@ -30,47 +29,23 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   const supabase = await createClient()
   const data = hojeISO()
 
-  // Play: trava a TARIFA/HORA do período (grade) — ou a tarifa/hora de FERIADO.
+  // Play: trava a TARIFA/HORA pela planilha (dia+hora) — ou o valor do FERIADO da data.
   // O valor final (piso 1h + proporcional) é calculado no check-out.
   let tarifaHora: number | null = null
   if (input.origem === 'espaco_kids') {
     const horaMin = horaParaMinutos(input.entrada)
-    const [{ data: gradeRows }, { data: cfg }, { data: fl }] = await Promise.all([
-      supabase
-        .from('grade_play')
-        .select('id, nome, dias_semana, hora_inicio, hora_fim, valor, capacidade')
-        .eq('ativo', true),
-      supabase.from('config_sistema').select('valor_feriado').eq('id', 1).maybeSingle(),
-      supabase.from('feriado').select('data').eq('data', data).eq('ativo', true).maybeSingle(),
+    const [{ data: precos }, { data: fer }] = await Promise.all([
+      supabase.from('preco_hora').select('dia_semana, hora, valor'),
+      supabase.from('feriado').select('valor').eq('data', data).eq('ativo', true).maybeSingle(),
     ])
-    const grade = (gradeRows ?? []).map((g) => ({ ...g, valor: Number(g.valor) }))
-    const valorFeriado = cfg?.valor_feriado != null ? Number(cfg.valor_feriado) : null
-    const ehFeriado = !!fl || feriadosNacionais(Number(data.slice(0, 4))).has(data)
-
-    if (ehFeriado && valorFeriado != null && dentroDeAlgumPeriodo(horaMin, grade)) {
-      // feriado: tarifa/hora única, respeitando o horário de funcionamento (sem cap por período)
-      tarifaHora = valorFeriado
+    if (fer?.valor != null) {
+      tarifaHora = Number(fer.valor) // feriado tem valor próprio
     } else {
-      const slot = encontrarSlot(diaDaSemana(data), horaMin, grade)
-      if (slot) {
-        tarifaHora = slot.valor
-        if (slot.capacidade != null) {
-          const { data: doDia } = await supabase
-            .from('presenca')
-            .select('entrada')
-            .eq('data', data)
-            .eq('origem', 'espaco_kids')
-          const ini = horaParaMinutos(slot.hora_inicio)
-          const fim = horaParaMinutos(slot.hora_fim)
-          const noPeriodo = (doDia ?? []).filter((p) => {
-            const m = horaParaMinutos(p.entrada)
-            return m >= ini && m < fim
-          }).length
-          if (noPeriodo >= slot.capacidade) {
-            return { ok: false, erro: `Período "${slot.nome}" lotado (${noPeriodo}/${slot.capacidade}).` }
-          }
-        }
-      }
+      tarifaHora = valorHoraPlay(
+        diaDaSemana(data),
+        horaMin,
+        (precos ?? []).map((p) => ({ ...p, valor: Number(p.valor) })),
+      )
     }
   }
 

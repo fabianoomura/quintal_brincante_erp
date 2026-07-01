@@ -2,7 +2,7 @@
 // Usa service role (bypassa RLS — é dev). Idempotente: limpa as crianças [seed] e recria.
 // Rodar: npm run seed:dev
 import { createClient } from '@supabase/supabase-js'
-import { encontrarSlot, type SlotGrade } from '../src/lib/grade'
+import { valorHoraPlay, type PrecoHora } from '../src/lib/grade'
 import { precoProporcional } from '../src/lib/tarifador'
 import { diaDaSemana, horaParaMinutos } from '../src/lib/datas'
 import { FakeSender } from '../src/lib/whatsapp/adapter'
@@ -103,12 +103,9 @@ const { data: colonia } = await sb
   .limit(1)
   .maybeSingle()
 
-// grade do play (para precificar as presenças de play pelo período)
-const { data: gradeRows } = await sb
-  .from('grade_play')
-  .select('id, nome, dias_semana, hora_inicio, hora_fim, valor, capacidade')
-  .eq('ativo', true)
-const grade: SlotGrade[] = (gradeRows ?? []).map((g) => ({ ...g, valor: Number(g.valor) }))
+// grade do play (planilha) para precificar as presenças de play
+const { data: precoRows } = await sb.from('preco_hora').select('dia_semana, hora, valor')
+const precos: PrecoHora[] = (precoRows ?? []).map((p) => ({ ...p, valor: Number(p.valor) }))
 
 // ─── crianças ───────────────────────────────────────────────────────────────
 const NOMES = [
@@ -225,16 +222,16 @@ for (let d = 14; d >= 0; d--) {
 
   for (const k of escolhidos) {
     const origem = pick(ORIGENS)
-    // play cai num período da grade (almoço/jantar); demais em horário livre
-    const hEntrada = origem === 'espaco_kids' ? pick([11, 12, 13, 18, 19, 20]) : int(8, 15)
+    // play cai numa hora com preço na planilha; demais em horário livre
+    const hEntrada = origem === 'espaco_kids' ? pick([12, 13, 18, 19, 20]) : int(8, 15)
     const mEntrada = pick([0, 15, 30, 45])
     const entrada = hhmm(hEntrada, mEntrada)
     const ambiente_id = origem === 'espaco_kids' && ambientes?.length && chance(0.6) ? pick(ambientes).id : null
 
-    // tarifa/hora do período (grade), travada no "check-in"
+    // tarifa/hora da planilha (dia+hora), travada no "check-in"
     const tarifaHora =
       origem === 'espaco_kids'
-        ? (encontrarSlot(diaDaSemana(data), horaParaMinutos(entrada), grade)?.valor ?? null)
+        ? valorHoraPlay(diaDaSemana(data), horaParaMinutos(entrada), precos)
         : null
 
     // hoje: ~metade fica em aberto (aparece em "quem está aqui")

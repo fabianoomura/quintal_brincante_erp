@@ -254,6 +254,7 @@ export type Database = {
           data: string
           id: string
           nome: string
+          valor: number | null
         }
         Insert: {
           ativo?: boolean
@@ -261,6 +262,7 @@ export type Database = {
           data: string
           id?: string
           nome: string
+          valor?: number | null
         }
         Update: {
           ativo?: boolean
@@ -268,42 +270,7 @@ export type Database = {
           data?: string
           id?: string
           nome?: string
-        }
-        Relationships: []
-      }
-      grade_play: {
-        Row: {
-          ativo: boolean
-          capacidade: number | null
-          created_at: string
-          dias_semana: number[]
-          hora_fim: string
-          hora_inicio: string
-          id: string
-          nome: string
-          valor: number
-        }
-        Insert: {
-          ativo?: boolean
-          capacidade?: number | null
-          created_at?: string
-          dias_semana: number[]
-          hora_fim: string
-          hora_inicio: string
-          id?: string
-          nome: string
-          valor: number
-        }
-        Update: {
-          ativo?: boolean
-          capacidade?: number | null
-          created_at?: string
-          dias_semana?: number[]
-          hora_fim?: string
-          hora_inicio?: string
-          id?: string
-          nome?: string
-          valor?: number
+          valor?: number | null
         }
         Relationships: []
       }
@@ -614,6 +581,24 @@ export type Database = {
           dias_por_semana?: number
           id?: string
           nome?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      preco_hora: {
+        Row: {
+          dia_semana: number
+          hora: number
+          valor: number
+        }
+        Insert: {
+          dia_semana: number
+          hora: number
+          valor: number
+        }
+        Update: {
+          dia_semana?: number
+          hora?: number
           valor?: number
         }
         Relationships: []

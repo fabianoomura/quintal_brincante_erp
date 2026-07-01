@@ -1,36 +1,14 @@
-import { horaParaMinutos } from '@/lib/datas'
+// Grade do play em planilha: valor/hora por (dia da semana, hora). Puro e testável.
+export type PrecoHora = { dia_semana: number; hora: number; valor: number }
 
-// Grade do play: preço FIXO por período (dia da semana + janela de horário). Puro e testável.
-export type SlotGrade = {
-  id: string
-  nome: string
-  dias_semana: number[] // 0=dom..6=sáb
-  hora_inicio: string // 'HH:MM(:SS)'
-  hora_fim: string
-  valor: number
-  capacidade: number | null
-}
-
-// Encontra o slot da grade para um dia da semana (0-6) e uma hora (minutos do dia).
-// Janela [inicio, fim). Retorna o primeiro que casar, ou null (fora de horário).
-export function encontrarSlot(
+// Valor/hora do play para um dia da semana (0-6) e uma hora (minutos do dia).
+// Usa a hora cheia da entrada. Retorna null se a célula não existe (fechado).
+export function valorHoraPlay(
   diaSemana: number,
   horaMin: number,
-  grade: SlotGrade[],
-): SlotGrade | null {
-  for (const s of grade) {
-    if (!s.dias_semana.includes(diaSemana)) continue
-    const ini = horaParaMinutos(s.hora_inicio)
-    const fim = horaParaMinutos(s.hora_fim)
-    if (horaMin >= ini && horaMin < fim) return s
-  }
-  return null
-}
-
-// Está dentro de ALGUMA janela de horário da grade (qualquer dia)? Usado em feriado,
-// que tem valor único mas ainda respeita os horários de funcionamento do play.
-export function dentroDeAlgumPeriodo(horaMin: number, grade: SlotGrade[]): boolean {
-  return grade.some(
-    (s) => horaMin >= horaParaMinutos(s.hora_inicio) && horaMin < horaParaMinutos(s.hora_fim),
-  )
+  precos: PrecoHora[],
+): number | null {
+  const hora = Math.floor(horaMin / 60)
+  const c = precos.find((p) => p.dia_semana === diaSemana && p.hora === hora)
+  return c ? c.valor : null
 }

@@ -1,46 +1,29 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { encontrarSlot, dentroDeAlgumPeriodo, type SlotGrade } from './grade'
+import { valorHoraPlay, type PrecoHora } from './grade'
 import { horaParaMinutos } from './datas'
 
-const grade: SlotGrade[] = [
-  { id: 'a', nome: '2a-4a almoço', dias_semana: [1, 2, 3], hora_inicio: '11:00', hora_fim: '14:00', valor: 8, capacidade: 2 },
-  { id: 'b', nome: '2a-4a jantar', dias_semana: [1, 2, 3], hora_inicio: '18:00', hora_fim: '21:00', valor: 8, capacidade: 5 },
-  { id: 'c', nome: 'sábado', dias_semana: [6], hora_inicio: '11:00', hora_fim: '21:00', valor: 20, capacidade: 10 },
+// planilha: seg(1)=8 no almoço; sáb(6)=20; célula 16h não existe
+const precos: PrecoHora[] = [
+  { dia_semana: 1, hora: 12, valor: 8 },
+  { dia_semana: 1, hora: 13, valor: 8 },
+  { dia_semana: 6, hora: 12, valor: 20 },
+  { dia_semana: 6, hora: 19, valor: 20 },
 ]
 const min = horaParaMinutos
 
-test('terça no almoço → R$8', () => {
-  const s = encontrarSlot(2, min('12:30'), grade)
-  assert.equal(s?.valor, 8)
-  assert.equal(s?.id, 'a')
+test('segunda 12h30 → 8/h', () => {
+  assert.equal(valorHoraPlay(1, min('12:30'), precos), 8)
 })
-
-test('terça no jantar → outro slot R$8 (cap 5)', () => {
-  const s = encontrarSlot(2, min('19:00'), grade)
-  assert.equal(s?.id, 'b')
-  assert.equal(s?.capacidade, 5)
+test('sábado 19h → 20/h', () => {
+  assert.equal(valorHoraPlay(6, min('19:00'), precos), 20)
 })
-
-test('sábado à tarde → R$20', () => {
-  assert.equal(encontrarSlot(6, min('15:00'), grade)?.valor, 20)
+test('hora sem célula → null (fechado)', () => {
+  assert.equal(valorHoraPlay(1, min('16:00'), precos), null)
 })
-
-test('fora do horário → null', () => {
-  assert.equal(encontrarSlot(2, min('09:00'), grade), null)
+test('dia sem células → null', () => {
+  assert.equal(valorHoraPlay(0, min('12:00'), precos), null)
 })
-
-test('dia sem grade → null', () => {
-  assert.equal(encontrarSlot(0, min('12:00'), grade), null)
-})
-
-test('borda: início inclui, fim exclui', () => {
-  assert.ok(encontrarSlot(1, min('11:00'), grade)) // 11:00 entra
-  assert.equal(encontrarSlot(1, min('14:00'), grade), null) // 14:00 já saiu
-})
-
-test('dentroDeAlgumPeriodo: horário de funcionamento (feriado)', () => {
-  assert.equal(dentroDeAlgumPeriodo(min('12:00'), grade), true) // dentro do almoço
-  assert.equal(dentroDeAlgumPeriodo(min('19:00'), grade), true) // dentro do jantar
-  assert.equal(dentroDeAlgumPeriodo(min('22:00'), grade), false) // fora de qualquer janela
+test('usa a hora cheia (12:59 ainda é 12h)', () => {
+  assert.equal(valorHoraPlay(1, min('12:59'), precos), 8)
 })
