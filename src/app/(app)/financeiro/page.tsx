@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
 import BaixaButton from './baixa-button'
+import AvulsoForm from './avulso-form'
 
 type StatusFiltro = 'pendente' | 'pago' | 'todos'
 
@@ -43,6 +44,11 @@ export default async function FinanceiroPage({
   if (de) pagosQ = pagosQ.gte('vencimento', de)
   if (ate) pagosQ = pagosQ.lte('vencimento', ate)
   const { data: pagos } = await pagosQ
+  const { data: criancasAtivas } = await supabase
+    .from('crianca')
+    .select('id, nome')
+    .eq('ativo', true)
+    .order('nome')
 
   function bucket(cm: string | null): string {
     if (cm === 'pix') return 'pix'
@@ -153,6 +159,8 @@ export default async function FinanceiroPage({
           ⬇️ Exportar CSV
         </a>
       </div>
+
+      <AvulsoForm criancas={criancasAtivas ?? []} />
 
       {error && (
         <p className="text-sm font-semibold text-rose-500">Erro: {error.message}</p>
