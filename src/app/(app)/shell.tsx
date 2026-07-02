@@ -12,25 +12,40 @@ const GRUPOS: Grupo[] = [
   {
     titulo: 'Operação',
     itens: [
-      { href: '/playground', label: 'Playground', icon: '🎠', cor: 'bg-fuchsia-500' },
-      { href: '/presenca', label: 'Presença', icon: '📋', cor: 'bg-amber-500' },
+      { href: '/presenca', label: 'Quem está aqui', icon: '📋', cor: 'bg-amber-500' },
       { href: '/criancas', label: 'Crianças', icon: '👧', cor: 'bg-sky-500' },
     ],
   },
   {
+    titulo: 'Play',
+    itens: [
+      { href: '/playground', label: 'Playground', icon: '🎠', cor: 'bg-fuchsia-500' },
+      { href: '/grade', label: 'Grade (valores)', icon: '🗓️', cor: 'bg-fuchsia-600', adminOnly: true },
+      { href: '/calendario', label: 'Feriados', icon: '📅', cor: 'bg-orange-500', adminOnly: true },
+    ],
+  },
+  {
+    titulo: 'Mensalistas',
+    itens: [
+      { href: '/mensalistas', label: 'Mensalistas', icon: '🎟️', cor: 'bg-pink-500' },
+      { href: '/planos', label: 'Planos', icon: '📦', cor: 'bg-pink-600', adminOnly: true },
+    ],
+  },
+  {
+    titulo: 'Colônia',
+    itens: [{ href: '/colonias', label: 'Colônia de férias', icon: '🏕️', cor: 'bg-yellow-500' }],
+  },
+  {
     titulo: 'Financeiro',
     itens: [
-      { href: '/financeiro', label: 'Financeiro', icon: '💰', cor: 'bg-emerald-500' },
-      { href: '/colonias', label: 'Colônia', icon: '🏕️', cor: 'bg-yellow-500' },
+      { href: '/financeiro', label: 'Lançamentos', icon: '💰', cor: 'bg-emerald-500' },
+      { href: '/faturamento', label: 'Faturamento', icon: '📈', cor: 'bg-emerald-600', adminOnly: true },
     ],
   },
   {
     titulo: 'Gestão',
     itens: [
       { href: '/gerencial', label: 'Gerencial', icon: '📊', cor: 'bg-indigo-500', adminOnly: true },
-      { href: '/grade', label: 'Grade do play', icon: '🎠', cor: 'bg-fuchsia-600', adminOnly: true },
-      { href: '/calendario', label: 'Calendário', icon: '📅', cor: 'bg-orange-500', adminOnly: true },
-      { href: '/planos', label: 'Planos', icon: '🎟️', cor: 'bg-pink-500', adminOnly: true },
       { href: '/ambientes', label: 'Ambientes', icon: '🏠', cor: 'bg-lime-500', adminOnly: true },
       { href: '/colaboradores', label: 'Colaboradores', icon: '🧑‍🏫', cor: 'bg-teal-500', adminOnly: true },
       { href: '/configuracoes', label: 'Configurações', icon: '⚙️', cor: 'bg-violet-500', adminOnly: true },
