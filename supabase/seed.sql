@@ -1,27 +1,16 @@
--- Seed de DEV (aplicado por `supabase db reset`). NÃO são valores oficiais.
--- ⚠️ TODO(dono): confirmar os valores reais da tarifa e a regra da 1ª hora (spec §5.4/§6).
---    Estes números são PLACEHOLDERS só para o ambiente local funcionar de ponta a ponta.
+-- Seed de DEV (aplicado por `supabase db reset`). Config mínima p/ o app funcionar.
+-- Dados de teste (crianças etc.) ficam em `npm run seed:dev`.
 
 insert into config_sistema (id) values (1)
   on conflict (id) do nothing;
 
-insert into tarifa (nome, minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao, aviso_antecedencia_min, ativo)
-select 'play', 60, 20.00, 30, 10.00, 15, true
-where not exists (select 1 from tarifa where ativo);
-
--- Grade do play (valores REAIS do dono; horários 11–14 / 18–21 são ponto de partida editável).
-insert into grade_play (nome, dias_semana, hora_inicio, hora_fim, valor, capacidade)
-select * from (values
-  ('2a a 4a - almoco',  array[1,2,3], time '11:00', time '14:00', 8.00,  2),
-  ('2a a 4a - jantar',  array[1,2,3], time '18:00', time '21:00', 8.00,  5),
-  ('5a e 6a - almoco',  array[4,5],   time '11:00', time '14:00', 15.00, 3),
-  ('5a e 6a - jantar',  array[4,5],   time '18:00', time '21:00', 15.00, 8),
-  ('Sabado - almoco',   array[6],     time '11:00', time '14:00', 20.00, 10),
-  ('Sabado - jantar',   array[6],     time '18:00', time '21:00', 20.00, 15),
-  ('Domingo - almoco',  array[0],     time '11:00', time '14:00', 20.00, 10),
-  ('Domingo - jantar',  array[0],     time '18:00', time '21:00', 20.00, 6)
-) as g(nome, dias_semana, hora_inicio, hora_fim, valor, capacidade)
-where not exists (select 1 from grade_play);
+-- Planilha do play (valor/hora por dia da semana × hora). Valores reais do dono:
+-- 2ª–4ª R$8 · 5ª–6ª R$15 · sáb/dom R$20, nas janelas 11–14h e 18–21h (editável em /grade).
+insert into preco_hora (dia_semana, hora, valor)
+select v.dia, h.hora, v.valor
+from (values (1, 8.00), (2, 8.00), (3, 8.00), (4, 15.00), (5, 15.00), (6, 20.00), (0, 20.00)) as v(dia, valor)
+cross join (values (11), (12), (13), (18), (19), (20)) as h(hora)
+where not exists (select 1 from preco_hora);
 
 -- Templates de mensagem (avisos rápidos do play + sistema).
 insert into mensagem_template (chave, nome, tipo, tipo_ocorrencia, texto, categoria, ordem)

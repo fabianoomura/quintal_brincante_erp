@@ -5,7 +5,7 @@ import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { calcularValorPlay } from '@/lib/tarifador'
+import { precoProporcional } from '@/lib/tarifador'
 import { gerarMensalidades } from '@/lib/mensalidades'
 import { POST as webhookPOST } from '@/app/api/webhook/infinitepay/route'
 import { POST as avisoTempoPOST } from '@/app/api/worker/aviso-tempo/route'
@@ -121,22 +121,18 @@ test('Cadastro: criança + contato + vínculo e busca por nome', async () => {
 })
 
 // ───────────────────────── Presença + tarifador + lançamento ─────────────────────────
-test('Presença: check-in play → valor pelo tarifador → lançamento pendente', async () => {
+test('Presença: check-in play → valor proporcional → lançamento pendente', async () => {
   const cid = await novaCrianca()
-  const { data: tarifa } = await asAdmin.from('tarifa').select('minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao').eq('ativo', true).single()
+  // check-in trava a tarifa/hora (como a action faz pela planilha); aqui fixamos 20/h
   const { data: pre } = await asOperador
     .from('presenca')
-    .insert({ crianca_id: cid, data: hoje(), entrada: '14:00', origem: 'espaco_kids', tempo_contratado_min: 120 })
+    .insert({ crianca_id: cid, data: hoje(), entrada: '14:00', origem: 'espaco_kids', tempo_contratado_min: 120, tarifa_hora: 20 })
     .select('id')
     .single()
 
-  // check-out (replica a action)
-  const valor = calcularValorPlay('14:00', '15:10', {
-    minimo_minutos: tarifa!.minimo_minutos,
-    valor_hora: Number(tarifa!.valor_hora),
-    tamanho_fracao_min: tarifa!.tamanho_fracao_min,
-    valor_fracao: Number(tarifa!.valor_fracao),
-  }).valor
+  // check-out (replica a action): piso 1h + proporcional → 1h10 a 20/h = 23.33
+  const valor = precoProporcional(70, 20)
+  assert.equal(valor, 23.33)
   await asOperador.from('presenca').update({ saida: '15:10', valor }).eq('id', pre!.id)
   await asOperador.from('lancamento').insert({
     crianca_id: cid, descricao: 'Play IT', valor, vencimento: hoje(), origem_tipo: 'presenca', origem_id: pre!.id,

@@ -4,7 +4,7 @@ import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { calcularValorPlay } from '@/lib/tarifador'
+import { precoProporcional } from '@/lib/tarifador'
 import { gerarMensalidades } from '@/lib/mensalidades'
 import { FakeSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
@@ -51,7 +51,7 @@ test('Jornada OPERADOR: recebe, avisa no WhatsApp, cobra e baixa', async () => {
     // 2) Check-in no playground (espaco_kids, 60min contratado)
     const { data: pre, error: eIn } = await asOperador
       .from('presenca')
-      .insert({ crianca_id: cid, data: hoje(), entrada: '14:00', origem: 'espaco_kids', tempo_contratado_min: 60 })
+      .insert({ crianca_id: cid, data: hoje(), entrada: '14:00', origem: 'espaco_kids', tempo_contratado_min: 60, tarifa_hora: 20 })
       .select('id')
       .single()
     assert.equal(eIn, null, 'operador faz check-in')
@@ -79,12 +79,8 @@ test('Jornada OPERADOR: recebe, avisa no WhatsApp, cobra e baixa', async () => {
     const { data: notif } = await asAdmin.from('notificacao').select('status').eq('ocorrencia_id', oc!.id).single()
     assert.equal(notif!.status, 'enviada')
 
-    // 4) Check-out → tarifador → lançamento pendente
-    const { data: tarifa } = await asOperador.from('tarifa').select('minimo_minutos, valor_hora, tamanho_fracao_min, valor_fracao').eq('ativo', true).single()
-    const valor = calcularValorPlay('14:00', '15:10', {
-      minimo_minutos: tarifa!.minimo_minutos, valor_hora: Number(tarifa!.valor_hora),
-      tamanho_fracao_min: tarifa!.tamanho_fracao_min, valor_fracao: Number(tarifa!.valor_fracao),
-    }).valor
+    // 4) Check-out → preço proporcional (tarifa/hora travada no check-in) → lançamento
+    const valor = precoProporcional(70, 20) // 1h10 a 20/h = 23.33
     await asOperador.from('presenca').update({ saida: '15:10', valor }).eq('id', pre!.id)
     await asOperador.from('lancamento').insert({ crianca_id: cid, descricao: 'Play', valor, vencimento: hoje(), origem_tipo: 'presenca', origem_id: pre!.id })
 
@@ -98,8 +94,8 @@ test('Jornada OPERADOR: recebe, avisa no WhatsApp, cobra e baixa', async () => {
     // 6) Operador NÃO faz gestão: criar plano e editar tarifa são bloqueados
     const plano = await asOperador.from('plano_mensalidade').insert({ nome: 'x', dias_por_semana: 2, valor: 1 }).select('id')
     assert.equal(plano.data?.length ?? 0, 0, 'operador não cria plano')
-    const tar = await asOperador.from('tarifa').update({ valor_hora: 999 }).eq('ativo', true).select('id')
-    assert.equal(tar.data?.length ?? 0, 0, 'operador não edita tarifa')
+    const tar = await asOperador.from('preco_hora').update({ valor: 999 }).eq('dia_semana', 1).eq('hora', 11).select('valor')
+    assert.equal(tar.data?.length ?? 0, 0, 'operador não edita a planilha de preços')
   } finally {
     await admin.from('crianca').delete().eq('id', cid)
     await admin.from('contato').delete().eq('id', co!.id)
@@ -112,8 +108,7 @@ test('Jornada GESTOR: cria plano, matricula, gera mensalidade, ajusta tarifa e c
   const cid = cri!.id
   let planoId: string | null = null
 
-  // guarda os valores originais da tarifa/capacidade p/ restaurar
-  const { data: tarOrig } = await admin.from('tarifa').select('valor_hora').eq('ativo', true).single()
+  // guarda a capacidade original p/ restaurar
   const { data: cfgOrig } = await admin.from('config_sistema').select('capacidade_dia').eq('id', 1).single()
 
   try {
@@ -143,10 +138,14 @@ test('Jornada GESTOR: cria plano, matricula, gera mensalidade, ajusta tarifa e c
     assert.ok((lanMens?.length ?? 0) >= 1, 'recorrência gerou a mensalidade')
     assert.equal(Number(lanMens![0].valor), 400)
 
-    // 5) Ajusta a tarifa (admin pode)
-    const { data: tarUpd } = await asAdmin.from('tarifa').update({ valor_hora: 22.5 }).eq('ativo', true).select('valor_hora')
-    assert.equal(tarUpd?.length, 1, 'admin ajusta tarifa')
-    assert.equal(Number(tarUpd![0].valor_hora), 22.5)
+    // 5) Ajusta a planilha de preços do play (admin pode)
+    const { data: tarUpd } = await asAdmin
+      .from('preco_hora')
+      .upsert({ dia_semana: 1, hora: 11, valor: 22.5 }, { onConflict: 'dia_semana,hora' })
+      .select('valor')
+    assert.equal(tarUpd?.length, 1, 'admin ajusta a planilha')
+    assert.equal(Number(tarUpd![0].valor), 22.5)
+    await asAdmin.from('preco_hora').update({ valor: 8 }).eq('dia_semana', 1).eq('hora', 11) // restaura
 
     // 6) Ajusta a capacidade do dia
     const { data: capUpd } = await asAdmin.from('config_sistema').update({ capacidade_dia: 30 }).eq('id', 1).select('capacidade_dia')
@@ -159,8 +158,7 @@ test('Jornada GESTOR: cria plano, matricula, gera mensalidade, ajusta tarifa e c
     assert.ok(insc?.id)
     await admin.from('colonia').delete().eq('id', col!.id)
   } finally {
-    // restaura tarifa/capacidade e limpa
-    if (tarOrig) await admin.from('tarifa').update({ valor_hora: tarOrig.valor_hora }).eq('ativo', true)
+    // restaura capacidade e limpa
     await admin.from('config_sistema').update({ capacidade_dia: cfgOrig?.capacidade_dia ?? null }).eq('id', 1)
     await admin.from('crianca').delete().eq('id', cid)
     if (planoId) await admin.from('plano_mensalidade').delete().eq('id', planoId)
