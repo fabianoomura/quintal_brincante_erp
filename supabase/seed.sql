@@ -22,3 +22,16 @@ select * from (values
   ('Domingo - jantar',  array[0],     time '18:00', time '21:00', 20.00, 6)
 ) as g(nome, dias_semana, hora_inicio, hora_fim, valor, capacidade)
 where not exists (select 1 from grade_play);
+
+-- Templates de mensagem (avisos rápidos do play + sistema).
+insert into mensagem_template (chave, nome, tipo, tipo_ocorrencia, texto, categoria, ordem)
+select * from (values
+  ('banheiro', '🚽 Banheiro',      'aviso_rapido', 'banheiro'::tipo_ocorrencia,    'Precisa ir ao banheiro - pode vir ajudar?',              'utility', 1),
+  ('trocar',   '👕 Trocar roupa',  'aviso_rapido', 'outro'::tipo_ocorrencia,       'Precisa trocar de roupa - pode vir?',                    'utility', 2),
+  ('chorando', '😢 Chorando',      'aviso_rapido', 'nao_adaptou'::tipo_ocorrencia, 'Esta chorando / ainda nao se adaptou - pode vir?',       'utility', 3),
+  ('buscar',   '🔔 Vir buscar',    'aviso_rapido', 'outro'::tipo_ocorrencia,       'Pode vir buscar a crianca, por favor.',                  'utility', 4),
+  ('aviso_tempo','Aviso de tempo', 'sistema',      null,                            'Ola {{1}}, o tempo do(a) {{2}} no play esta acabando (faltam {{3}} min).', 'utility', 10),
+  ('ocorrencia', 'Ocorrencia',     'sistema',      null,                            'Ola {{1}}, sobre {{2}}: {{3}}. Pode vir ao espaco?',     'utility', 11),
+  ('aviso_geral','Aviso geral',    'sistema',      null,                            'Ola {{1}}, {{2}}',                                       'utility', 12)
+) as t(chave, nome, tipo, tipo_ocorrencia, texto, categoria, ordem)
+where not exists (select 1 from mensagem_template);

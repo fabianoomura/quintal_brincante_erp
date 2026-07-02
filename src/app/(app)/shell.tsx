@@ -22,6 +22,7 @@ const GRUPOS: Grupo[] = [
       { href: '/playground', label: 'Playground', icon: '🎠', cor: 'bg-fuchsia-500' },
       { href: '/grade', label: 'Grade (valores)', icon: '🗓️', cor: 'bg-fuchsia-600', adminOnly: true },
       { href: '/calendario', label: 'Feriados', icon: '📅', cor: 'bg-orange-500', adminOnly: true },
+      { href: '/mensagens', label: 'Mensagens', icon: '💬', cor: 'bg-fuchsia-700', adminOnly: true },
     ],
   },
   {

@@ -15,7 +15,7 @@ export default async function KioskPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }] = await Promise.all([
+  const [{ data: presentes }, { data: criancas }, { data: avisos }] = await Promise.all([
     supabase
       .from('presenca')
       .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto)')
@@ -24,6 +24,12 @@ export default async function KioskPage() {
       .is('saida', null)
       .order('entrada', { ascending: true }),
     supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
+    supabase
+      .from('mensagem_template')
+      .select('id, nome, tipo_ocorrencia, texto')
+      .eq('tipo', 'aviso_rapido')
+      .eq('ativo', true)
+      .order('ordem'),
   ])
 
   return (
@@ -55,6 +61,9 @@ export default async function KioskPage() {
             tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
           }))}
           criancas={criancas ?? []}
+          avisos={(avisos ?? [])
+            .filter((a) => a.tipo_ocorrencia)
+            .map((a) => ({ id: a.id, label: a.nome, tipo: a.tipo_ocorrencia!, texto: a.texto }))}
         />
 
         <div className="mt-6">

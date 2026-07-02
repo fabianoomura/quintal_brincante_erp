@@ -6,7 +6,7 @@ import { checkIn, checkOut } from '../presenca/actions'
 import { cadastroRapido } from '../criancas/actions'
 import { duracaoMinutos, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
-import AvisosRapidos from '../avisos-rapidos'
+import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import FotoInput from '../foto-input'
 
 type Presente = {
@@ -33,9 +33,11 @@ function fmtDuracao(min: number) {
 export default function PlaygroundPanel({
   presentes,
   criancas,
+  avisos,
 }: {
   presentes: Presente[]
   criancas: { id: string; nome: string }[]
+  avisos: AvisoRapido[]
 }) {
   const router = useRouter()
   const [agora, setAgora] = useState(agoraHHMM())
@@ -280,7 +282,7 @@ export default function PlaygroundPanel({
                 <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                   Avisar responsável
                 </div>
-                <AvisosRapidos criancaId={p.criancaId} presencaId={p.id} compact />
+                <AvisosRapidos criancaId={p.criancaId} avisos={avisos} presencaId={p.id} compact />
               </div>
             </div>
           )

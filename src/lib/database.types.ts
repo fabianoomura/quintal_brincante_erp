@@ -375,6 +375,52 @@ export type Database = {
           },
         ]
       }
+      mensagem_template: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          chave: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          status_aprovacao: string
+          texto: string
+          tipo: string
+          tipo_ocorrencia: Database["public"]["Enums"]["tipo_ocorrencia"] | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string
+          chave: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          status_aprovacao?: string
+          texto: string
+          tipo?: string
+          tipo_ocorrencia?:
+            | Database["public"]["Enums"]["tipo_ocorrencia"]
+            | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          chave?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          status_aprovacao?: string
+          texto?: string
+          tipo?: string
+          tipo_ocorrencia?:
+            | Database["public"]["Enums"]["tipo_ocorrencia"]
+            | null
+        }
+        Relationships: []
+      }
       mensalidade: {
         Row: {
           ativo: boolean
