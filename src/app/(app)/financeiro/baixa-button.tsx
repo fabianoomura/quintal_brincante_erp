@@ -29,7 +29,8 @@ export default function BaixaButton({
   function descontoReais(): number {
     const n = Number(desc)
     if (!(n > 0)) return 0
-    return tipo === '%' ? (valor * n) / 100 : n
+    const bruto = tipo === '%' ? (valor * n) / 100 : n
+    return Math.round(bruto * 100) / 100 // centavos
   }
 
   async function pagar(m: Modalidade) {

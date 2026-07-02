@@ -14,6 +14,8 @@ const COLUNAS = [
   'descrição',
   'origem',
   'valor',
+  'desconto',
+  'valor_liquido',
   'vencimento',
   'status',
   'método',
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from('lancamento')
     .select(
-      'created_at, descricao, origem_tipo, valor, vencimento, status, capture_method, transaction_nsu, pago_em, receipt_url, crianca:crianca_id (nome)',
+      'created_at, descricao, origem_tipo, valor, desconto, vencimento, status, capture_method, transaction_nsu, pago_em, receipt_url, crianca:crianca_id (nome)',
     )
     .order('vencimento', { ascending: true })
   if (status !== 'todos') query = query.eq('status', status as StatusLancamento)
@@ -63,6 +65,8 @@ export async function GET(request: Request) {
       l.descricao,
       l.origem_tipo ?? '',
       valorBR(l.valor),
+      valorBR(l.desconto),
+      valorBR(Number(l.valor) - Number(l.desconto)),
       l.vencimento,
       l.status,
       l.capture_method ?? '',

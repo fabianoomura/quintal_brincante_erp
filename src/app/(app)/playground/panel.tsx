@@ -99,19 +99,34 @@ export default function PlaygroundPanel({
     router.refresh()
   }
 
+  const [saida, setSaida] = useState<string | null>(null)
+
   async function sair(p: Presente) {
     setOcupado(p.id)
     const res = await checkOut(p.id)
     setOcupado(null)
-    if (res.ok && res.valor != null) {
-      // feedback rápido do valor cobrado
-      window.alert(`${p.nome} saiu. Valor: ${formatBRL(res.valor)}`)
+    if (res.ok) {
+      setSaida(
+        res.valor != null
+          ? `✅ ${p.nome} saiu · ${formatBRL(res.valor)} (pendente no financeiro)`
+          : `✅ ${p.nome} saiu.`,
+      )
+      setTimeout(() => setSaida(null), 6000)
+    } else {
+      setSaida(`❌ ${res.erro}`)
     }
     router.refresh()
   }
 
   return (
     <div className="space-y-4">
+      {/* toast de check-out (melhor que alert em tablet) */}
+      {saida && (
+        <div className="rounded-2xl bg-slate-800 px-4 py-3 font-semibold text-white shadow-md">
+          {saida}
+        </div>
+      )}
+
       {/* Check-in rápido */}
       <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
         <div className="font-display text-base font-bold text-slate-600">🚀 Entrada rápida</div>
