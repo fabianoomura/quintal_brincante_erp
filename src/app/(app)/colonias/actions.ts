@@ -81,10 +81,42 @@ export async function inscrever(coloniaId: string, criancaId: string): Promise<R
     return { ok: false, erro: dup ? 'Essa criança já está inscrita.' : errIns.message }
   }
 
+  // desconto por irmão: se já há irmão (mesmo responsável/CPF) inscrito nesta colônia
+  let desconto = 0
+  const { data: cfg } = await supabase.from('config_sistema').select('desconto_irmao_percentual').eq('id', 1).maybeSingle()
+  const pct = cfg?.desconto_irmao_percentual != null ? Number(cfg.desconto_irmao_percentual) : 0
+  if (pct > 0) {
+    const chave = async (cid: string): Promise<string> => {
+      const { data: v } = await supabase
+        .from('crianca_contato')
+        .select('contato:contato_id (id, cpf)')
+        .eq('crianca_id', cid)
+        .eq('papel', 'responsavel')
+        .limit(1)
+        .maybeSingle()
+      return v?.contato?.cpf ? `cpf:${v.contato.cpf}` : v?.contato?.id ? `c:${v.contato.id}` : `x:${cid}`
+    }
+    const minha = await chave(criancaId)
+    const { data: outras } = await supabase
+      .from('inscricao_colonia')
+      .select('crianca_id')
+      .eq('colonia_id', coloniaId)
+      .neq('crianca_id', criancaId)
+    let temIrmao = false
+    for (const o of outras ?? []) {
+      if ((await chave(o.crianca_id)) === minha) {
+        temIrmao = true
+        break
+      }
+    }
+    if (temIrmao) desconto = Math.round(Number(colonia.valor) * pct) / 100
+  }
+
   const { error: errLan } = await supabase.from('lancamento').insert({
     crianca_id: criancaId,
     descricao: `Colônia — ${colonia.nome}`,
     valor: colonia.valor,
+    desconto,
     vencimento: colonia.inicio,
     origem_tipo: 'colonia',
     origem_id: insc.id,

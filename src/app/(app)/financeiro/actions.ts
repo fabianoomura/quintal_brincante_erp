@@ -39,19 +39,39 @@ export async function criarAvulso(input: {
 export const MODALIDADES = ['dinheiro', 'pix', 'cartao', 'maquininha'] as const
 export type Modalidade = (typeof MODALIDADES)[number]
 
-// Baixa manual: marca o lançamento como pago, registrando a MODALIDADE de recebimento
-// (dinheiro/pix/cartão/maquininha) em capture_method. Só age em pendentes.
+// Baixa manual: marca pago, registrando a MODALIDADE (capture_method) e opcionalmente um
+// DESCONTO em R$ (só se habilitado na config). Soma ao desconto já existente (ex.: irmão).
 export async function baixaManual(
   lancamentoId: string,
   modalidade: Modalidade,
+  descontoReais = 0,
 ): Promise<Resultado> {
   const supabase = await createClient()
+
+  const { data: lanc } = await supabase
+    .from('lancamento')
+    .select('valor, desconto')
+    .eq('id', lancamentoId)
+    .maybeSingle()
+  if (!lanc) return { ok: false, erro: 'Lançamento não encontrado.' }
+
+  let desc = Number(lanc.desconto)
+  if (descontoReais > 0) {
+    const { data: cfg } = await supabase
+      .from('config_sistema')
+      .select('desconto_ativo')
+      .eq('id', 1)
+      .maybeSingle()
+    if (cfg?.desconto_ativo) desc = Math.min(Number(lanc.valor), desc + descontoReais)
+  }
+
   const { error } = await supabase
     .from('lancamento')
     .update({
       status: 'pago',
       conciliado_por: 'manual',
       capture_method: modalidade,
+      desconto: desc,
       pago_em: new Date().toISOString(),
     })
     .eq('id', lancamentoId)

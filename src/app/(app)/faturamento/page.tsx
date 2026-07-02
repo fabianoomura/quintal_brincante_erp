@@ -33,7 +33,7 @@ export default async function FaturamentoPage({
   const supabase = await createClient()
   const { data: lancs } = await supabase
     .from('lancamento')
-    .select('valor, status, origem_tipo')
+    .select('valor, desconto, status, origem_tipo')
     .gte('vencimento', primeiro)
     .lte('vencimento', ultimo)
 
@@ -43,7 +43,7 @@ export default async function FaturamentoPage({
   for (const l of lancs ?? []) {
     const t = l.origem_tipo ?? 'avulso'
     por[t] ??= { aReceber: 0, recebido: 0 }
-    const v = Number(l.valor)
+    const v = Number(l.valor) - Number(l.desconto)
     if (l.status === 'pago') {
       por[t].recebido += v
       totRecebido += v

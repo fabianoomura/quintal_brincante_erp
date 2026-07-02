@@ -28,6 +28,9 @@ export default async function ConcluidasHoje() {
     for (const l of lancs ?? []) if (l.origem_id) porPresenca.set(l.origem_id, { id: l.id, status: l.status })
   }
 
+  const { data: cfgDesc } = await supabase.from('config_sistema').select('desconto_ativo').eq('id', 1).maybeSingle()
+  const descontoAtivo = cfgDesc?.desconto_ativo ?? false
+
   if (!sessoes || sessoes.length === 0) return null
 
   const totalPend = sessoes.reduce((s, p) => {
@@ -64,7 +67,9 @@ export default async function ConcluidasHoje() {
                   {pago ? 'pago' : 'pendente'}
                 </span>
               </div>
-              {lan && !pago && <BaixaButton lancamentoId={lan.id} />}
+              {lan && !pago && (
+                <BaixaButton lancamentoId={lan.id} valor={Number(p.valor ?? 0)} descontoAtivo={descontoAtivo} />
+              )}
             </li>
           )
         })}

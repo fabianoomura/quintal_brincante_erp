@@ -131,6 +131,8 @@ export type Database = {
           capacidade_dia: number | null
           conciliacao_automatica: boolean
           created_at: string
+          desconto_ativo: boolean
+          desconto_irmao_percentual: number | null
           id: number
           valor_feriado: number | null
         }
@@ -140,6 +142,8 @@ export type Database = {
           capacidade_dia?: number | null
           conciliacao_automatica?: boolean
           created_at?: string
+          desconto_ativo?: boolean
+          desconto_irmao_percentual?: number | null
           id?: number
           valor_feriado?: number | null
         }
@@ -149,6 +153,8 @@ export type Database = {
           capacidade_dia?: number | null
           conciliacao_automatica?: boolean
           created_at?: string
+          desconto_ativo?: boolean
+          desconto_irmao_percentual?: number | null
           id?: number
           valor_feriado?: number | null
         }
@@ -319,6 +325,7 @@ export type Database = {
           conciliado_por: string | null
           created_at: string
           crianca_id: string
+          desconto: number
           descricao: string
           id: string
           order_nsu: string | null
@@ -336,6 +343,7 @@ export type Database = {
           conciliado_por?: string | null
           created_at?: string
           crianca_id: string
+          desconto?: number
           descricao: string
           id?: string
           order_nsu?: string | null
@@ -353,6 +361,7 @@ export type Database = {
           conciliado_por?: string | null
           created_at?: string
           crianca_id?: string
+          desconto?: number
           descricao?: string
           id?: string
           order_nsu?: string | null

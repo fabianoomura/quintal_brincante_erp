@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { setFlag } from './actions'
 
-type Flag = 'conciliacao_automatica' | 'aviso_tempo_ativo'
+type Flag = 'conciliacao_automatica' | 'aviso_tempo_ativo' | 'desconto_ativo'
 
 export default function ConfigToggle({
   campo,

@@ -27,7 +27,7 @@ export default async function FinanceiroPage({
   let query = supabase
     .from('lancamento')
     .select(
-      'id, descricao, valor, vencimento, status, origem_tipo, pago_em, crianca:crianca_id (nome)',
+      'id, descricao, valor, desconto, vencimento, status, origem_tipo, pago_em, crianca:crianca_id (nome)',
     )
     .order('vencimento', { ascending: false })
     .limit(200)
@@ -37,18 +37,18 @@ export default async function FinanceiroPage({
 
   const { data: lancamentos, error } = await query
 
-  const total = (lancamentos ?? []).reduce((s, l) => s + Number(l.valor), 0)
+  const total = (lancamentos ?? []).reduce((s, l) => s + Number(l.valor) - Number(l.desconto), 0)
 
-  // Recebido por MODALIDADE (pagos no período), independente do filtro de status.
-  let pagosQ = supabase.from('lancamento').select('valor, capture_method').eq('status', 'pago')
+  // Recebido por MODALIDADE (pagos no período), líquido do desconto.
+  let pagosQ = supabase.from('lancamento').select('valor, desconto, capture_method').eq('status', 'pago')
   if (de) pagosQ = pagosQ.gte('vencimento', de)
   if (ate) pagosQ = pagosQ.lte('vencimento', ate)
-  const { data: pagos } = await pagosQ
-  const { data: criancasAtivas } = await supabase
-    .from('crianca')
-    .select('id, nome')
-    .eq('ativo', true)
-    .order('nome')
+  const [{ data: pagos }, { data: criancasAtivas }, { data: cfgDesc }] = await Promise.all([
+    pagosQ,
+    supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
+    supabase.from('config_sistema').select('desconto_ativo').eq('id', 1).maybeSingle(),
+  ])
+  const descontoAtivo = cfgDesc?.desconto_ativo ?? false
 
   function bucket(cm: string | null): string {
     if (cm === 'pix') return 'pix'
@@ -60,7 +60,7 @@ export default async function FinanceiroPage({
   const porModalidade: Record<string, number> = {}
   let totalRecebido = 0
   for (const p of pagos ?? []) {
-    const v = Number(p.valor)
+    const v = Number(p.valor) - Number(p.desconto)
     totalRecebido += v
     const b = bucket(p.capture_method)
     porModalidade[b] = (porModalidade[b] ?? 0) + v
@@ -184,8 +184,11 @@ export default async function FinanceiroPage({
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-display text-lg font-bold text-slate-700">
-                  {formatBRL(l.valor)}
+                  {formatBRL(Number(l.valor) - Number(l.desconto))}
                 </span>
+                {Number(l.desconto) > 0 && (
+                  <span className="text-xs text-rose-500 line-through">{formatBRL(l.valor)}</span>
+                )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                     STATUS_CHIP[l.status] ?? ''
@@ -195,7 +198,9 @@ export default async function FinanceiroPage({
                 </span>
               </div>
             </div>
-            {l.status === 'pendente' && <BaixaButton lancamentoId={l.id} />}
+            {l.status === 'pendente' && (
+              <BaixaButton lancamentoId={l.id} valor={Number(l.valor)} descontoAtivo={descontoAtivo} />
+            )}
           </li>
         ))}
       </ul>

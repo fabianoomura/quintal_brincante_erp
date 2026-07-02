@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ConfigToggle from './config-toggle'
 import CapacidadeInput from './capacidade-input'
 import AntecedenciaInput from './antecedencia-input'
+import DescontoIrmao from './desconto-irmao'
 import { requireAdmin } from '@/lib/colaborador'
 
 export default async function ConfiguracoesPage() {
@@ -10,7 +11,7 @@ export default async function ConfiguracoesPage() {
   const supabase = await createClient()
   const { data: cfg } = await supabase
     .from('config_sistema')
-    .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia, aviso_antecedencia_min')
+    .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia, aviso_antecedencia_min, desconto_ativo, desconto_irmao_percentual')
     .eq('id', 1)
     .maybeSingle()
 
@@ -40,6 +41,15 @@ export default async function ConfiguracoesPage() {
       <CapacidadeInput inicial={cfg?.capacidade_dia ?? null} />
 
       <AntecedenciaInput inicial={cfg?.aviso_antecedencia_min ?? 15} />
+
+      <ConfigToggle
+        campo="desconto_ativo"
+        titulo="🏷️ Desconto na baixa"
+        descricao="Quando ligado, o operador pode aplicar um desconto (% ou R$) ao marcar um pagamento como pago."
+        inicial={cfg?.desconto_ativo ?? false}
+      />
+
+      <DescontoIrmao inicial={cfg?.desconto_irmao_percentual != null ? Number(cfg.desconto_irmao_percentual) : null} />
 
       <Link
         href="/grade"
