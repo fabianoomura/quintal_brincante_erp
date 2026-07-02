@@ -9,7 +9,7 @@ type Origem = CheckInInput['origem']
 
 const ORIGENS: { value: Origem; label: string }[] = [
   { value: 'espaco_kids', label: 'Play (espaço kids)' },
-  { value: 'diaria', label: 'Diária' },
+  { value: 'diaria', label: 'Diária / aula experimental' },
   { value: 'mensalista', label: 'Mensalista' },
   { value: 'colonia', label: 'Colônia' },
 ]
@@ -31,6 +31,7 @@ export default function CheckinForm({
   const [origem, setOrigem] = useState<Origem>('espaco_kids')
   const [entrada, setEntrada] = useState(agoraLocalHHMM())
   const [tempo, setTempo] = useState('')
+  const [valorDiaria, setValorDiaria] = useState('')
   const [ambienteId, setAmbienteId] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -46,6 +47,8 @@ export default function CheckinForm({
       tempoContratadoMin:
         origem === 'espaco_kids' && tempo.trim() !== '' ? Number(tempo) : null,
       ambienteId: ambienteId || null,
+      valorDiaria:
+        origem === 'diaria' && valorDiaria.trim() !== '' ? Number(valorDiaria) : null,
     })
     setOcupado(false)
     if (!res.ok) {
@@ -54,6 +57,7 @@ export default function CheckinForm({
     }
     setCriancaId('')
     setTempo('')
+    setValorDiaria('')
     setAmbienteId('')
     setEntrada(agoraLocalHHMM())
     router.refresh()
@@ -107,6 +111,19 @@ export default function CheckinForm({
           placeholder="Tempo contratado (min) — opcional"
           value={tempo}
           onChange={(e) => setTempo(e.target.value)}
+          className={input}
+        />
+      )}
+
+      {origem === 'diaria' && (
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          inputMode="decimal"
+          placeholder="Valor da diária (R$) — vazio = experimental, não cobra"
+          value={valorDiaria}
+          onChange={(e) => setValorDiaria(e.target.value)}
           className={input}
         />
       )}

@@ -36,6 +36,37 @@ export async function criarColonia(input: {
   return { ok: true }
 }
 
+// Edita os dados de uma colônia existente. Admin (RLS). Não mexe nas inscrições já feitas
+// (o valor de quem já se inscreveu fica como estava).
+export async function editarColonia(
+  id: string,
+  input: { nome: string; inicio: string; fim: string; valor: number; vagas: number | null },
+): Promise<Resultado> {
+  if (input.nome.trim() === '') return { ok: false, erro: 'Informe o nome.' }
+  if (!input.inicio || !input.fim) return { ok: false, erro: 'Informe o período.' }
+  if (input.fim < input.inicio) return { ok: false, erro: 'Fim antes do início.' }
+  if (!(input.valor > 0)) return { ok: false, erro: 'Informe o valor.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('colonia')
+    .update({
+      nome: input.nome.trim(),
+      inicio: input.inicio,
+      fim: input.fim,
+      valor: input.valor,
+      vagas: input.vagas,
+    })
+    .eq('id', id)
+    .select('id')
+  if (error) return { ok: false, erro: error.message }
+  if (!data || data.length === 0) return { ok: false, erro: SEM_PERMISSAO }
+
+  revalidatePath('/colonias')
+  revalidatePath(`/colonias/${id}`)
+  return { ok: true }
+}
+
 export async function toggleColonia(id: string, ativo: boolean): Promise<Resultado> {
   const supabase = await createClient()
   const { data, error } = await supabase

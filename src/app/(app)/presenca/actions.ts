@@ -20,6 +20,7 @@ export type CheckInInput = {
   entrada: string // 'HH:MM'
   tempoContratadoMin: number | null // só faz sentido p/ espaco_kids
   ambienteId?: string | null // opcional (sala/espaço)
+  valorDiaria?: number | null // diária: valor a cobrar (null = experimental, não cobra)
 }
 
 export async function checkIn(input: CheckInInput): Promise<Resultado> {
@@ -49,6 +50,12 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     }
   }
 
+  // Diária: valor definido no check-in (null = aula experimental / não cobra).
+  const valorDiaria =
+    input.origem === 'diaria' && input.valorDiaria != null && input.valorDiaria > 0
+      ? Math.round(input.valorDiaria * 100) / 100
+      : null
+
   const { data: novo, error } = await supabase
     .from('presenca')
     .insert({
@@ -60,6 +67,7 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
         input.origem === 'espaco_kids' ? input.tempoContratadoMin : null,
       ambiente_id: input.ambienteId ?? null,
       tarifa_hora: tarifaHora,
+      valor: valorDiaria,
     })
     .select('id')
     .single()
@@ -79,17 +87,21 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
 
   const { data: p, error: errP } = await supabase
     .from('presenca')
-    .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora')
+    .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, valor')
     .eq('id', presencaId)
     .maybeSingle()
   if (errP) return { ok: false, erro: errP.message }
   if (!p) return { ok: false, erro: 'Presença não encontrada.' }
   if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
+  // Play: calcula pelo tempo (tarifa/hora travada no check-in).
+  // Diária: usa o valor definido no check-in (null = experimental, não cobra).
   const valor: number | null =
     p.origem === 'espaco_kids' && p.tarifa_hora != null
       ? precoProporcional(Math.ceil(duracaoMinutos(p.entrada, saida)), Number(p.tarifa_hora))
-      : null
+      : p.valor != null
+        ? Number(p.valor)
+        : null
 
   const { error: errU } = await supabase
     .from('presenca')
@@ -98,11 +110,11 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
     .is('saida', null)
   if (errU) return { ok: false, erro: errU.message }
 
-  // Gera lançamento pendente para o play (valor fixado no check-in).
+  // Gera lançamento pendente para presenças cobradas (play e diária com valor).
   if (valor !== null) {
     const { error: errL } = await supabase.from('lancamento').insert({
       crianca_id: p.crianca_id,
-      descricao: `Play — ${p.data}`,
+      descricao: `${p.origem === 'espaco_kids' ? 'Play' : 'Diária'} — ${p.data}`,
       valor,
       vencimento: p.data,
       origem_tipo: 'presenca',

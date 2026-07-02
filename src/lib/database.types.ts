@@ -447,7 +447,6 @@ export type Database = {
           id: string
           inicio: string
           plano_id: string | null
-          turma_id: string | null
           valor: number
         }
         Insert: {
@@ -460,7 +459,6 @@ export type Database = {
           id?: string
           inicio: string
           plano_id?: string | null
-          turma_id?: string | null
           valor: number
         }
         Update: {
@@ -473,7 +471,6 @@ export type Database = {
           id?: string
           inicio?: string
           plano_id?: string | null
-          turma_id?: string | null
           valor?: number
         }
         Relationships: [
@@ -489,13 +486,6 @@ export type Database = {
             columns: ["plano_id"]
             isOneToOne: false
             referencedRelation: "plano_mensalidade"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mensalidade_turma_id_fkey"
-            columns: ["turma_id"]
-            isOneToOne: false
-            referencedRelation: "turma"
             referencedColumns: ["id"]
           },
         ]
@@ -758,66 +748,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tarifa: {
-        Row: {
-          ativo: boolean
-          aviso_antecedencia_min: number
-          created_at: string
-          id: string
-          minimo_minutos: number
-          nome: string
-          tamanho_fracao_min: number
-          valor_fracao: number
-          valor_hora: number
-        }
-        Insert: {
-          ativo?: boolean
-          aviso_antecedencia_min?: number
-          created_at?: string
-          id?: string
-          minimo_minutos?: number
-          nome?: string
-          tamanho_fracao_min: number
-          valor_fracao: number
-          valor_hora: number
-        }
-        Update: {
-          ativo?: boolean
-          aviso_antecedencia_min?: number
-          created_at?: string
-          id?: string
-          minimo_minutos?: number
-          nome?: string
-          tamanho_fracao_min?: number
-          valor_fracao?: number
-          valor_hora?: number
-        }
-        Relationships: []
-      }
-      turma: {
-        Row: {
-          capacidade: number | null
-          created_at: string
-          faixa_etaria: string | null
-          id: string
-          nome: string
-        }
-        Insert: {
-          capacidade?: number | null
-          created_at?: string
-          faixa_etaria?: string | null
-          id?: string
-          nome: string
-        }
-        Update: {
-          capacidade?: number | null
-          created_at?: string
-          faixa_etaria?: string | null
-          id?: string
-          nome?: string
-        }
-        Relationships: []
       }
     }
     Views: {

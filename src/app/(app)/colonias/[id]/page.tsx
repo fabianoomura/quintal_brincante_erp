@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
+import { getColaboradorAtual } from '@/lib/colaborador'
 import Inscrever from './inscrever'
 import RemoverInscricao from './remover-inscricao'
+import EditarColonia from './editar-colonia'
 
 export default async function ColoniaDetalhePage({
   params,
@@ -21,14 +23,16 @@ export default async function ColoniaDetalhePage({
     .maybeSingle()
   if (!colonia) notFound()
 
-  const [{ data: inscricoes }, { data: criancas }] = await Promise.all([
+  const [{ data: inscricoes }, { data: criancas }, colaborador] = await Promise.all([
     supabase
       .from('inscricao_colonia')
       .select('id, crianca:crianca_id (id, nome)')
       .eq('colonia_id', id)
       .order('created_at', { ascending: true }),
     supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
+    getColaboradorAtual(),
   ])
+  const ehAdmin = colaborador?.papel_acesso === 'admin'
 
   const inscritosIds = new Set((inscricoes ?? []).map((i) => i.crianca?.id))
   const disponiveis = (criancas ?? []).filter((c) => !inscritosIds.has(c.id))
@@ -57,6 +61,20 @@ export default async function ColoniaDetalhePage({
           </span>
         </div>
       </div>
+
+      {ehAdmin && (
+        <EditarColonia
+          colonia={{
+            id: colonia.id,
+            nome: colonia.nome,
+            inicio: colonia.inicio,
+            fim: colonia.fim,
+            valor: Number(colonia.valor),
+            vagas: colonia.vagas,
+            ativo: colonia.ativo,
+          }}
+        />
+      )}
 
       <section className="space-y-2">
         <h2 className="font-display text-lg font-bold text-slate-600">Inscritos ({total})</h2>
