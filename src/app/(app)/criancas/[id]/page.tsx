@@ -10,6 +10,7 @@ import ContatosManager from './contatos-manager'
 import OcorrenciaForm from './ocorrencia-form'
 import MatriculaSection from './matricula-section'
 import MensalistaControle from './mensalista-controle'
+import ConsentimentoSection from './consentimento-section'
 
 const ORIGEM_LABEL: Record<string, string> = {
   mensalista: '🎟️ Mensalista',
@@ -28,7 +29,7 @@ export default async function FichaPage({
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('id, nome, nascimento, saude, ativo, foto')
+    .select('id, nome, nascimento, saude, ativo, foto, consentimento_em, consentimento_por')
     .eq('id', id)
     .maybeSingle()
 
@@ -132,12 +133,24 @@ export default async function FichaPage({
             {totalVisitas} visita(s)
           </span>
         )}
+        {!crianca.consentimento_em && (
+          <span className="rounded-full bg-amber-200 px-3 py-1 text-sm font-bold text-amber-800">
+            ⚠️ LGPD pendente
+          </span>
+        )}
         {!crianca.ativo && (
           <span className="rounded-full bg-slate-200 px-3 py-1 text-sm font-bold text-slate-500">
             inativa
           </span>
         )}
       </div>
+
+      <ConsentimentoSection
+        criancaId={crianca.id}
+        consentimentoEm={crianca.consentimento_em}
+        consentimentoPor={crianca.consentimento_por}
+        sugestaoResponsavel={contatos.find((c) => c.papel === 'responsavel')?.nome ?? ''}
+      />
 
       <EditForm crianca={crianca} />
       <MatriculaSection

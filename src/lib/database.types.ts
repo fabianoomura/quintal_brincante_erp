@@ -193,6 +193,8 @@ export type Database = {
       crianca: {
         Row: {
           ativo: boolean
+          consentimento_em: string | null
+          consentimento_por: string | null
           created_at: string
           foto: string | null
           id: string
@@ -202,6 +204,8 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          consentimento_em?: string | null
+          consentimento_por?: string | null
           created_at?: string
           foto?: string | null
           id?: string
@@ -211,6 +215,8 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          consentimento_em?: string | null
+          consentimento_por?: string | null
           created_at?: string
           foto?: string | null
           id?: string

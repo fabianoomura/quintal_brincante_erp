@@ -156,6 +156,30 @@ test('Presença: check-in play → valor proporcional → lançamento pendente',
   await admin.from('crianca').delete().eq('id', cid)
 })
 
+// ───────────────────────── Consentimento LGPD ─────────────────────────
+test('LGPD: operador registra e revoga o consentimento', async () => {
+  const cid = await novaCrianca()
+  try {
+    const { data: reg } = await asOperador
+      .from('crianca')
+      .update({ consentimento_em: new Date().toISOString(), consentimento_por: 'Mãe IT' })
+      .eq('id', cid)
+      .select('consentimento_por')
+      .single()
+    assert.equal(reg!.consentimento_por, 'Mãe IT', 'operador registra consentimento')
+
+    const { data: rev } = await asOperador
+      .from('crianca')
+      .update({ consentimento_em: null, consentimento_por: null })
+      .eq('id', cid)
+      .select('consentimento_em')
+      .single()
+    assert.equal(rev!.consentimento_em, null, 'revogação limpa o registro')
+  } finally {
+    await admin.from('crianca').delete().eq('id', cid)
+  }
+})
+
 test('Presença: "quem está aqui hoje" traz só as abertas de hoje', async () => {
   const cid = await novaCrianca()
   const { data: aberta } = await asOperador.from('presenca').insert({ crianca_id: cid, data: hoje(), entrada: '09:00', origem: 'diaria' }).select('id').single()

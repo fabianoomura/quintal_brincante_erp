@@ -140,6 +140,14 @@ for (let i = 0; i < NOMES.length; i++) {
     .single()
   await sb.from('crianca_contato').insert({ crianca_id: cri!.id, contato_id: co!.id, papel: 'responsavel' as Papel })
 
+  // ~80% já têm o consentimento LGPD registrado (o resto fica pendente p/ testar o alerta)
+  if (chance(0.8)) {
+    await sb
+      .from('crianca')
+      .update({ consentimento_em: new Date().toISOString(), consentimento_por: respNome })
+      .eq('id', cri!.id)
+  }
+
   // ~40% ganham um contato extra (autorizado ou emergência)
   if (chance(0.4)) {
     const { data: co2 } = await sb
