@@ -33,6 +33,7 @@ const contas: {
   funcao: string
   papel: Database['public']['Enums']['papel_acesso']
 }[] = [
+  { email: 'fabianoomura@gmail.com', senha: '510841', nome: 'Fabiano Omura', funcao: 'coordenação', papel: 'admin' },
   { email: 'equipe@quintal.local', senha: 'quintal123', nome: 'Equipe Admin', funcao: 'coordenação', papel: 'admin' },
   { email: 'operador@quintal.local', senha: 'operador123', nome: 'Operador Recepção', funcao: 'recepção', papel: 'operador' },
 ]
