@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from './logout-action'
+import AjudaButton from './ajuda-button'
 
 type Item = { href: string; label: string; icon: string; cor: string; adminOnly?: boolean }
 type Grupo = { titulo: string; itens: Item[] }
@@ -156,6 +157,7 @@ export default function Shell({
             <h1 className="font-display text-xl font-bold text-slate-700">
               {tituloDaRota(pathname)}
             </h1>
+            <AjudaButton />
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 sm:inline">
