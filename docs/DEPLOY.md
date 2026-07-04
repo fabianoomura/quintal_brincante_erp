@@ -14,19 +14,19 @@ Tempo estimado: ~40 min. Pré-requisito: conta no GitHub (o repo já está lá).
    ```bash
    supabase login                       # abre o navegador
    supabase link --project-ref <REF>   # REF = id do projeto (Settings → General)
-   supabase db push                    # aplica as 13 migrations
+   supabase db push                    # aplica as 19 migrations
    ```
-3. **Config mínima:** no painel → SQL Editor, cole e execute o conteúdo de
-   [`supabase/seed.sql`](../supabase/seed.sql) (config_sistema, planilha de preços do play,
-   templates de mensagem). *Não* rode `scripts/seed-dev.mts` em produção (dados fake).
-4. **Usuários reais:** painel → Authentication → Users → **Add user** (e-mail + senha,
+   O `db push` já cria o **bootstrap** (config_sistema, planilha de preços do play,
+   templates de mensagem) — isso virou migration idempotente, não precisa rodar seed à mão.
+   *Não* rode `scripts/seed-dev.mts` em produção (dados fake).
+3. **Usuários reais:** painel → Authentication → Users → **Add user** (e-mail + senha,
    "Auto confirm"). Depois, SQL Editor:
    ```sql
    insert into colaborador (user_id, nome, funcao, papel_acesso)
    values ('<UUID do usuário criado>', 'Seu Nome', 'coordenação', 'admin');
    -- repita para cada operador com papel_acesso = 'operador'
    ```
-5. Anote em Settings → API: **Project URL**, **anon key** e **service_role key**.
+4. Anote em Settings → API: **Project URL**, **anon key** e **service_role key**.
 
 ## 2. App — Vercel (~10 min)
 
@@ -82,8 +82,10 @@ Conferir: `select * from cron.job;` — e depois `select * from cron.job_run_det
 
 ## Quando as integrações reais chegarem
 
-- **WhatsApp (Meta):** criar o WhatsApp Business, submeter os templates de `/mensagens`,
-  implementar o `CloudSender` no adapter (`src/lib/whatsapp/adapter.ts`) e trocar
-  `WHATSAPP_PROVIDER=cloud` + tokens nas envs da Vercel.
+- **WhatsApp (Meta):** o `CloudSender` **já está implementado** (`src/lib/whatsapp/adapter.ts`).
+  Para ligar, basta pôr nas envs da Vercel: `WHATSAPP_PROVIDER=cloud`, `WHATSAPP_TOKEN`,
+  `WHATSAPP_PHONE_ID` (e `WHATSAPP_LANG` se não for `pt_BR`). Serve tanto para o **número de
+  teste** (grátis, sem verificação — ótimo para começar) quanto para produção. Passo a passo
+  em [`docs/WHATSAPP.md`](WHATSAPP.md).
 - **InfinitePay:** validar assinatura HMAC real no webhook
   (`src/app/api/webhook/infinitepay/route.ts`) e ligar `conciliacao_automatica` nas Configurações.
