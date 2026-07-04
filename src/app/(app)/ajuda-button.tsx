@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { ajudaDaRota } from '@/lib/ajuda'
 
@@ -20,22 +21,13 @@ export default function AjudaButton() {
 
   if (!ajuda) return null
 
-  return (
-    <>
-      <button
-        onClick={() => setAberto(true)}
-        aria-label={`Ajuda: ${ajuda.titulo}`}
-        title="O que é esta tela?"
-        className="grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-base font-bold text-sky-600 ring-1 ring-sky-200 transition hover:bg-sky-200"
-      >
-        ?
-      </button>
-
-      {aberto && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
-          onClick={() => setAberto(false)}
-        >
+  // O modal vai via portal para o <body>: o header tem backdrop-blur, que criaria um
+  // containing block e prenderia o `fixed` lá no topo. No body, ele cobre a tela toda.
+  const modal = (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+      onClick={() => setAberto(false)}
+    >
           <div className="absolute inset-0 bg-black/40" />
           <div
             role="dialog"
@@ -80,7 +72,19 @@ export default function AjudaButton() {
             </button>
           </div>
         </div>
-      )}
+  )
+
+  return (
+    <>
+      <button
+        onClick={() => setAberto(true)}
+        aria-label={`Ajuda: ${ajuda.titulo}`}
+        title="O que é esta tela?"
+        className="grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-base font-bold text-sky-600 ring-1 ring-sky-200 transition hover:bg-sky-200"
+      >
+        ?
+      </button>
+      {aberto && createPortal(modal, document.body)}
     </>
   )
 }
