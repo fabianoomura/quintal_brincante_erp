@@ -1,3 +1,16 @@
+// Máscara de digitação: formata progressivamente para (DD) XXXXX-XXXX.
+// Aceita colar com +55 (descarta o país), com pontuação, espaços etc.
+export function formatarTelefoneBR(valor: string): string {
+  let d = valor.replace(/\D/g, '')
+  if (d.startsWith('55') && d.length > 11) d = d.slice(2) // colou +55 na frente
+  d = d.slice(0, 11)
+  if (d.length === 0) return ''
+  if (d.length <= 2) return `(${d}`
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` // celular (11 dígitos)
+}
+
 // Telefone em E.164 para WhatsApp: +55DDDNUMERO (regra do projeto).
 // Normaliza entradas comuns no Brasil; retorna null se não der p/ formar um número válido.
 export function normalizeE164BR(raw: string | null | undefined): string | null {

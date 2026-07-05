@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createCrianca, type ContatoInput } from '../actions'
 import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
 import { formatarCPF } from '@/lib/cpf'
+import { formatarTelefoneBR } from '@/lib/fone'
 
 const PAPEIS = [
   { value: 'responsavel', label: 'Responsável' },
@@ -137,9 +138,10 @@ export default function NovaCriancaPage() {
             />
             <input
               type="tel"
-              placeholder="Telefone (WhatsApp)"
+              maxLength={15}
+              placeholder="WhatsApp — (43) 99120-3404"
               value={c.telefone}
-              onChange={(e) => atualizarContato(i, { telefone: e.target.value })}
+              onChange={(e) => atualizarContato(i, { telefone: formatarTelefoneBR(e.target.value) })}
               className={input}
             />
             <input

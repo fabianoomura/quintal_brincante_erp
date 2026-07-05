@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { addContato, removeContato, type ContatoInput } from '../actions'
 import { card, input, btnGrape } from '@/lib/ui'
 import { formatarCPF } from '@/lib/cpf'
+import { formatarTelefoneBR } from '@/lib/fone'
 
 type Papel = ContatoInput['papel']
 
@@ -120,9 +121,10 @@ export default function ContatosManager({
         />
         <input
           type="tel"
-          placeholder="Telefone (WhatsApp)"
+          maxLength={15}
+          placeholder="WhatsApp — (43) 99120-3404"
           value={novo.telefone}
-          onChange={(e) => setNovo({ ...novo, telefone: e.target.value })}
+          onChange={(e) => setNovo({ ...novo, telefone: formatarTelefoneBR(e.target.value) })}
           className={input}
         />
         <input
