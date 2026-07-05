@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { checkIn, type CheckInInput } from './actions'
 import { card, input, btnPrimary } from '@/lib/ui'
+import BuscaCrianca from '../busca-crianca'
 
 type Origem = CheckInInput['origem']
 
@@ -22,9 +23,11 @@ function agoraLocalHHMM() {
 export default function CheckinForm({
   criancas,
   ambientes = [],
+  onSuccess,
 }: {
   criancas: { id: string; nome: string }[]
   ambientes?: { id: string; nome: string }[]
+  onSuccess?: () => void
 }) {
   const router = useRouter()
   const [criancaId, setCriancaId] = useState('')
@@ -40,27 +43,33 @@ export default function CheckinForm({
     e.preventDefault()
     setErro(null)
     setOcupado(true)
-    const res = await checkIn({
-      criancaId,
-      origem,
-      entrada,
-      tempoContratadoMin:
-        origem === 'espaco_kids' && tempo.trim() !== '' ? Number(tempo) : null,
-      ambienteId: ambienteId || null,
-      valorDiaria:
-        origem === 'diaria' && valorDiaria.trim() !== '' ? Number(valorDiaria) : null,
-    })
-    setOcupado(false)
-    if (!res.ok) {
-      setErro(res.erro)
-      return
+    try {
+      const res = await checkIn({
+        criancaId,
+        origem,
+        entrada,
+        tempoContratadoMin:
+          origem === 'espaco_kids' && tempo.trim() !== '' ? Number(tempo) : null,
+        ambienteId: ambienteId || null,
+        valorDiaria:
+          origem === 'diaria' && valorDiaria.trim() !== '' ? Number(valorDiaria) : null,
+      })
+      if (!res.ok) {
+        setErro(res.erro)
+        return
+      }
+      setCriancaId('')
+      setTempo('')
+      setValorDiaria('')
+      setAmbienteId('')
+      setEntrada(agoraLocalHHMM())
+      router.refresh()
+      onSuccess?.()
+    } catch (e2) {
+      setErro(`Falha ao registrar (${e2 instanceof Error ? e2.message : 'erro'}). Tente de novo.`)
+    } finally {
+      setOcupado(false)
     }
-    setCriancaId('')
-    setTempo('')
-    setValorDiaria('')
-    setAmbienteId('')
-    setEntrada(agoraLocalHHMM())
-    router.refresh()
   }
 
   return (
@@ -69,19 +78,7 @@ export default function CheckinForm({
         🚪 Registrar entrada
       </div>
 
-      <select
-        required
-        value={criancaId}
-        onChange={(e) => setCriancaId(e.target.value)}
-        className={input}
-      >
-        <option value="">Selecione a criança…</option>
-        {criancas.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.nome}
-          </option>
-        ))}
-      </select>
+      <BuscaCrianca criancas={criancas} value={criancaId} onChange={setCriancaId} />
 
       <div className="flex gap-2">
         <select
@@ -145,7 +142,7 @@ export default function CheckinForm({
 
       {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
 
-      <button type="submit" disabled={ocupado} className={btnPrimary}>
+      <button type="submit" disabled={ocupado || !criancaId} className={btnPrimary}>
         Registrar entrada 🎉
       </button>
     </form>

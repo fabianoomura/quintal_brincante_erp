@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, hhmm } from '@/lib/datas'
 import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
-import CheckinForm from './checkin-form'
+import NovaEntradaButton from './nova-entrada-button'
 import CheckoutButton from './checkout-button'
 
 import { card } from '@/lib/ui'
@@ -60,11 +60,14 @@ export default async function PresencaPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Link href="/" className="text-sm font-semibold text-slate-500">
-          ← Início
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-700">📋 Quem está aqui hoje</h1>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link href="/" className="text-sm font-semibold text-slate-500">
+            ← Início
+          </Link>
+          <h1 className="truncate text-2xl font-bold text-slate-700">📋 Quem está aqui hoje</h1>
+        </div>
+        <NovaEntradaButton criancas={criancas ?? []} ambientes={ambientes ?? []} />
       </div>
 
       <div
@@ -85,8 +88,6 @@ export default async function PresencaPage() {
               : estilo.txt}
         </span>
       </div>
-
-      <CheckinForm criancas={criancas ?? []} ambientes={ambientes ?? []} />
 
       {porAmbiente.length > 0 && (
         <div className="flex flex-wrap gap-2">
