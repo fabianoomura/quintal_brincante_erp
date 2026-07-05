@@ -51,6 +51,8 @@ export default function PlaygroundPanel({
   const [nNome, setNNome] = useState('')
   const [nResp, setNResp] = useState('')
   const [nTel, setNTel] = useState('')
+  const [nCpf, setNCpf] = useState('')
+  const [nRg, setNRg] = useState('')
   const [nFoto, setNFoto] = useState<string | null>(null)
   const [cadErro, setCadErro] = useState<string | null>(null)
 
@@ -58,7 +60,14 @@ export default function PlaygroundPanel({
     e.preventDefault()
     setCadErro(null)
     setOcupado('cadastro')
-    const res = await cadastroRapido({ nome: nNome, respNome: nResp, telefone: nTel, foto: nFoto })
+    const res = await cadastroRapido({
+      nome: nNome,
+      respNome: nResp,
+      telefone: nTel,
+      cpf: nCpf,
+      rg: nRg,
+      foto: nFoto,
+    })
     setOcupado(null)
     if (!res.ok) {
       setCadErro(res.erro)
@@ -69,6 +78,8 @@ export default function PlaygroundPanel({
     setNNome('')
     setNResp('')
     setNTel('')
+    setNCpf('')
+    setNRg('')
     setNFoto(null)
     router.refresh()
   }
@@ -181,21 +192,35 @@ export default function PlaygroundPanel({
               onChange={(e) => setNNome(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
             />
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 placeholder="Responsável (nome)"
                 value={nResp}
                 onChange={(e) => setNResp(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
               />
               <input
                 type="tel"
                 placeholder="WhatsApp"
                 value={nTel}
                 onChange={(e) => setNTel(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+              />
+              <input
+                inputMode="numeric"
+                placeholder="CPF do responsável"
+                value={nCpf}
+                onChange={(e) => setNCpf(e.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
+              />
+              <input
+                placeholder="RG (opcional)"
+                value={nRg}
+                onChange={(e) => setNRg(e.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
               />
             </div>
+            <p className="text-xs text-slate-400">CPF preferencial (LGPD). RG opcional.</p>
             {cadErro && <p className="text-sm font-semibold text-rose-500">{cadErro}</p>}
             <div className="flex gap-2">
               <button

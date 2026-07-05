@@ -31,6 +31,8 @@ export async function cadastroRapido(input: {
   nome: string
   respNome: string
   telefone: string
+  cpf?: string
+  rg?: string
   foto: string | null
 }): Promise<Resultado> {
   if (input.nome.trim() === '') return { ok: false, erro: 'Informe o nome.' }
@@ -43,12 +45,26 @@ export async function cadastroRapido(input: {
     .single()
   if (error) return { ok: false, erro: error.message }
 
-  if (input.telefone.trim() !== '') {
-    const telefone = normalizeE164BR(input.telefone)
-    if (!telefone) return { ok: false, erro: 'Telefone inválido.' }
+  // Cria o responsável se houver qualquer dado dele (nome, telefone, CPF ou RG).
+  const cpf = (input.cpf ?? '').trim()
+  const rg = (input.rg ?? '').trim()
+  const temResp =
+    input.respNome.trim() !== '' || input.telefone.trim() !== '' || cpf !== '' || rg !== ''
+
+  if (temResp) {
+    let telefone: string | null = null
+    if (input.telefone.trim() !== '') {
+      telefone = normalizeE164BR(input.telefone)
+      if (!telefone) return { ok: false, erro: 'Telefone inválido.' }
+    }
     const { data: contato, error: errC } = await supabase
       .from('contato')
-      .insert({ nome: input.respNome.trim() || 'Responsável', telefone })
+      .insert({
+        nome: input.respNome.trim() || 'Responsável',
+        telefone,
+        cpf: cpf === '' ? null : cpf,
+        rg: rg === '' ? null : rg,
+      })
       .select('id')
       .single()
     if (errC) return { ok: false, erro: errC.message }

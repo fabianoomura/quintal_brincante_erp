@@ -80,7 +80,7 @@ export default function AjudaButton() {
         onClick={() => setAberto(true)}
         aria-label={`Ajuda: ${ajuda.titulo}`}
         title="O que é esta tela?"
-        className="grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-base font-bold text-sky-600 ring-1 ring-sky-200 transition hover:bg-sky-200"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-100 text-base font-bold text-sky-600 ring-1 ring-sky-200 transition hover:bg-sky-200"
       >
         ?
       </button>

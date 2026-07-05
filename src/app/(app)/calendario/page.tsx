@@ -67,7 +67,8 @@ export default async function CalendarioPage({
         <Link href={`/calendario?mes=${addMes(ano, mes, 1)}`} className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">Próximo →</Link>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+        <div className="min-w-[520px]">
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400">
           {DIAS.map((d) => <div key={d} className="py-1">{d}</div>)}
         </div>
@@ -100,6 +101,7 @@ export default async function CalendarioPage({
               </div>
             )
           })}
+        </div>
         </div>
       </div>
 

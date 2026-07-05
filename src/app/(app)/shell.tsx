@@ -146,20 +146,20 @@ export default function Shell({
       {/* Coluna de conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 backdrop-blur md:px-6">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => setAberto(true)}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-lg md:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg md:hidden"
               aria-label="Menu"
             >
               ☰
             </button>
-            <h1 className="font-display text-xl font-bold text-slate-700">
+            <h1 className="truncate font-display text-lg font-bold text-slate-700 sm:text-xl">
               {tituloDaRota(pathname)}
             </h1>
             <AjudaButton />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="hidden rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 sm:inline">
               {nome.split(' ')[0]} · {ehAdmin ? 'admin' : 'operador'}
             </span>
