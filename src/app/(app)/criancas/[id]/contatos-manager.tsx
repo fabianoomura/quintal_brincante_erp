@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addContato, removeContato, type ContatoInput } from '../actions'
 import { card, input, btnGrape } from '@/lib/ui'
+import { formatarCPF } from '@/lib/cpf'
 
 type Papel = ContatoInput['papel']
 
@@ -136,7 +137,8 @@ export default function ContatosManager({
             inputMode="numeric"
             placeholder="CPF (preferencial)"
             value={novo.cpf}
-            onChange={(e) => setNovo({ ...novo, cpf: e.target.value })}
+            maxLength={14}
+            onChange={(e) => setNovo({ ...novo, cpf: formatarCPF(e.target.value) })}
             className={input}
           />
           <input

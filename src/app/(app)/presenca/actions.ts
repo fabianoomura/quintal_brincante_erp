@@ -27,56 +27,60 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   if (!input.criancaId) return { ok: false, erro: 'Selecione uma criança.' }
   if (!input.entrada) return { ok: false, erro: 'Informe o horário de entrada.' }
 
-  const supabase = await createClient()
-  const data = hojeISO()
+  try {
+    const supabase = await createClient()
+    const data = hojeISO()
 
-  // Play: trava a TARIFA/HORA pela planilha (dia+hora) — ou o valor do FERIADO da data.
-  // O valor final (piso 1h + proporcional) é calculado no check-out.
-  let tarifaHora: number | null = null
-  if (input.origem === 'espaco_kids') {
-    const horaMin = horaParaMinutos(input.entrada)
-    const [{ data: precos }, { data: fer }] = await Promise.all([
-      supabase.from('preco_hora').select('dia_semana, hora, valor'),
-      supabase.from('feriado').select('valor').eq('data', data).eq('ativo', true).maybeSingle(),
-    ])
-    if (fer?.valor != null) {
-      tarifaHora = Number(fer.valor) // feriado tem valor próprio
-    } else {
-      tarifaHora = valorHoraPlay(
-        diaDaSemana(data),
-        horaMin,
-        (precos ?? []).map((p) => ({ ...p, valor: Number(p.valor) })),
-      )
+    // Play: trava a TARIFA/HORA pela planilha (dia+hora) — ou o valor do FERIADO da data.
+    // O valor final (piso 1h + proporcional) é calculado no check-out.
+    let tarifaHora: number | null = null
+    if (input.origem === 'espaco_kids') {
+      const horaMin = horaParaMinutos(input.entrada)
+      const [{ data: precos }, { data: fer }] = await Promise.all([
+        supabase.from('preco_hora').select('dia_semana, hora, valor'),
+        supabase.from('feriado').select('valor').eq('data', data).eq('ativo', true).maybeSingle(),
+      ])
+      if (fer?.valor != null) {
+        tarifaHora = Number(fer.valor) // feriado tem valor próprio
+      } else {
+        tarifaHora = valorHoraPlay(
+          diaDaSemana(data),
+          horaMin,
+          (precos ?? []).map((p) => ({ ...p, valor: Number(p.valor) })),
+        )
+      }
     }
+
+    // Diária: valor definido no check-in (null = aula experimental / não cobra).
+    const valorDiaria =
+      input.origem === 'diaria' && input.valorDiaria != null && input.valorDiaria > 0
+        ? Math.round(input.valorDiaria * 100) / 100
+        : null
+
+    const { data: novo, error } = await supabase
+      .from('presenca')
+      .insert({
+        crianca_id: input.criancaId,
+        data,
+        entrada: input.entrada,
+        origem: input.origem,
+        tempo_contratado_min:
+          input.origem === 'espaco_kids' ? input.tempoContratadoMin : null,
+        ambiente_id: input.ambienteId ?? null,
+        tarifa_hora: tarifaHora,
+        valor: valorDiaria,
+      })
+      .select('id')
+      .single()
+    if (error) return { ok: false, erro: error.message }
+
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    revalidatePath('/kiosk')
+    return { ok: true, id: novo.id }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
   }
-
-  // Diária: valor definido no check-in (null = aula experimental / não cobra).
-  const valorDiaria =
-    input.origem === 'diaria' && input.valorDiaria != null && input.valorDiaria > 0
-      ? Math.round(input.valorDiaria * 100) / 100
-      : null
-
-  const { data: novo, error } = await supabase
-    .from('presenca')
-    .insert({
-      crianca_id: input.criancaId,
-      data,
-      entrada: input.entrada,
-      origem: input.origem,
-      tempo_contratado_min:
-        input.origem === 'espaco_kids' ? input.tempoContratadoMin : null,
-      ambiente_id: input.ambienteId ?? null,
-      tarifa_hora: tarifaHora,
-      valor: valorDiaria,
-    })
-    .select('id')
-    .single()
-  if (error) return { ok: false, erro: error.message }
-
-  revalidatePath('/presenca')
-  revalidatePath('/playground')
-  revalidatePath('/kiosk')
-  return { ok: true, id: novo.id }
 }
 
 // Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela

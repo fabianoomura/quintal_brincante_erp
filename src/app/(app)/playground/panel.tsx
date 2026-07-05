@@ -6,6 +6,7 @@ import { checkIn, checkOut } from '../presenca/actions'
 import { cadastroRapido } from '../criancas/actions'
 import { duracaoMinutos, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
+import { formatarCPF } from '@/lib/cpf'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import FotoInput from '../foto-input'
 
@@ -60,28 +61,35 @@ export default function PlaygroundPanel({
     e.preventDefault()
     setCadErro(null)
     setOcupado('cadastro')
-    const res = await cadastroRapido({
-      nome: nNome,
-      respNome: nResp,
-      telefone: nTel,
-      cpf: nCpf,
-      rg: nRg,
-      foto: nFoto,
-    })
-    setOcupado(null)
-    if (!res.ok) {
-      setCadErro(res.erro)
-      return
+    try {
+      const res = await cadastroRapido({
+        nome: nNome,
+        respNome: nResp,
+        telefone: nTel,
+        cpf: nCpf,
+        rg: nRg,
+        foto: nFoto,
+      })
+      if (!res.ok) {
+        setCadErro(res.erro)
+        return
+      }
+      setCriancaId(res.id) // já seleciona p/ o check-in
+      setCadastro(false)
+      setNNome('')
+      setNResp('')
+      setNTel('')
+      setNCpf('')
+      setNRg('')
+      setNFoto(null)
+      router.refresh()
+    } catch (err) {
+      setCadErro(
+        `Não consegui salvar (${err instanceof Error ? err.message : 'erro inesperado'}). Tente de novo.`,
+      )
+    } finally {
+      setOcupado(null)
     }
-    setCriancaId(res.id) // já seleciona p/ o check-in
-    setCadastro(false)
-    setNNome('')
-    setNResp('')
-    setNTel('')
-    setNCpf('')
-    setNRg('')
-    setNFoto(null)
-    router.refresh()
   }
 
   // Relógio: re-renderiza a cada 20s p/ atualizar cronômetros e custos.
@@ -94,39 +102,51 @@ export default function PlaygroundPanel({
     if (!criancaId) return
     setErro(null)
     setOcupado('checkin')
-    const res = await checkIn({
-      criancaId,
-      origem: 'espaco_kids',
-      entrada: agoraHHMM(),
-      tempoContratadoMin: tempo.trim() !== '' ? Number(tempo) : null,
-    })
-    setOcupado(null)
-    if (!res.ok) {
-      setErro(res.erro)
-      return
+    try {
+      const res = await checkIn({
+        criancaId,
+        origem: 'espaco_kids',
+        entrada: agoraHHMM(),
+        tempoContratadoMin: tempo.trim() !== '' ? Number(tempo) : null,
+      })
+      if (!res.ok) {
+        setErro(res.erro)
+        return
+      }
+      setCriancaId('')
+      setTempo('')
+      router.refresh()
+    } catch (err) {
+      setErro(
+        `Não consegui registrar (${err instanceof Error ? err.message : 'erro inesperado'}). Tente de novo.`,
+      )
+    } finally {
+      setOcupado(null)
     }
-    setCriancaId('')
-    setTempo('')
-    router.refresh()
   }
 
   const [saida, setSaida] = useState<string | null>(null)
 
   async function sair(p: Presente) {
     setOcupado(p.id)
-    const res = await checkOut(p.id)
-    setOcupado(null)
-    if (res.ok) {
-      setSaida(
-        res.valor != null
-          ? `✅ ${p.nome} saiu · ${formatBRL(res.valor)} (pendente no financeiro)`
-          : `✅ ${p.nome} saiu.`,
-      )
-      setTimeout(() => setSaida(null), 6000)
-    } else {
-      setSaida(`❌ ${res.erro}`)
+    try {
+      const res = await checkOut(p.id)
+      if (res.ok) {
+        setSaida(
+          res.valor != null
+            ? `✅ ${p.nome} saiu · ${formatBRL(res.valor)} (pendente no financeiro)`
+            : `✅ ${p.nome} saiu.`,
+        )
+        setTimeout(() => setSaida(null), 6000)
+      } else {
+        setSaida(`❌ ${res.erro}`)
+      }
+      router.refresh()
+    } catch (err) {
+      setSaida(`❌ Não consegui registrar a saída (${err instanceof Error ? err.message : 'erro'}). Tente de novo.`)
+    } finally {
+      setOcupado(null)
     }
-    router.refresh()
   }
 
   return (
@@ -208,9 +228,10 @@ export default function PlaygroundPanel({
               />
               <input
                 inputMode="numeric"
+                maxLength={14}
                 placeholder="CPF do responsável"
                 value={nCpf}
-                onChange={(e) => setNCpf(e.target.value)}
+                onChange={(e) => setNCpf(formatarCPF(e.target.value))}
                 className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
               />
               <input

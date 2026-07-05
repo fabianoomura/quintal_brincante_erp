@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createCrianca, type ContatoInput } from '../actions'
 import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
+import { formatarCPF } from '@/lib/cpf'
 
 const PAPEIS = [
   { value: 'responsavel', label: 'Responsável' },
@@ -147,9 +148,10 @@ export default function NovaCriancaPage() {
             <div className="flex gap-2">
               <input
                 inputMode="numeric"
+                maxLength={14}
                 placeholder="CPF (preferencial)"
                 value={c.cpf}
-                onChange={(e) => atualizarContato(i, { cpf: e.target.value })}
+                onChange={(e) => atualizarContato(i, { cpf: formatarCPF(e.target.value) })}
                 className={input}
               />
               <input
