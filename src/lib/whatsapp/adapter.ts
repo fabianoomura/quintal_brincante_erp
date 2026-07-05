@@ -87,12 +87,68 @@ export class CloudSender implements EnviarWhatsApp {
   }
 }
 
-// Fábrica: escolhe o provider por env. Default 'fake' enquanto não há credenciais da Meta.
+// Provider EVOLUTION: Evolution API (não-oficial, Baileys por baixo). Decisão do dono
+// (2026-07-05): sem burocracia Meta; um servidor Evolution fica logado no número
+// (QR code) e a gente chama o REST dele. Envia o texto JÁ RENDERIZADO (msg.conteudo) —
+// não existe "template aprovado" no mundo não-oficial.
+export class EvolutionSender implements EnviarWhatsApp {
+  constructor(
+    private baseUrl: string, // ex.: https://evo.seudominio.com (sem barra no fim)
+    private apiKey: string,
+    private instance: string, // nome da instância criada no Evolution
+  ) {}
+
+  async enviar(msg: MensagemWhatsApp): Promise<ResultadoEnvio> {
+    if (!msg.para) return { ok: false, erro: 'Sem telefone do responsável.' }
+
+    let resp: Response
+    try {
+      resp = await fetch(
+        `${this.baseUrl.replace(/\/$/, '')}/message/sendText/${this.instance}`,
+        {
+          method: 'POST',
+          headers: { apikey: this.apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            number: msg.para.replace(/\D/g, ''), // só dígitos (E.164 sem o +)
+            text: msg.conteudo,
+          }),
+        },
+      )
+    } catch (e) {
+      return { ok: false, erro: `Falha de rede ao chamar o Evolution: ${(e as Error).message}` }
+    }
+
+    const json = (await resp.json().catch(() => ({}))) as {
+      key?: { id?: string }
+      message?: string
+      response?: { message?: unknown }
+    }
+    if (!resp.ok) {
+      const detalhe =
+        json.message ?? (json.response ? JSON.stringify(json.response) : `HTTP ${resp.status}`)
+      return { ok: false, erro: `Evolution recusou: ${detalhe}` }
+    }
+    return { ok: true, providerMsgId: json.key?.id ?? `evo-${Date.now()}` }
+  }
+}
+
+// Fábrica: escolhe o provider por env. Default 'fake' enquanto não há credenciais.
 export function getSender(): EnviarWhatsApp {
   const provider = process.env.WHATSAPP_PROVIDER ?? 'fake'
   switch (provider) {
     case 'fake':
       return new FakeSender()
+    case 'evolution': {
+      const url = process.env.EVOLUTION_URL
+      const key = process.env.EVOLUTION_API_KEY
+      const instance = process.env.EVOLUTION_INSTANCE
+      if (!url || !key || !instance) {
+        throw new Error(
+          "Provider 'evolution' exige EVOLUTION_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.",
+        )
+      }
+      return new EvolutionSender(url, key, instance)
+    }
     case 'cloud': {
       const token = process.env.WHATSAPP_TOKEN
       const phoneId = process.env.WHATSAPP_PHONE_ID
@@ -106,7 +162,7 @@ export function getSender(): EnviarWhatsApp {
     }
     default:
       throw new Error(
-        `Provider WhatsApp '${provider}' desconhecido. Use 'fake' ou 'cloud'.`,
+        `Provider WhatsApp '${provider}' desconhecido. Use 'fake', 'evolution' ou 'cloud'.`,
       )
   }
 }

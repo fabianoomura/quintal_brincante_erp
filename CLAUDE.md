@@ -34,7 +34,9 @@ o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular
 
 - **Frontend:** Next.js (App Router), PWA, mobile-first.
 - **Banco + Auth:** Supabase (Postgres + Auth + RLS).
-- **Integrações:** WhatsApp Business API (oficial); InfinitePay (Checkout + webhook).
+- **Integrações:** WhatsApp via **Evolution API** (não-oficial; **decisão do dono 2026-07-05** —
+  ver `docs/WHATSAPP-EVOLUTION.md`; o `CloudSender` da Meta oficial segue implementado em
+  stand-by, voltar = trocar envs); InfinitePay (Checkout + webhook).
 - **Worker agendado (aviso de tempo):** **DECIDIDO (2026-06-30) — Supabase (`pg_cron` chamando
   um endpoint do worker).** Motivo: zero-ops, sem herdar uptime de VPS. Arquitetura escolhida p/
   ficar testável e portável: a **lógica** vive em `src/lib/whatsapp/avisoTempo.ts` (função pura,

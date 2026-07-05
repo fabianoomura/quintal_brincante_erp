@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CloudSender, FakeSender } from './adapter'
+import { CloudSender, EvolutionSender, FakeSender } from './adapter'
 
 test('FakeSender registra e devolve id fake', async () => {
   const s = new FakeSender()
@@ -84,4 +84,51 @@ test('CloudSender devolve erro quando a Meta recusa', async () => {
   } finally {
     globalThis.fetch = orig
   }
+})
+
+test('EvolutionSender manda texto renderizado pro endpoint da instância', async () => {
+  const { fn, calls } = mockFetch({ status: 201, json: { key: { id: 'BAE5F1A2B3C4' } } })
+  const orig = globalThis.fetch
+  globalThis.fetch = fn
+  try {
+    const s = new EvolutionSender('https://evo.exemplo.com/', 'CHAVE', 'quintal')
+    const r = await s.enviar({
+      para: '+55 (43) 99999-9999',
+      template: 'ocorrencia',
+      variaveis: ['Ana', 'banheiro', 'precisa de ajuda'],
+      conteudo: 'Olá Ana, sobre banheiro: precisa de ajuda. Pode vir ao espaço?',
+    })
+    assert.deepEqual(r, { ok: true, providerMsgId: 'BAE5F1A2B3C4' })
+    assert.equal(calls[0].url, 'https://evo.exemplo.com/message/sendText/quintal')
+    const headers = calls[0].init.headers as Record<string, string>
+    assert.equal(headers.apikey, 'CHAVE')
+    const body = JSON.parse(calls[0].init.body as string)
+    assert.equal(body.number, '5543999999999') // só dígitos
+    assert.equal(body.text, 'Olá Ana, sobre banheiro: precisa de ajuda. Pode vir ao espaço?')
+  } finally {
+    globalThis.fetch = orig
+  }
+})
+
+test('EvolutionSender devolve erro quando a API recusa', async () => {
+  const { fn } = mockFetch({ status: 400, json: { response: { message: ['number not on whatsapp'] } } })
+  const orig = globalThis.fetch
+  globalThis.fetch = fn
+  try {
+    const r = await new EvolutionSender('https://evo.x.com', 'K', 'i').enviar({
+      para: '+5543999999999',
+      template: 't',
+      variaveis: [],
+      conteudo: 'oi',
+    })
+    assert.equal(r.ok, false)
+    assert.match((r as { erro: string }).erro, /Evolution recusou/)
+  } finally {
+    globalThis.fetch = orig
+  }
+})
+
+test('EvolutionSender falha sem telefone', async () => {
+  const r = await new EvolutionSender('https://evo.x.com', 'K', 'i').enviar({ para: '', template: 't', variaveis: [], conteudo: 'oi' })
+  assert.equal(r.ok, false)
 })
