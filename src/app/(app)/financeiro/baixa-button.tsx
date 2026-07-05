@@ -7,7 +7,8 @@ import { baixaManual, type Modalidade } from './actions'
 const OPCOES: { m: Modalidade; label: string }[] = [
   { m: 'dinheiro', label: '💵' },
   { m: 'pix', label: '📱 Pix' },
-  { m: 'cartao', label: '💳' },
+  { m: 'debito', label: '💳 Déb' },
+  { m: 'credito', label: '💳 Créd' },
   { m: 'maquininha', label: '🏧' },
 ]
 

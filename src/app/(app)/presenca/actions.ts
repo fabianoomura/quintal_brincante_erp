@@ -11,7 +11,7 @@ type Origem = Database['public']['Enums']['origem_presenca']
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 type ResultadoCheckout =
-  | { ok: true; id: string; valor: number | null }
+  | { ok: true; id: string; valor: number | null; lancamentoId: string | null; nome: string }
   | { ok: false; erro: string }
 
 export type CheckInInput = {
@@ -86,49 +86,59 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 // Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela
 // tarifa/hora travada no check-in. Gera o lançamento pendente.
 export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
-  const supabase = await createClient()
-  const saida = agoraHora()
+  try {
+    const supabase = await createClient()
+    const saida = agoraHora()
 
-  const { data: p, error: errP } = await supabase
-    .from('presenca')
-    .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, valor')
-    .eq('id', presencaId)
-    .maybeSingle()
-  if (errP) return { ok: false, erro: errP.message }
-  if (!p) return { ok: false, erro: 'Presença não encontrada.' }
-  if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
+    const { data: p, error: errP } = await supabase
+      .from('presenca')
+      .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, valor, crianca:crianca_id (nome)')
+      .eq('id', presencaId)
+      .maybeSingle()
+    if (errP) return { ok: false, erro: errP.message }
+    if (!p) return { ok: false, erro: 'Presença não encontrada.' }
+    if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
-  // Play: calcula pelo tempo (tarifa/hora travada no check-in).
-  // Diária: usa o valor definido no check-in (null = experimental, não cobra).
-  const valor: number | null =
-    p.origem === 'espaco_kids' && p.tarifa_hora != null
-      ? precoProporcional(Math.ceil(duracaoMinutos(p.entrada, saida)), Number(p.tarifa_hora))
-      : p.valor != null
-        ? Number(p.valor)
-        : null
+    // Play: calcula pelo tempo (tarifa/hora travada no check-in).
+    // Diária: usa o valor definido no check-in (null = experimental, não cobra).
+    const valor: number | null =
+      p.origem === 'espaco_kids' && p.tarifa_hora != null
+        ? precoProporcional(Math.ceil(duracaoMinutos(p.entrada, saida)), Number(p.tarifa_hora))
+        : p.valor != null
+          ? Number(p.valor)
+          : null
 
-  const { error: errU } = await supabase
-    .from('presenca')
-    .update({ saida, valor })
-    .eq('id', presencaId)
-    .is('saida', null)
-  if (errU) return { ok: false, erro: errU.message }
+    const { error: errU } = await supabase
+      .from('presenca')
+      .update({ saida, valor })
+      .eq('id', presencaId)
+      .is('saida', null)
+    if (errU) return { ok: false, erro: errU.message }
 
-  // Gera lançamento pendente para presenças cobradas (play e diária com valor).
-  if (valor !== null) {
-    const { error: errL } = await supabase.from('lancamento').insert({
-      crianca_id: p.crianca_id,
-      descricao: `${p.origem === 'espaco_kids' ? 'Play' : 'Diária'} — ${p.data}`,
-      valor,
-      vencimento: p.data,
-      origem_tipo: 'presenca',
-      origem_id: p.id,
-    })
-    if (errL) return { ok: false, erro: errL.message }
+    // Gera lançamento pendente para presenças cobradas (play e diária com valor).
+    let lancamentoId: string | null = null
+    if (valor !== null) {
+      const { data: lanc, error: errL } = await supabase
+        .from('lancamento')
+        .insert({
+          crianca_id: p.crianca_id,
+          descricao: `${p.origem === 'espaco_kids' ? 'Play' : 'Diária'} — ${p.data}`,
+          valor,
+          vencimento: p.data,
+          origem_tipo: 'presenca',
+          origem_id: p.id,
+        })
+        .select('id')
+        .single()
+      if (errL) return { ok: false, erro: errL.message }
+      lancamentoId = lanc.id
+    }
+
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    revalidatePath('/financeiro')
+    return { ok: true, id: presencaId, valor, lancamentoId, nome: p.crianca?.nome ?? '' }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
   }
-
-  revalidatePath('/presenca')
-  revalidatePath('/playground')
-  revalidatePath('/financeiro')
-  return { ok: true, id: presencaId, valor }
 }

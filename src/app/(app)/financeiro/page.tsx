@@ -53,9 +53,10 @@ export default async function FinanceiroPage({
   function bucket(cm: string | null): string {
     if (cm === 'pix') return 'pix'
     if (cm === 'dinheiro') return 'dinheiro'
-    if (cm === 'maquininha') return 'maquininha'
-    if (cm && ['cartao', 'credit', 'debit', 'credit_card'].includes(cm)) return 'cartao'
-    return 'outros'
+    if (cm === 'debito') return 'debito'
+    if (cm === 'credito') return 'credito'
+    if (cm && ['cartao', 'credit', 'debit', 'credit_card'].includes(cm)) return 'credito' // legado
+    return 'outros' // maquininha, sem modalidade, etc.
   }
   const porModalidade: Record<string, number> = {}
   let totalRecebido = 0
@@ -68,8 +69,8 @@ export default async function FinanceiroPage({
   const MODALIDADES: { k: string; label: string; cls: string }[] = [
     { k: 'dinheiro', label: '💵 Dinheiro', cls: 'bg-emerald-100 text-emerald-800' },
     { k: 'pix', label: '📱 Pix', cls: 'bg-sky-100 text-sky-800' },
-    { k: 'cartao', label: '💳 Cartão', cls: 'bg-violet-100 text-violet-800' },
-    { k: 'maquininha', label: '🏧 Maquininha', cls: 'bg-amber-100 text-amber-800' },
+    { k: 'debito', label: '💳 Débito', cls: 'bg-violet-100 text-violet-800' },
+    { k: 'credito', label: '💳 Crédito', cls: 'bg-fuchsia-100 text-fuchsia-800' },
   ]
 
   const qs = new URLSearchParams({ status, ...(de && { de }), ...(ate && { ate }) })

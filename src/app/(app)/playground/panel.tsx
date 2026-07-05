@@ -9,6 +9,7 @@ import { formatBRL } from '@/lib/dinheiro'
 import { formatarCPF } from '@/lib/cpf'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import FotoInput from '../foto-input'
+import RecebimentoModal from '../recebimento-modal'
 
 type Presente = {
   id: string
@@ -126,20 +127,24 @@ export default function PlaygroundPanel({
   }
 
   const [saida, setSaida] = useState<string | null>(null)
+  // recebimento: aberto após um check-out cobrado
+  const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string } | null>(null)
 
   async function sair(p: Presente) {
     setOcupado(p.id)
     try {
       const res = await checkOut(p.id)
-      if (res.ok) {
-        setSaida(
-          res.valor != null
-            ? `✅ ${p.nome} saiu · ${formatBRL(res.valor)} (pendente no financeiro)`
-            : `✅ ${p.nome} saiu.`,
-        )
-        setTimeout(() => setSaida(null), 6000)
-      } else {
+      if (!res.ok) {
         setSaida(`❌ ${res.erro}`)
+        router.refresh()
+        return
+      }
+      if (res.valor != null && res.lancamentoId) {
+        // abre o pop-up de recebimento (Pix/dinheiro/débito/crédito)
+        setReceb({ lancamentoId: res.lancamentoId, valor: res.valor, nome: res.nome || p.nome })
+      } else {
+        setSaida(`✅ ${p.nome} saiu.`)
+        setTimeout(() => setSaida(null), 6000)
       }
       router.refresh()
     } catch (err) {
@@ -349,6 +354,14 @@ export default function PlaygroundPanel({
           )
         })}
       </div>
+
+      <RecebimentoModal
+        aberto={receb != null}
+        lancamentoId={receb?.lancamentoId ?? null}
+        valor={receb?.valor ?? 0}
+        nome={receb?.nome ?? ''}
+        onFechar={() => setReceb(null)}
+      />
     </div>
   )
 }

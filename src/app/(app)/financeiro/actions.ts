@@ -36,7 +36,7 @@ export async function criarAvulso(input: {
 }
 
 // Modalidades de recebimento manual (na tela/maquininha).
-export const MODALIDADES = ['dinheiro', 'pix', 'cartao', 'maquininha'] as const
+export const MODALIDADES = ['dinheiro', 'pix', 'debito', 'credito', 'maquininha'] as const
 export type Modalidade = (typeof MODALIDADES)[number]
 
 // Baixa manual: marca pago, registrando a MODALIDADE (capture_method) e opcionalmente um
