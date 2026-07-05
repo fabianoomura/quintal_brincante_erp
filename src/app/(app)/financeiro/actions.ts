@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import type { Modalidade } from '@/lib/modalidades'
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 
@@ -34,10 +35,6 @@ export async function criarAvulso(input: {
   revalidatePath('/financeiro')
   return { ok: true, id: data.id }
 }
-
-// Modalidades de recebimento manual (na tela/maquininha).
-export const MODALIDADES = ['dinheiro', 'pix', 'debito', 'credito', 'maquininha'] as const
-export type Modalidade = (typeof MODALIDADES)[number]
 
 // Baixa manual: marca pago, registrando a MODALIDADE (capture_method) e opcionalmente um
 // DESCONTO em R$ (só se habilitado na config). Soma ao desconto já existente (ex.: irmão).

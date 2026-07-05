@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { baixaManual, type Modalidade } from './actions'
+import { baixaManual } from './actions'
+import type { Modalidade } from '@/lib/modalidades'
 
 const OPCOES: { m: Modalidade; label: string }[] = [
   { m: 'dinheiro', label: '💵' },

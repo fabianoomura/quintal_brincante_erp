@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Modal from './modal'
-import { baixaManual, type Modalidade } from './financeiro/actions'
+import { baixaManual } from './financeiro/actions'
+import type { Modalidade } from '@/lib/modalidades'
 import { formatBRL } from '@/lib/dinheiro'
 
 const OPCOES: { k: Modalidade; label: string; cls: string }[] = [
