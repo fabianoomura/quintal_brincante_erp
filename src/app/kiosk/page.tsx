@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getColaboradorAtual } from '@/lib/colaborador'
 import { hojeISO } from '@/lib/datas'
@@ -8,9 +7,22 @@ import ConcluidasHoje from '@/app/(app)/playground/concluidas-hoje'
 
 // Modo quiosque do PLAY: tela cheia, sem sidebar — para um tablet fixo na entrada.
 // Autenticado (o proxy protege) + exige colaborador ativo.
+// NÃO usa redirect() aqui: as actions do play revalidam esta rota, e um redirect()
+// no render quebraria o server action. Sem sessão, mostra um fallback simples.
 export default async function KioskPage() {
   const colaborador = await getColaboradorAtual()
-  if (!colaborador) redirect('/')
+  if (!colaborador) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-fuchsia-50 p-6 text-center">
+        <div className="space-y-2">
+          <p className="font-display text-lg font-bold text-slate-700">Sessão não encontrada.</p>
+          <Link href="/" className="font-semibold text-fuchsia-700">
+            Ir para o início →
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const supabase = await createClient()
   const hoje = hojeISO()

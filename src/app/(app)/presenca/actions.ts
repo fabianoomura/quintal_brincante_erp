@@ -76,7 +76,6 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 
     revalidatePath('/presenca')
     revalidatePath('/playground')
-    revalidatePath('/kiosk')
     return { ok: true, id: novo.id }
   } catch (e) {
     return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }

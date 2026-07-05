@@ -77,7 +77,6 @@ export async function cadastroRapido(input: {
     }
 
     revalidatePath('/playground')
-    revalidatePath('/kiosk')
     revalidatePath('/criancas')
     return { ok: true, id: crianca.id }
   } catch (e) {
