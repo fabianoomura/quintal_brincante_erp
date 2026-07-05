@@ -21,6 +21,7 @@ export default function FotoInput({
   onChange: (dataUrl: string | null) => void
 }) {
   const [camera, setCamera] = useState(false)
+  const [pronto, setPronto] = useState(false) // stream rodando no <video>
   const [erro, setErro] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -29,9 +30,18 @@ export default function FotoInput({
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setCamera(false)
+    setPronto(false)
   }
 
   useEffect(() => () => pararCamera(), [])
+
+  // Prende o stream no <video> DEPOIS que ele existe no DOM (confiável, sem setTimeout).
+  useEffect(() => {
+    if (!camera || !videoRef.current || !streamRef.current) return
+    const v = videoRef.current
+    v.srcObject = streamRef.current
+    v.play().catch(() => {})
+  }, [camera])
 
   async function abrirCamera() {
     setErro(null)
@@ -39,21 +49,17 @@ export default function FotoInput({
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       streamRef.current = stream
       setCamera(true)
-      // espera o próximo tick para o <video> existir
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          videoRef.current.play().catch(() => {})
-        }
-      }, 0)
     } catch {
-      setErro('Não consegui acessar a webcam. Use “Enviar foto”.')
+      setErro('Não consegui acessar a webcam (permissão negada?). Use “Enviar foto”.')
     }
   }
 
   function capturar() {
     const v = videoRef.current
-    if (!v) return
+    if (!v || v.videoWidth === 0) {
+      setErro('A câmera ainda não carregou — espere a imagem aparecer.')
+      return
+    }
     onChange(comprimir(v, v.videoWidth, v.videoHeight))
     pararCamera()
   }
@@ -73,10 +79,29 @@ export default function FotoInput({
   return (
     <div className="space-y-2">
       {camera ? (
-        <div className="space-y-2">
-          <video ref={videoRef} playsInline muted className="w-full rounded-xl bg-black" />
+        <div className="mx-auto w-full max-w-xs space-y-2">
+          <div className="relative overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-slate-200">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onPlaying={() => setPronto(true)}
+              className="aspect-square w-full object-cover [transform:scaleX(-1)]"
+            />
+            {!pronto && (
+              <div className="absolute inset-0 grid place-items-center text-sm font-semibold text-white/80">
+                📷 Abrindo a câmera…
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
-            <button type="button" onClick={capturar} className="pop flex-1 rounded-xl bg-emerald-600 py-2 font-semibold text-white">
+            <button
+              type="button"
+              onClick={capturar}
+              disabled={!pronto}
+              className="pop flex-1 rounded-xl bg-emerald-600 py-2 font-semibold text-white disabled:opacity-50"
+            >
               📸 Capturar
             </button>
             <button type="button" onClick={pararCamera} className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-600">
