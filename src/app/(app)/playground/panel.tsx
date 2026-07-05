@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
-import { cadastroRapido } from '../criancas/actions'
 import { duracaoMinutos, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
-import { formatarCPF } from '@/lib/cpf'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
-import FotoInput from '../foto-input'
+import BuscaCrianca from '../busca-crianca'
 import RecebimentoModal from '../recebimento-modal'
 
 type Presente = {
@@ -42,56 +41,15 @@ export default function PlaygroundPanel({
   avisos: AvisoRapido[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [agora, setAgora] = useState(agoraHHMM())
   const [criancaId, setCriancaId] = useState('')
   const [tempo, setTempo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
-  // cadastro rápido
-  const [cadastro, setCadastro] = useState(false)
-  const [nNome, setNNome] = useState('')
-  const [nResp, setNResp] = useState('')
-  const [nTel, setNTel] = useState('')
-  const [nCpf, setNCpf] = useState('')
-  const [nRg, setNRg] = useState('')
-  const [nFoto, setNFoto] = useState<string | null>(null)
-  const [cadErro, setCadErro] = useState<string | null>(null)
-
-  async function salvarCadastro(e: React.FormEvent) {
-    e.preventDefault()
-    setCadErro(null)
-    setOcupado('cadastro')
-    try {
-      const res = await cadastroRapido({
-        nome: nNome,
-        respNome: nResp,
-        telefone: nTel,
-        cpf: nCpf,
-        rg: nRg,
-        foto: nFoto,
-      })
-      if (!res.ok) {
-        setCadErro(res.erro)
-        return
-      }
-      setCriancaId(res.id) // já seleciona p/ o check-in
-      setCadastro(false)
-      setNNome('')
-      setNResp('')
-      setNTel('')
-      setNCpf('')
-      setNRg('')
-      setNFoto(null)
-      router.refresh()
-    } catch (err) {
-      setCadErro(
-        `Não consegui salvar (${err instanceof Error ? err.message : 'erro inesperado'}). Tente de novo.`,
-      )
-    } finally {
-      setOcupado(null)
-    }
-  }
+  // cadastro completo (mesma ficha da tela Crianças); volta pra cá depois de salvar
+  const linkCadastro = `/criancas/nova?de=${pathname === '/kiosk' ? 'kiosk' : 'play'}`
 
   // Relógio: re-renderiza a cada 20s p/ atualizar cronômetros e custos.
   useEffect(() => {
@@ -165,19 +123,16 @@ export default function PlaygroundPanel({
 
       {/* Check-in rápido */}
       <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <div className="font-display text-base font-bold text-slate-600">🚀 Entrada rápida</div>
-        <select
-          value={criancaId}
-          onChange={(e) => setCriancaId(e.target.value)}
-          className="w-full rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-4 py-3 text-base"
-        >
-          <option value="">Selecione a criança…</option>
-          {criancas.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nome}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-display text-base font-bold text-slate-600">🚀 Entrada rápida</div>
+          <Link
+            href={linkCadastro}
+            className="pop shrink-0 rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
+          >
+            + Cadastrar criança
+          </Link>
+        </div>
+        <BuscaCrianca criancas={criancas} value={criancaId} onChange={setCriancaId} />
         <div className="flex gap-2">
           <input
             type="number"
@@ -197,75 +152,6 @@ export default function PlaygroundPanel({
           </button>
         </div>
         {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
-
-        {!cadastro ? (
-          <button
-            type="button"
-            onClick={() => setCadastro(true)}
-            className="text-sm font-semibold text-fuchsia-700"
-          >
-            + Não encontrou? Cadastro rápido
-          </button>
-        ) : (
-          <form onSubmit={salvarCadastro} className="space-y-2 rounded-xl bg-fuchsia-50 p-3">
-            <div className="text-sm font-bold text-fuchsia-700">🧒 Cadastro rápido</div>
-            <FotoInput value={nFoto} onChange={setNFoto} />
-            <input
-              required
-              placeholder="Nome da criança"
-              value={nNome}
-              onChange={(e) => setNNome(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
-            />
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <input
-                placeholder="Responsável (nome)"
-                value={nResp}
-                onChange={(e) => setNResp(e.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
-              />
-              <input
-                type="tel"
-                placeholder="WhatsApp"
-                value={nTel}
-                onChange={(e) => setNTel(e.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
-              />
-              <input
-                inputMode="numeric"
-                maxLength={14}
-                placeholder="CPF do responsável"
-                value={nCpf}
-                onChange={(e) => setNCpf(formatarCPF(e.target.value))}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
-              />
-              <input
-                placeholder="RG (opcional)"
-                value={nRg}
-                onChange={(e) => setNRg(e.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-base"
-              />
-            </div>
-            <p className="text-xs text-slate-400">CPF preferencial (LGPD). RG opcional.</p>
-            {cadErro && <p className="text-sm font-semibold text-rose-500">{cadErro}</p>}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={ocupado === 'cadastro'}
-                className="pop flex-1 rounded-xl bg-fuchsia-600 py-2 font-semibold text-white disabled:opacity-60"
-              >
-                {ocupado === 'cadastro' ? 'Salvando…' : 'Cadastrar e selecionar'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCadastro(false)}
-                className="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-600"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        )}
       </div>
 
       {presentes.length === 0 && (

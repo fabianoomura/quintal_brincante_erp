@@ -42,7 +42,11 @@ export default function NovaCriancaPage() {
       setSalvando(false)
       return
     }
-    router.push(`/criancas/${res.id}`)
+    // veio do play/kiosk (?de=...) → volta pra lá; senão, abre a ficha criada
+    const de = new URLSearchParams(window.location.search).get('de')
+    if (de === 'play') router.push('/playground')
+    else if (de === 'kiosk') router.push('/kiosk')
+    else router.push(`/criancas/${res.id}`)
   }
 
   return (

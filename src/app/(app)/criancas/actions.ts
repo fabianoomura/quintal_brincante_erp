@@ -25,65 +25,6 @@ export type CriancaInput = {
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 
-// Cadastro RÁPIDO (a partir do play): só o essencial, mas na MESMA tabela `crianca`.
-// Opcionalmente já cria o responsável (telefone p/ os avisos) e a foto.
-export async function cadastroRapido(input: {
-  nome: string
-  respNome: string
-  telefone: string
-  cpf?: string
-  rg?: string
-  foto: string | null
-}): Promise<Resultado> {
-  if (input.nome.trim() === '') return { ok: false, erro: 'Informe o nome.' }
-
-  try {
-    const supabase = await createClient()
-    const { data: crianca, error } = await supabase
-      .from('crianca')
-      .insert({ nome: input.nome.trim(), foto: input.foto })
-      .select('id')
-      .single()
-    if (error) return { ok: false, erro: error.message }
-
-    // Cria o responsável se houver qualquer dado dele (nome, telefone, CPF ou RG).
-    const cpf = (input.cpf ?? '').trim()
-    const rg = (input.rg ?? '').trim()
-    const temResp =
-      input.respNome.trim() !== '' || input.telefone.trim() !== '' || cpf !== '' || rg !== ''
-
-    if (temResp) {
-      let telefone: string | null = null
-      if (input.telefone.trim() !== '') {
-        telefone = normalizeE164BR(input.telefone)
-        if (!telefone) return { ok: false, erro: 'Telefone inválido.' }
-      }
-      const { data: contato, error: errC } = await supabase
-        .from('contato')
-        .insert({
-          nome: input.respNome.trim() || 'Responsável',
-          telefone,
-          cpf: cpf === '' ? null : cpf,
-          rg: rg === '' ? null : rg,
-        })
-        .select('id')
-        .single()
-      if (errC) return { ok: false, erro: errC.message }
-      await supabase.from('crianca_contato').insert({
-        crianca_id: crianca.id,
-        contato_id: contato.id,
-        papel: 'responsavel',
-      })
-    }
-
-    revalidatePath('/playground')
-    revalidatePath('/criancas')
-    return { ok: true, id: crianca.id }
-  } catch (e) {
-    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
-  }
-}
-
 // Insere um contato e o vínculo com a criança. Lança em caso de erro.
 async function inserirContato(
   supabase: Awaited<ReturnType<typeof createClient>>,
