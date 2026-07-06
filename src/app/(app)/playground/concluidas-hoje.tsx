@@ -3,6 +3,7 @@ import { hojeISO, hhmm } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
 import ReceberButton from '../receber-button'
+import CobrarButton from '../cobrar-button'
 
 // Visão geral do play: sessões que já saíram HOJE, com valor e pago/pendente.
 export default async function ConcluidasHoje() {
@@ -49,24 +50,32 @@ export default async function ConcluidasHoje() {
         {sessoes.map((p) => {
           const lan = porPresenca.get(p.id)
           const pago = lan?.status === 'pago'
+          // sem lançamento = terminou sem valor na grade → dá pra cobrar retroativo
+          const semCobranca = !lan
           return (
             <li key={p.id} className={`flex items-center justify-between ${card}`}>
               <div className="min-w-0">
                 <div className="truncate font-semibold">{p.crianca?.nome}</div>
                 <div className="text-xs text-slate-500">
-                  {hhmm(p.entrada)}{p.saida ? `–${hhmm(p.saida)}` : ''} · {formatBRL(p.valor)}
+                  {hhmm(p.entrada)}{p.saida ? `–${hhmm(p.saida)}` : ''}
+                  {semCobranca ? '' : ` · ${formatBRL(p.valor)}`}
                 </div>
                 <span
                   className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    pago ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    pago
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : semCobranca
+                        ? 'bg-slate-100 text-slate-500'
+                        : 'bg-amber-100 text-amber-700'
                   }`}
                 >
-                  {pago ? 'pago' : 'pendente'}
+                  {pago ? 'pago' : semCobranca ? 'sem cobrança' : 'pendente'}
                 </span>
               </div>
               {lan && !pago && (
                 <ReceberButton lancamentoId={lan.id} valor={Number(p.valor ?? 0)} nome={p.crianca?.nome ?? ''} />
               )}
+              {semCobranca && <CobrarButton presencaId={p.id} nome={p.crianca?.nome ?? ''} />}
             </li>
           )
         })}

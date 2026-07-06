@@ -87,6 +87,59 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   }
 }
 
+// Cobrança retroativa: sessão concluída SEM valor (ex.: grade vazia no check-in).
+// Grava o valor na presença e gera o lançamento pendente — daí o Receber funciona.
+export async function cobrarPresenca(
+  presencaId: string,
+  valor: number,
+): Promise<{ ok: true; lancamentoId: string; nome: string } | { ok: false; erro: string }> {
+  if (!(valor > 0)) return { ok: false, erro: 'Informe o valor.' }
+  try {
+    const supabase = await createClient()
+    const { data: p, error: errP } = await supabase
+      .from('presenca')
+      .select('id, crianca_id, data, origem, saida, crianca:crianca_id (nome)')
+      .eq('id', presencaId)
+      .maybeSingle()
+    if (errP) return { ok: false, erro: errP.message }
+    if (!p) return { ok: false, erro: 'Presença não encontrada.' }
+    if (!p.saida) return { ok: false, erro: 'Faça o check-out antes de cobrar.' }
+
+    const { data: jaTem } = await supabase
+      .from('lancamento')
+      .select('id')
+      .eq('origem_tipo', 'presenca')
+      .eq('origem_id', presencaId)
+      .limit(1)
+    if (jaTem && jaTem.length > 0) return { ok: false, erro: 'Essa sessão já tem cobrança.' }
+
+    const v = Math.round(valor * 100) / 100
+    const { error: errU } = await supabase.from('presenca').update({ valor: v }).eq('id', presencaId)
+    if (errU) return { ok: false, erro: errU.message }
+
+    const { data: lanc, error: errL } = await supabase
+      .from('lancamento')
+      .insert({
+        crianca_id: p.crianca_id,
+        descricao: `${p.origem === 'espaco_kids' ? 'Play' : 'Diária'} — ${p.data}`,
+        valor: v,
+        vencimento: p.data,
+        origem_tipo: 'presenca',
+        origem_id: p.id,
+      })
+      .select('id')
+      .single()
+    if (errL) return { ok: false, erro: errL.message }
+
+    // SEM revalidatePath aqui: o re-render desmontaria o CobrarButton (o card vira
+    // "pendente") e mataria o modal de recebimento recém-aberto. O refresh acontece
+    // no onFechar do modal (client).
+    return { ok: true, lancamentoId: lanc.id, nome: p.crianca?.nome ?? '' }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
 // Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela
 // tarifa/hora travada no check-in. Gera o lançamento pendente.
 export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
