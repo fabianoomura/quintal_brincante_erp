@@ -98,13 +98,14 @@ export default function PlaygroundPanel({
         return
       }
       if (res.valor != null && res.lancamentoId) {
-        // abre o pop-up de recebimento (Pix/dinheiro/débito/crédito)
+        // abre o pop-up de recebimento; o refresh fica pra quando ele FECHAR
+        // (refresh junto da abertura podia remontar a página e engolir o modal)
         setReceb({ lancamentoId: res.lancamentoId, valor: res.valor, nome: res.nome || p.nome })
       } else {
         setSaida(`✅ ${p.nome} saiu.`)
         setTimeout(() => setSaida(null), 6000)
+        router.refresh()
       }
-      router.refresh()
     } catch (err) {
       setSaida(`❌ Não consegui registrar a saída (${err instanceof Error ? err.message : 'erro'}). Tente de novo.`)
     } finally {
@@ -246,7 +247,10 @@ export default function PlaygroundPanel({
         lancamentoId={receb?.lancamentoId ?? null}
         valor={receb?.valor ?? 0}
         nome={receb?.nome ?? ''}
-        onFechar={() => setReceb(null)}
+        onFechar={() => {
+          setReceb(null)
+          router.refresh()
+        }}
       />
     </div>
   )

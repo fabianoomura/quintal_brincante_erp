@@ -25,9 +25,11 @@ export default function CheckoutButton({ presencaId }: { presencaId: string }) {
         return
       }
       if (res.valor != null && res.lancamentoId) {
+        // refresh só quando o modal fechar (abrir e refresh juntos podia engolir o modal)
         setReceb({ lancamentoId: res.lancamentoId, valor: res.valor, nome: res.nome })
+      } else {
+        router.refresh()
       }
-      router.refresh()
     } catch (e) {
       setErro(`Falha no check-out (${e instanceof Error ? e.message : 'erro'}). Tente de novo.`)
     } finally {
@@ -50,7 +52,10 @@ export default function CheckoutButton({ presencaId }: { presencaId: string }) {
         lancamentoId={receb?.lancamentoId ?? null}
         valor={receb?.valor ?? 0}
         nome={receb?.nome ?? ''}
-        onFechar={() => setReceb(null)}
+        onFechar={() => {
+          setReceb(null)
+          router.refresh()
+        }}
       />
 
       <Modal open={erro != null} onClose={() => setErro(null)} title="Ops">

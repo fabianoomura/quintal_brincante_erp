@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeISO, hhmm } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
-import BaixaButton from '../financeiro/baixa-button'
+import ReceberButton from '../receber-button'
 
 // Visão geral do play: sessões que já saíram HOJE, com valor e pago/pendente.
 export default async function ConcluidasHoje() {
@@ -27,9 +27,6 @@ export default async function ConcluidasHoje() {
       .in('origem_id', ids)
     for (const l of lancs ?? []) if (l.origem_id) porPresenca.set(l.origem_id, { id: l.id, status: l.status })
   }
-
-  const { data: cfgDesc } = await supabase.from('config_sistema').select('desconto_ativo').eq('id', 1).maybeSingle()
-  const descontoAtivo = cfgDesc?.desconto_ativo ?? false
 
   if (!sessoes || sessoes.length === 0) return null
 
@@ -68,7 +65,7 @@ export default async function ConcluidasHoje() {
                 </span>
               </div>
               {lan && !pago && (
-                <BaixaButton lancamentoId={lan.id} valor={Number(p.valor ?? 0)} descontoAtivo={descontoAtivo} />
+                <ReceberButton lancamentoId={lan.id} valor={Number(p.valor ?? 0)} nome={p.crianca?.nome ?? ''} />
               )}
             </li>
           )
