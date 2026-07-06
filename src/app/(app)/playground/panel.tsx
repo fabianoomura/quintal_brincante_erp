@@ -72,6 +72,12 @@ export default function PlaygroundPanel({
         setErro(res.erro)
         return
       }
+      if (res.semTarifa) {
+        setSaida(
+          '⚠️ Entrada registrada SEM valor na grade para este horário — o play NÃO será cobrado. Confira a Grade (valores).',
+        )
+        setTimeout(() => setSaida(null), 15000)
+      }
       setCriancaId('')
       setTempo('')
       router.refresh()

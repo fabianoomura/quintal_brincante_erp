@@ -9,7 +9,8 @@ import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
 
-type Resultado = { ok: true; id: string } | { ok: false; erro: string }
+// semTarifa: play sem valor na grade p/ o horário — entra, mas NÃO será cobrado (avisar operador)
+type Resultado = { ok: true; id: string; semTarifa?: boolean } | { ok: false; erro: string }
 type ResultadoCheckout =
   | { ok: true; id: string; valor: number | null; lancamentoId: string | null; nome: string }
   | { ok: false; erro: string }
@@ -76,7 +77,11 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 
     revalidatePath('/presenca')
     revalidatePath('/playground')
-    return { ok: true, id: novo.id }
+    return {
+      ok: true,
+      id: novo.id,
+      semTarifa: input.origem === 'espaco_kids' && tarifaHora == null,
+    }
   } catch (e) {
     return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
   }

@@ -37,11 +37,13 @@ export default function CheckinForm({
   const [valorDiaria, setValorDiaria] = useState('')
   const [ambienteId, setAmbienteId] = useState('')
   const [erro, setErro] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
   async function registrar(e: React.FormEvent) {
     e.preventDefault()
     setErro(null)
+    setAviso(null)
     setOcupado(true)
     try {
       const res = await checkIn({
@@ -64,7 +66,14 @@ export default function CheckinForm({
       setAmbienteId('')
       setEntrada(agoraLocalHHMM())
       router.refresh()
-      onSuccess?.()
+      if (res.semTarifa) {
+        // entra, mas sem valor na grade: mantém o form aberto mostrando o aviso
+        setAviso(
+          '⚠️ Entrada registrada SEM valor na grade para este horário — o play NÃO será cobrado. Confira a Grade (valores).',
+        )
+      } else {
+        onSuccess?.()
+      }
     } catch (e2) {
       setErro(`Falha ao registrar (${e2 instanceof Error ? e2.message : 'erro'}). Tente de novo.`)
     } finally {
@@ -141,6 +150,11 @@ export default function CheckinForm({
       )}
 
       {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
+      {aviso && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200">
+          {aviso}
+        </p>
+      )}
 
       <button type="submit" disabled={ocupado || !criancaId} className={btnPrimary}>
         Registrar entrada 🎉
