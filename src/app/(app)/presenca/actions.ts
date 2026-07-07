@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
 import { precoProporcional, duracaoMinutos } from '@/lib/tarifador'
+import { getSender } from '@/lib/whatsapp/adapter'
+import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -75,6 +77,16 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       .single()
     if (error) return { ok: false, erro: error.message }
 
+    // Boas-vindas ("combinados") na PRIMEIRA entrada do play da criança.
+    // Best-effort: falha de envio NÃO quebra o check-in (fica na auditoria como falha).
+    if (input.origem === 'espaco_kids') {
+      try {
+        await enviarBoasVindas(supabase, input.criancaId, novo.id)
+      } catch {
+        // silencioso por design — o check-in já foi feito
+      }
+    }
+
     revalidatePath('/presenca')
     revalidatePath('/playground')
     return {
@@ -85,6 +97,57 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   } catch (e) {
     return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
   }
+}
+
+// Envia a mensagem de boas-vindas com os combinados (template editável em /mensagens,
+// chave 'boas_vindas') na primeira presença de play da criança. {{1}}=responsável, {{2}}=criança.
+async function enviarBoasVindas(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  criancaId: string,
+  presencaId: string,
+) {
+  // é a primeira entrada no play? (a presença recém-criada conta 1)
+  const { count } = await supabase
+    .from('presenca')
+    .select('id', { count: 'exact', head: true })
+    .eq('crianca_id', criancaId)
+    .eq('origem', 'espaco_kids')
+  if ((count ?? 0) > 1) return
+
+  const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
+    supabase
+      .from('mensagem_template')
+      .select('texto')
+      .eq('chave', 'boas_vindas')
+      .eq('ativo', true)
+      .maybeSingle(),
+    supabase.from('crianca').select('nome').eq('id', criancaId).single(),
+    supabase
+      .from('crianca_contato')
+      .select('contato:contato_id (id, nome, telefone)')
+      .eq('crianca_id', criancaId)
+      .eq('papel', 'responsavel')
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const responsavel = vinculo?.contato
+  if (!tpl || !responsavel?.telefone || !crianca) return
+
+  const primeiroNome = responsavel.nome.split(' ')[0]
+  const conteudo = tpl.texto
+    .replaceAll('{{1}}', primeiroNome)
+    .replaceAll('{{2}}', crianca.nome)
+
+  await enviarNotificacao(supabase, getSender(), {
+    crianca_id: criancaId,
+    contato_id: responsavel.id,
+    para: responsavel.telefone,
+    tipo: 'boas_vindas',
+    template: 'boas_vindas',
+    variaveis: [primeiroNome, crianca.nome],
+    conteudo,
+    presenca_id: presencaId,
+  })
 }
 
 // Cobrança retroativa: sessão concluída SEM valor (ex.: grade vazia no check-in).

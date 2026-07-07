@@ -763,7 +763,11 @@ export type Database = {
       papel_contato: "responsavel" | "autorizado" | "emergencia"
       status_lancamento: "pendente" | "pago" | "cancelado"
       status_notificacao: "pendente" | "enviada" | "entregue" | "lida" | "falha"
-      tipo_notificacao: "aviso_tempo" | "ocorrencia" | "aviso_geral"
+      tipo_notificacao:
+        | "aviso_tempo"
+        | "ocorrencia"
+        | "aviso_geral"
+        | "boas_vindas"
       tipo_ocorrencia:
         | "banheiro"
         | "nao_adaptou"
@@ -905,7 +909,12 @@ export const Constants = {
       papel_contato: ["responsavel", "autorizado", "emergencia"],
       status_lancamento: ["pendente", "pago", "cancelado"],
       status_notificacao: ["pendente", "enviada", "entregue", "lida", "falha"],
-      tipo_notificacao: ["aviso_tempo", "ocorrencia", "aviso_geral"],
+      tipo_notificacao: [
+        "aviso_tempo",
+        "ocorrencia",
+        "aviso_geral",
+        "boas_vindas",
+      ],
       tipo_ocorrencia: [
         "banheiro",
         "nao_adaptou",
