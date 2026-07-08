@@ -1,5 +1,5 @@
-// Adapter de envio WhatsApp (spec §7). Isola o resto do sistema do provedor.
-// Hoje: FAKE (dev, sem Meta). Amanhã: Cloud API oficial — só troca a implementação.
+// Adapter de envio WhatsApp. Isola o resto do sistema do provedor:
+// fake para dev/testes, Evolution como provider operacional atual e Cloud API em stand-by.
 
 export type MensagemWhatsApp = {
   para: string // telefone E.164 do responsável

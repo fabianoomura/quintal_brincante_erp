@@ -3,7 +3,7 @@
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
 (plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra) e o
 [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-07-05**.
+Última atualização: **2026-07-08**.
 
 ---
 
@@ -11,7 +11,7 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 
 - **App:** https://quintal-brincante-erp.vercel.app (Vercel; deploy automático a cada
   `git push` na `main` — repo `fabianoomura/quintal_brincante_erp`)
-- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 19 migrations, RLS em tudo
+- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 21 migrations, RLS em tudo
 - **Workers:** `pg_cron` → `aviso-tempo` (a cada 5 min) e `mensalidades` (dia 1, 06h BRT)
 - **WhatsApp:** Evolution API no Railway (instância `quintal`) — mensagens reais chegando;
   aguardando conexão do **chip dedicado** (QR)
@@ -23,7 +23,7 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 ## O que foi construído (por área)
 
 ### Núcleo (Etapas 1a–1d do CLAUDE.md)
-- Schema completo + RLS equipe-only (anônimo = 0 linhas, testado em produção)
+- Schema completo + RLS/RBAC por colaborador (anônimo = 0 linhas, testado em produção)
 - Cadastro de crianças: responsáveis/autorizados/emergência, saúde, foto (webcam/arquivo),
   CPF/RG do responsável, consentimento LGPD com selo de pendência
 - Presença (check-in/out) com origem (play/diária/mensalista/colônia), ambientes e lotação
@@ -51,7 +51,7 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 - Ajuda contextual: botão “?” em toda tela explica o que ela faz (textos em `src/lib/ajuda.ts`)
 
 ### Qualidade
-- 56 testes unitários (tarifador, grade, feriados, irmãos, aviso-tempo, adapters WhatsApp,
+- 66 testes unitários (tarifador, grade, feriados, irmãos, aviso-tempo, adapters WhatsApp,
   máscaras) + testes de integração contra Supabase local
 - Máscaras de digitação: CPF (`054.593.509-13`) e telefone (`(43) 99120-3404`); servidor
   normaliza telefone p/ E.164 e recusa número sem DDD

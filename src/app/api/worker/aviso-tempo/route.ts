@@ -60,6 +60,12 @@ export async function POST(request: Request) {
   const aAvisar = selecionarAvisos(abertas, agoraMin, antecedencia)
   const sender = getSender()
   const detalhes: { presenca: string; status: string }[] = []
+  const { data: tpl } = await sb
+    .from('mensagem_template')
+    .select('texto')
+    .eq('chave', 'aviso_tempo')
+    .eq('ativo', true)
+    .maybeSingle()
 
   for (const alvo of aAvisar) {
     const orig = presencas!.find((p) => p.id === alvo.id)!
@@ -83,7 +89,12 @@ export async function POST(request: Request) {
       alvo.entradaMin,
       alvo.tempoContratadoMin!,
     )
-    const render = tplAvisoTempo(responsavel.nome, orig.crianca?.nome ?? '', faltam)
+    const render = tplAvisoTempo(
+      responsavel.nome,
+      orig.crianca?.nome ?? '',
+      faltam,
+      tpl?.texto,
+    )
 
     const res = await enviarNotificacao(sb, sender, {
       crianca_id: orig.crianca_id,

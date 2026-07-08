@@ -23,6 +23,12 @@ export default function Planilha({ precos }: { precos: Celula[] }) {
     setVals((s) => ({ ...s, [`${dia}-${hora}`]: v }))
   }
 
+  function parseValor(raw: string): number | null {
+    const valor = Number(raw.trim().replace(',', '.'))
+    if (!Number.isFinite(valor) || valor < 0) return null
+    return Math.round(valor * 100) / 100
+  }
+
   async function salvar() {
     setMsg(null)
     setErro(null)
@@ -31,7 +37,15 @@ export default function Planilha({ precos }: { precos: Celula[] }) {
     for (const dia of [0, 1, 2, 3, 4, 5, 6]) {
       for (const hora of HORAS) {
         const raw = vals[`${dia}-${hora}`]
-        if (raw != null && raw.trim() !== '') celulas.push({ dia, hora, valor: Number(raw) })
+        if (raw != null && raw.trim() !== '') {
+          const valor = parseValor(raw)
+          if (valor == null) {
+            setOcupado(false)
+            setErro(`Valor inválido em ${DIAS[dia]} ${String(hora).padStart(2, '0')}h.`)
+            return
+          }
+          celulas.push({ dia, hora, valor })
+        }
       }
     }
     const res = await salvarPrecos(celulas)

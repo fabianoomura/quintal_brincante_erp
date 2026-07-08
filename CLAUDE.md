@@ -1,8 +1,10 @@
 # CLAUDE.md — Quintal Brincante
 
 Arquivo de orientação para o Claude Code. Leia isto primeiro, sempre.
-A **fonte de verdade do schema e das regras** é `docs/quintal-brincante-mvp.md`.
-Este arquivo é o resumo operacional + plano de trabalho.
+A **fonte de verdade do schema** são as migrations em `supabase/migrations/` e os tipos em
+`src/lib/database.types.ts`. O **estado operacional atual** fica em `docs/DIARIO.md`; o plano
+ativo fica em `docs/ROADMAP.md`. `quintal-brincante-mvp.md` é a spec histórica inicial.
+Este arquivo é o resumo operacional para agentes.
 
 ---
 
@@ -57,25 +59,24 @@ o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular
    a InfiniteSmart. Conciliação é **manual** (baixa na mão) ou **automática via Checkout/webhook**,
    esta atrás de `config_sistema.conciliacao_automatica` (default `false`). Não tente integrar a
    maquininha física.
-4. **Play por PERÍODO (grade), não por hora.** Decisão do dono (2026-07-01): o play tem
-   **valor fixo por período**, variando por dia da semana + janela de horário (almoço/jantar) —
-   ex.: 2ª–4ª R$8, 5ª–6ª R$15, sáb/dom R$20. Tabela `grade_play` (dias + horário + valor +
-   capacidade opcional), gerida em `/grade`. O valor é fixado no **check-in** pela hora de
-   entrada (`encontrarSlot`, função pura + testes); capacidade limita vagas do período. O
-   antigo tarifador "estacionamento" (`calcularValorPlay`) foi **substituído** para o play.
+4. **Play por grade hora x dia.** Decisão atual: o play usa valor/hora por planilha
+   (`preco_hora`, gerida em `/grade`) + valor próprio de feriado (`/calendario`). A tarifa/hora
+   é travada no **check-in** pela hora de entrada; o check-out cobra **piso de 1h + proporcional**
+   e respeita `config_sistema.tolerancia_min` quando houver tempo contratado.
 5. **Dinheiro:** `numeric`, nunca `float`. **Telefone:** E.164 (`+55DDDNUMERO`).
 6. **Segredos** (chaves Supabase, token WhatsApp, credencial InfinitePay) só em variáveis de
    ambiente. Nunca commitados.
 
 ---
 
-## Valores de config pendentes (preencher, não inventar)
+## Config e valores
 
-Vivem em `tarifa` / `config_sistema` (ver spec §5.4). Enquanto o dono não confirmar, deixe-os
-como variáveis de config com TODO — não chute número no código nem nos testes (use fixtures):
+Valores editáveis pela operação vivem no banco, não no código:
 
-- `valor_hora`, `tamanho_fracao_min`, `valor_fracao`, `aviso_antecedencia_min`
-- Regra da 1ª hora (preço único vs. primeira hora diferente)
+- Grade do play: `preco_hora`
+- Feriados: `feriado.valor`
+- Flags e limites: `config_sistema`
+- Templates de mensagens: `mensagem_template`
 
 ---
 
@@ -153,7 +154,9 @@ npm run dev
 
 Variáveis de ambiente esperadas (`.env.local`, fora do git):
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
-`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `INFINITEPAY_*` (quando chegar em 1c/1d).
+`CRON_SECRET`, `WHATSAPP_PROVIDER` e as credenciais do provider escolhido
+(`EVOLUTION_*` ou `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_ID`), além de `INFINITEPAY_WEBHOOK_SECRET`
+quando testar o webhook.
 
 ---
 
@@ -161,9 +164,11 @@ Variáveis de ambiente esperadas (`.env.local`, fora do git):
 
 ```
 /CLAUDE.md                      (este arquivo)
-/docs/quintal-brincante-mvp.md  (spec — fonte de verdade do schema)
+/quintal-brincante-mvp.md       (spec histórica inicial)
+/docs/DIARIO.md                 (estado real do projeto)
+/docs/ROADMAP.md                (plano ativo)
 /supabase/migrations/           (SQL)
-/app/                           (Next.js App Router)
-/lib/                           (tarifador, adapter WhatsApp, helpers)
+/src/app/                       (Next.js App Router)
+/src/lib/                       (tarifador, adapter WhatsApp, helpers)
 /tests/                         (testes; tarifador é prioridade)
 ```

@@ -47,12 +47,6 @@ export async function registrarOcorrencia(
   if (errOc) return { ok: false, erro: errOc.message }
 
   // Acha o responsável correto (papel='responsavel') com telefone.
-  const { data: crianca } = await supabase
-    .from('crianca')
-    .select('nome')
-    .eq('id', criancaId)
-    .single()
-
   const { data: vinculo } = await supabase
     .from('crianca_contato')
     .select('contato:contato_id (id, nome, telefone)')
@@ -72,7 +66,13 @@ export async function registrarOcorrencia(
 
   const motivo = MOTIVO_LABEL[tipo]
   const detalhe = descricao.trim() === '' ? motivo : descricao.trim()
-  const render = tplOcorrencia(responsavel.nome, motivo, detalhe)
+  const { data: tpl } = await supabase
+    .from('mensagem_template')
+    .select('texto')
+    .eq('chave', 'ocorrencia')
+    .eq('ativo', true)
+    .maybeSingle()
+  const render = tplOcorrencia(responsavel.nome, motivo, detalhe, tpl?.texto)
 
   const res = await enviarNotificacao(supabase, getSender(), {
     crianca_id: criancaId,

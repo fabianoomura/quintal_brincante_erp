@@ -1,10 +1,11 @@
 # Estado & Evolução — Quintal Brincante ERP
 
 Doc vivo. Avaliação honesta do sistema + plano de evolução priorizado.
-Atualizado em **2026-07-04**. Marque `[x]` conforme concluir.
+Atualizado em **2026-07-08**. Marque `[x]` conforme concluir.
 
 > Contexto: o sistema entrou em produção em 2026-07-04 (Vercel + Supabase) e a equipe
-> começou a testar. Detalhes de infra em [DEPLOY.md](DEPLOY.md); WhatsApp em [WHATSAPP.md](WHATSAPP.md).
+> começou a testar. Detalhes de infra em [DEPLOY.md](DEPLOY.md); WhatsApp atual em
+> [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md).
 
 ---
 
@@ -23,8 +24,9 @@ Ligado hoje:
 - Workers `pg_cron` (aviso de tempo a cada 5 min, mensalidades dia 1)
 
 Ainda **não** ligado de verdade:
-- **WhatsApp real** — roda em `WHATSAPP_PROVIDER=fake` (registra no banco, não envia).
-  O `CloudSender` já está pronto; falta o número/token da Meta (test number solicitado).
+- **WhatsApp final do chip dedicado** — o adapter Evolution está implementado e testado; falta
+  manter a instância conectada no número dedicado e validar o fluxo real de ponta a ponta.
+  O `CloudSender` da Meta segue pronto em stand-by.
 - **InfinitePay** — conciliação automática atrás de flag (`conciliacao_automatica=false`).
 
 ---
@@ -49,8 +51,8 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 
 1. **É um MVP interno.** Construído rápido; vão aparecer bugs quando a equipe usar de verdade.
    Normal — é assim que amadurece. Colher feedback do teste é a prioridade agora.
-2. **O aviso de tempo (recurso "estrela") ainda não dispara.** Tudo pronto no código; dormindo
-   até o setup da Meta.
+2. **O aviso de tempo depende do WhatsApp conectado.** A lógica e auditoria estão prontas; a
+   confiabilidade operacional depende da instância Evolution/chip dedicado.
 3. **Backup não está definido.** Hoje dependemos do que o plano do Supabase oferece por padrão.
 4. **Sem "sinal de vida" dos workers.** Se um agendamento parar, ninguém é avisado (falha calada).
 5. **Sem trilha de auditoria completa.** Sabemos das notificações; não de "quem alterou o quê".
@@ -63,9 +65,8 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 ## 4. Plano de evolução (priorizado)
 
 ### P1 — Provar o valor e proteger contra dor silenciosa
-- [ ] **Ligar o WhatsApp de teste.** Com o número/token da Meta: `WHATSAPP_PROVIDER=cloud` +
-      `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_ID` na Vercel. *Aceite:* 1 aviso de tempo real chega
-      no celular de um responsável de teste.
+- [ ] **Validar o WhatsApp do chip dedicado.** Com `WHATSAPP_PROVIDER=evolution` e instância
+      conectada. *Aceite:* 1 aviso de tempo real chega no celular de um responsável de teste.
 - [ ] **Sinal de vida dos workers.** Um aviso (e-mail/WhatsApp p/ admin) se um worker falhar ou
       ficar X horas sem rodar. *Aceite:* derrubar o worker de propósito gera alerta.
 - [ ] **Backup.** Confirmar retenção do plano e, se preciso, um dump agendado extra. *Aceite:*
@@ -79,7 +80,8 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 - [ ] Página de "saúde do sistema" simples pro admin (últimas execuções dos workers).
 
 ### P3 — Depois que o núcleo estiver redondo
-- [ ] WhatsApp de **produção** (número dedicado + verificação da empresa na Meta).
+- [ ] WhatsApp de **produção** robusto: chip dedicado estável no Evolution ou migração para Meta
+      Cloud API se a operação pedir mais garantia.
 - [ ] InfinitePay real (assinatura HMAC + link de checkout), ligar `conciliacao_automatica`.
 - [ ] Marketing/captação (Fase 3 da spec) — número separado, opt-in obrigatório.
 

@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quintal Brincante ERP
 
-## Getting Started
+Sistema interno de gestão para um espaço de recreação infantil. O foco é operação diária:
+cadastro de crianças, responsáveis, presença, play por tempo, financeiro, mensalistas,
+colônia de férias e avisos por WhatsApp.
 
-First, run the development server:
+## Estado
+
+MVP em produção, com Supabase + Vercel. O estado operacional mais recente fica em
+[`docs/DIARIO.md`](docs/DIARIO.md) e o plano de evolução em [`docs/ROADMAP.md`](docs/ROADMAP.md).
+A spec inicial [`quintal-brincante-mvp.md`](quintal-brincante-mvp.md) é histórica.
+
+## Stack
+
+- Next.js 16 App Router, React 19 e Tailwind CSS 4
+- Supabase Auth/Postgres/RLS
+- WhatsApp por adapter: `fake`, `evolution` ou `cloud`
+- Workers via endpoints protegidos por `CRON_SECRET`
+
+## Setup local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O app local sobe em http://localhost:6006.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Para banco local:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+supabase start
+supabase db reset
+npm run setup:users
+npm run seed:dev
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev       # Next dev na porta 6006
+npm run build     # build de produção
+npm run lint      # ESLint
+npm run test      # testes unitários puros
+npm run test:it   # integração contra Supabase local
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Antes de rodar `npm run test:it`, confirme que `.env.local` aponta para um Supabase local
+ou ambiente descartável, porque os testes criam e alteram dados.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentação
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`docs/DIARIO.md`](docs/DIARIO.md): histórico e estado real do projeto
+- [`docs/ROADMAP.md`](docs/ROADMAP.md): prioridades e próximos passos
+- [`docs/DEPLOY.md`](docs/DEPLOY.md): deploy em Supabase/Vercel
+- [`docs/WHATSAPP-EVOLUTION.md`](docs/WHATSAPP-EVOLUTION.md): provider atual de WhatsApp
+- [`docs/WHATSAPP.md`](docs/WHATSAPP.md): Meta Cloud API, mantida em stand-by

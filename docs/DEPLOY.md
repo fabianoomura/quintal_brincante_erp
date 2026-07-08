@@ -8,7 +8,10 @@ Tempo estimado: ~40 min. Pré-requisito: conta no GitHub (o repo já está lá).
 ## 1. Banco — Supabase Cloud (~15 min)
 
 1. Crie a conta/projeto em https://supabase.com → **New project**
-   - Nome: `quintal-brincante` · Região: **South America (São Paulo)**
+   - Nome: `quintal-brincante`
+   - Região: escolha a região mais próxima do app. A produção atual foi criada em **East US**
+     para casar com a Vercel free; **South America (São Paulo)** também é uma opção natural
+     se a latência local pesar mais.
    - Guarde a **senha do banco** (Database password).
 2. No terminal do projeto, conecte e aplique as migrations:
    ```bash
