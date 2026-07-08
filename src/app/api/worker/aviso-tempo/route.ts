@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   const { data: presencas, error } = await sb
     .from('presenca')
     .select(
-      'id, entrada, tempo_contratado_min, crianca_id, crianca:crianca_id (nome), notificacao (tipo)',
+      'id, entrada, tempo_contratado_min, crianca_id, crianca:crianca_id (nome, primeiro_nome), notificacao (tipo)',
     )
     .eq('data', data)
     .eq('origem', 'espaco_kids')
@@ -91,10 +91,11 @@ export async function POST(request: Request) {
     )
     const render = tplAvisoTempo(
       responsavel.nome,
-      orig.crianca?.nome ?? '',
+      orig.crianca?.nome ?? 'criança',
       faltam,
       tpl?.texto,
       responsavel.primeiro_nome,
+      orig.crianca?.primeiro_nome,
     )
 
     const res = await enviarNotificacao(sb, sender, {

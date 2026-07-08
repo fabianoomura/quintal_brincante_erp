@@ -48,7 +48,7 @@ export async function registrarOcorrencia(
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('nome')
+    .select('nome, primeiro_nome')
     .eq('id', criancaId)
     .maybeSingle()
 
@@ -79,10 +79,11 @@ export async function registrarOcorrencia(
     .maybeSingle()
   const render = tplOcorrencia(
     responsavel.nome,
-    crianca?.nome ?? 'a criança',
+    crianca?.nome ?? 'criança',
     detalhe,
     tpl?.texto,
     responsavel.primeiro_nome,
+    crianca?.primeiro_nome,
   )
 
   const res = await enviarNotificacao(supabase, getSender(), {

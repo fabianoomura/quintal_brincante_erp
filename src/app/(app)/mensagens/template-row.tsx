@@ -14,13 +14,13 @@ const STATUS = [
 // O que cada {{n}} significa, por template (chave). O sistema preenche na hora do envio.
 const VARIAVEIS: Record<string, { v: string; desc: string }[]> = {
   aviso_tempo: [
-    { v: '{{1}}', desc: 'nome do responsável' },
-    { v: '{{2}}', desc: 'nome da criança' },
+    { v: '{{1}}', desc: 'primeiro nome do responsável' },
+    { v: '{{2}}', desc: 'primeiro nome da criança' },
     { v: '{{3}}', desc: 'minutos restantes' },
   ],
   ocorrencia: [
-    { v: '{{1}}', desc: 'nome do responsável' },
-    { v: '{{2}}', desc: 'nome da criança' },
+    { v: '{{1}}', desc: 'primeiro nome do responsável' },
+    { v: '{{2}}', desc: 'primeiro nome da criança' },
     { v: '{{3}}', desc: 'detalhe do aviso' },
   ],
   aviso_geral: [
@@ -29,7 +29,7 @@ const VARIAVEIS: Record<string, { v: string; desc: string }[]> = {
   ],
   boas_vindas: [
     { v: '{{1}}', desc: 'primeiro nome do responsável' },
-    { v: '{{2}}', desc: 'nome da criança' },
+    { v: '{{2}}', desc: 'primeiro nome da criança' },
   ],
 }
 

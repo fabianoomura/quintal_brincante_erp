@@ -12,7 +12,7 @@ const TEXTO_AVISO_TEMPO =
   'Olá {{1}}, o tempo de {{2}} no play está chegando ao fim. Faltam {{3}} min. Pode vir se aproximando, por favor?'
 const TEXTO_OCORRENCIA = 'Olá {{1}}, sobre {{2}}: {{3}}'
 
-export function nomeResponsavelMensagem(
+export function nomePessoaMensagem(
   nome: string | null | undefined,
   primeiroNome?: string | null,
 ): string {
@@ -22,6 +22,8 @@ export function nomeResponsavelMensagem(
   const nomeLimpo = nome?.trim() ?? ''
   return nomeLimpo.split(/\s+/)[0] ?? ''
 }
+
+export const nomeResponsavelMensagem = nomePessoaMensagem
 
 export function renderizarTemplate(texto: string, variaveis: string[]): string {
   return variaveis.reduce(
@@ -37,10 +39,11 @@ export function tplAvisoTempo(
   minutosRestantes: number,
   textoTemplate = TEXTO_AVISO_TEMPO,
   primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
 ): TemplateRender {
   const variaveis = [
-    nomeResponsavelMensagem(responsavel, primeiroNomeResponsavel),
-    crianca,
+    nomePessoaMensagem(responsavel, primeiroNomeResponsavel),
+    nomePessoaMensagem(crianca, primeiroNomeCrianca),
     String(minutosRestantes),
   ]
   return {
@@ -57,10 +60,11 @@ export function tplOcorrencia(
   detalhe: string,
   textoTemplate = TEXTO_OCORRENCIA,
   primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
 ): TemplateRender {
   const variaveis = [
-    nomeResponsavelMensagem(responsavel, primeiroNomeResponsavel),
-    crianca,
+    nomePessoaMensagem(responsavel, primeiroNomeResponsavel),
+    nomePessoaMensagem(crianca, primeiroNomeCrianca),
     detalhe,
   ]
   return {

@@ -7,7 +7,7 @@ import { valorHoraPlay } from '@/lib/grade'
 import { precoProporcional, duracaoMinutos, minutosCobraveis } from '@/lib/tarifador'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
-import { nomeResponsavelMensagem } from '@/lib/whatsapp/templates'
+import { nomePessoaMensagem } from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -124,7 +124,7 @@ async function enviarBoasVindas(
       .eq('chave', 'boas_vindas')
       .eq('ativo', true)
       .maybeSingle(),
-    supabase.from('crianca').select('nome').eq('id', criancaId).single(),
+    supabase.from('crianca').select('nome, primeiro_nome').eq('id', criancaId).single(),
     supabase
       .from('crianca_contato')
       .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
@@ -136,10 +136,11 @@ async function enviarBoasVindas(
   const responsavel = vinculo?.contato
   if (!tpl || !responsavel?.telefone || !crianca) return
 
-  const primeiroNome = nomeResponsavelMensagem(responsavel.nome, responsavel.primeiro_nome)
+  const primeiroNome = nomePessoaMensagem(responsavel.nome, responsavel.primeiro_nome)
+  const primeiroNomeCrianca = nomePessoaMensagem(crianca.nome, crianca.primeiro_nome)
   const conteudo = tpl.texto
     .replaceAll('{{1}}', primeiroNome)
-    .replaceAll('{{2}}', crianca.nome)
+    .replaceAll('{{2}}', primeiroNomeCrianca)
 
   await enviarNotificacao(supabase, getSender(), {
     crianca_id: criancaId,
@@ -147,7 +148,7 @@ async function enviarBoasVindas(
     para: responsavel.telefone,
     tipo: 'boas_vindas',
     template: 'boas_vindas',
-    variaveis: [primeiroNome, crianca.nome],
+    variaveis: [primeiroNome, primeiroNomeCrianca],
     conteudo,
     presenca_id: presencaId,
   })
