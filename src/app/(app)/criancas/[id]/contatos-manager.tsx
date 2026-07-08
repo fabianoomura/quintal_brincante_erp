@@ -13,10 +13,13 @@ type Contato = {
   papel: Papel
   id: string
   nome: string
+  primeiro_nome: string | null
+  sobrenome: string | null
   telefone: string | null
   email: string | null
   cpf: string | null
   rg: string | null
+  endereco: string | null
 }
 
 const PAPEL_LABEL: Record<Papel, string> = {
@@ -35,10 +38,13 @@ export default function ContatosManager({
   const router = useRouter()
   const [novo, setNovo] = useState<ContatoInput>({
     nome: '',
+    primeiroNome: '',
+    sobrenome: '',
     telefone: '',
     email: '',
     cpf: '',
     rg: '',
+    endereco: '',
     papel: 'responsavel',
   })
   const [erro, setErro] = useState<string | null>(null)
@@ -46,7 +52,17 @@ export default function ContatosManager({
 
   // edição inline: chave do contato em edição (id+papel) + formulário
   const [editando, setEditando] = useState<string | null>(null)
-  const [edit, setEdit] = useState<ContatoInput>({ nome: '', telefone: '', email: '', cpf: '', rg: '', papel: 'responsavel' })
+  const [edit, setEdit] = useState<ContatoInput>({
+    nome: '',
+    primeiroNome: '',
+    sobrenome: '',
+    telefone: '',
+    email: '',
+    cpf: '',
+    rg: '',
+    endereco: '',
+    papel: 'responsavel',
+  })
   const [editErro, setEditErro] = useState<string | null>(null)
 
   function abrirEdicao(c: Contato) {
@@ -54,10 +70,13 @@ export default function ContatosManager({
     setEditando(`${c.id}-${c.papel}`)
     setEdit({
       nome: c.nome,
+      primeiroNome: c.primeiro_nome ?? c.nome,
+      sobrenome: c.sobrenome ?? '',
       telefone: c.telefone ? formatarTelefoneBR(c.telefone) : '',
       email: c.email ?? '',
       cpf: c.cpf ? formatarCPF(c.cpf) : '',
       rg: c.rg ?? '',
+      endereco: c.endereco ?? '',
       papel: c.papel,
     })
   }
@@ -91,7 +110,17 @@ export default function ContatosManager({
       setErro(res.erro)
       return
     }
-    setNovo({ nome: '', telefone: '', email: '', cpf: '', rg: '', papel: 'responsavel' })
+    setNovo({
+      nome: '',
+      primeiroNome: '',
+      sobrenome: '',
+      telefone: '',
+      email: '',
+      cpf: '',
+      rg: '',
+      endereco: '',
+      papel: 'responsavel',
+    })
     router.refresh()
   }
 
@@ -127,13 +156,21 @@ export default function ContatosManager({
                       <option key={p} value={p}>{PAPEL_LABEL[p]}</option>
                     ))}
                   </select>
-                  <input
-                    required
-                    placeholder="Nome do contato"
-                    value={edit.nome}
-                    onChange={(e) => setEdit({ ...edit, nome: e.target.value })}
-                    className={input}
-                  />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input
+                      required
+                      placeholder="Nome do contato"
+                      value={edit.primeiroNome ?? ''}
+                      onChange={(e) => setEdit({ ...edit, primeiroNome: e.target.value })}
+                      className={input}
+                    />
+                    <input
+                      placeholder="Sobrenome"
+                      value={edit.sobrenome ?? ''}
+                      onChange={(e) => setEdit({ ...edit, sobrenome: e.target.value })}
+                      className={input}
+                    />
+                  </div>
                   <input
                     type="tel"
                     maxLength={15}
@@ -147,6 +184,12 @@ export default function ContatosManager({
                     placeholder="E-mail (opcional)"
                     value={edit.email}
                     onChange={(e) => setEdit({ ...edit, email: e.target.value })}
+                    className={input}
+                  />
+                  <input
+                    placeholder="Endereço (opcional)"
+                    value={edit.endereco ?? ''}
+                    onChange={(e) => setEdit({ ...edit, endereco: e.target.value })}
                     className={input}
                   />
                   <div className="flex gap-2">
@@ -194,6 +237,7 @@ export default function ContatosManager({
                   {PAPEL_LABEL[c.papel]}
                   {c.telefone ? ` · ${c.telefone}` : ''}
                   {c.cpf ? ` · CPF ${c.cpf}` : c.rg ? ` · RG ${c.rg}` : ''}
+                  {c.endereco ? ` · ${c.endereco}` : ''}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -232,12 +276,21 @@ export default function ContatosManager({
             </option>
           ))}
         </select>
-        <input
-          placeholder="Nome do contato"
-          value={novo.nome}
-          onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
-          className={input}
-        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input
+            required
+            placeholder="Nome do contato"
+            value={novo.primeiroNome ?? ''}
+            onChange={(e) => setNovo({ ...novo, primeiroNome: e.target.value })}
+            className={input}
+          />
+          <input
+            placeholder="Sobrenome"
+            value={novo.sobrenome ?? ''}
+            onChange={(e) => setNovo({ ...novo, sobrenome: e.target.value })}
+            className={input}
+          />
+        </div>
         <input
           type="tel"
           maxLength={15}
@@ -251,6 +304,12 @@ export default function ContatosManager({
           placeholder="E-mail (opcional)"
           value={novo.email}
           onChange={(e) => setNovo({ ...novo, email: e.target.value })}
+          className={input}
+        />
+        <input
+          placeholder="Endereço (opcional)"
+          value={novo.endereco ?? ''}
+          onChange={(e) => setNovo({ ...novo, endereco: e.target.value })}
           className={input}
         />
         <div className="flex gap-2">

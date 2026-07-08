@@ -15,14 +15,26 @@ const PAPEIS = [
 ] as const
 
 function contatoVazio(papel: ContatoInput['papel']): ContatoInput {
-  return { nome: '', telefone: '', email: '', cpf: '', rg: '', papel }
+  return {
+    nome: '',
+    primeiroNome: '',
+    sobrenome: '',
+    telefone: '',
+    email: '',
+    cpf: '',
+    rg: '',
+    endereco: '',
+    papel,
+  }
 }
 
 export default function NovaCriancaPage() {
   const router = useRouter()
-  const [nome, setNome] = useState('')
+  const [primeiroNome, setPrimeiroNome] = useState('')
+  const [sobrenome, setSobrenome] = useState('')
   const [nascimento, setNascimento] = useState('')
   const [saude, setSaude] = useState('')
+  const [endereco, setEndereco] = useState('')
   const [contatos, setContatos] = useState<ContatoInput[]>([
     contatoVazio('responsavel'),
   ])
@@ -37,7 +49,15 @@ export default function NovaCriancaPage() {
     e.preventDefault()
     setErro(null)
     setSalvando(true)
-    const res = await createCrianca({ nome, nascimento, saude, contatos })
+    const res = await createCrianca({
+      nome: '',
+      primeiroNome,
+      sobrenome,
+      nascimento,
+      saude,
+      endereco,
+      contatos,
+    })
     if (!res.ok) {
       setErro(res.erro)
       setSalvando(false)
@@ -60,21 +80,40 @@ export default function NovaCriancaPage() {
       </div>
 
       <section className={`space-y-3 ${card}`}>
-        <label className={label}>
-          <span className={labelText}>Nome *</span>
-          <input
-            required
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className={input}
-          />
-        </label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className={label}>
+            <span className={labelText}>Nome *</span>
+            <input
+              required
+              value={primeiroNome}
+              onChange={(e) => setPrimeiroNome(e.target.value)}
+              className={input}
+            />
+          </label>
+          <label className={label}>
+            <span className={labelText}>Sobrenome</span>
+            <input
+              value={sobrenome}
+              onChange={(e) => setSobrenome(e.target.value)}
+              className={input}
+            />
+          </label>
+        </div>
         <label className={label}>
           <span className={labelText}>Nascimento</span>
           <input
             type="date"
             value={nascimento}
             onChange={(e) => setNascimento(e.target.value)}
+            className={input}
+          />
+        </label>
+        <label className={label}>
+          <span className={labelText}>Endereço</span>
+          <input
+            value={endereco}
+            onChange={(e) => setEndereco(e.target.value)}
+            placeholder="Rua, número, bairro, cidade"
             className={input}
           />
         </label>
@@ -130,12 +169,21 @@ export default function NovaCriancaPage() {
                 </button>
               )}
             </div>
-            <input
-              placeholder="Nome do contato"
-              value={c.nome}
-              onChange={(e) => atualizarContato(i, { nome: e.target.value })}
-              className={input}
-            />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                required={c.papel === 'responsavel'}
+                placeholder="Nome do contato"
+                value={c.primeiroNome ?? ''}
+                onChange={(e) => atualizarContato(i, { primeiroNome: e.target.value })}
+                className={input}
+              />
+              <input
+                placeholder="Sobrenome"
+                value={c.sobrenome ?? ''}
+                onChange={(e) => atualizarContato(i, { sobrenome: e.target.value })}
+                className={input}
+              />
+            </div>
             <input
               type="tel"
               maxLength={15}
@@ -149,6 +197,12 @@ export default function NovaCriancaPage() {
               placeholder="E-mail (opcional)"
               value={c.email}
               onChange={(e) => atualizarContato(i, { email: e.target.value })}
+              className={input}
+            />
+            <input
+              placeholder="Endereço (opcional)"
+              value={c.endereco ?? ''}
+              onChange={(e) => atualizarContato(i, { endereco: e.target.value })}
               className={input}
             />
             <div className="flex gap-2">

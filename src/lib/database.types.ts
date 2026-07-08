@@ -168,27 +168,36 @@ export type Database = {
           cpf: string | null
           created_at: string
           email: string | null
+          endereco: string | null
           id: string
           nome: string
+          primeiro_nome: string | null
           rg: string | null
+          sobrenome: string | null
           telefone: string | null
         }
         Insert: {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           nome: string
+          primeiro_nome?: string | null
           rg?: string | null
+          sobrenome?: string | null
           telefone?: string | null
         }
         Update: {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          endereco?: string | null
           id?: string
           nome?: string
+          primeiro_nome?: string | null
           rg?: string | null
+          sobrenome?: string | null
           telefone?: string | null
         }
         Relationships: []
@@ -199,33 +208,42 @@ export type Database = {
           consentimento_em: string | null
           consentimento_por: string | null
           created_at: string
+          endereco: string | null
           foto: string | null
           id: string
           nascimento: string | null
           nome: string
+          primeiro_nome: string | null
           saude: string | null
+          sobrenome: string | null
         }
         Insert: {
           ativo?: boolean
           consentimento_em?: string | null
           consentimento_por?: string | null
           created_at?: string
+          endereco?: string | null
           foto?: string | null
           id?: string
           nascimento?: string | null
           nome: string
+          primeiro_nome?: string | null
           saude?: string | null
+          sobrenome?: string | null
         }
         Update: {
           ativo?: boolean
           consentimento_em?: string | null
           consentimento_por?: string | null
           created_at?: string
+          endereco?: string | null
           foto?: string | null
           id?: string
           nascimento?: string | null
           nome?: string
+          primeiro_nome?: string | null
           saude?: string | null
+          sobrenome?: string | null
         }
         Relationships: []
       }
@@ -928,4 +946,3 @@ export const Constants = {
     },
   },
 } as const
-

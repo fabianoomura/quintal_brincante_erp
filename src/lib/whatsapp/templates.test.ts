@@ -19,7 +19,7 @@ test('tplAvisoTempo renderiza texto e variáveis', () => {
   assert.deepEqual(r.variaveis, ['Ana', 'Beto', '15'])
   assert.equal(
     r.conteudo,
-    'Olá Ana, o tempo do(a) Beto no play está acabando (faltam 15 min).',
+    'Olá Ana, o tempo de Beto no play está chegando ao fim. Faltam 15 min. Pode vir se aproximando, por favor?',
   )
 })
 
@@ -29,12 +29,12 @@ test('tplAvisoTempo aceita texto vindo do banco', () => {
 })
 
 test('tplOcorrencia renderiza texto e variáveis', () => {
-  const r = tplOcorrencia('Ana', 'não se adaptou', 'chorou bastante')
+  const r = tplOcorrencia('Ana', 'Beto', 'chorou bastante')
   assert.equal(r.template, 'ocorrencia')
-  assert.deepEqual(r.variaveis, ['Ana', 'não se adaptou', 'chorou bastante'])
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto', 'chorou bastante'])
   assert.equal(
     r.conteudo,
-    'Olá Ana, sobre não se adaptou: chorou bastante. Pode vir ao espaço?',
+    'Olá Ana, sobre Beto: chorou bastante',
   )
 })
 

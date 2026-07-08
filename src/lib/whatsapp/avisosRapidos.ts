@@ -13,8 +13,8 @@ export type AvisoRapido = {
 }
 
 export const AVISOS_RAPIDOS: AvisoRapido[] = [
-  { id: 'banheiro', label: '🚽 Banheiro', tipo: 'banheiro', texto: 'Precisa ir ao banheiro — pode vir ajudar?' },
-  { id: 'trocar', label: '👕 Trocar roupa', tipo: 'outro', texto: 'Precisa trocar de roupa — pode vir?' },
-  { id: 'chorando', label: '😢 Chorando', tipo: 'nao_adaptou', texto: 'Está chorando / ainda não se adaptou — pode vir?' },
-  { id: 'buscar', label: '🔔 Vir buscar', tipo: 'outro', texto: 'Pode vir buscar a criança, por favor.' },
+  { id: 'banheiro', label: '🚽 Banheiro', tipo: 'banheiro', texto: 'A criança pediu para ir ao banheiro. Pode vir ajudar, por favor?' },
+  { id: 'trocar', label: '👕 Trocar roupa', tipo: 'outro', texto: 'A criança precisa trocar de roupa. Pode vir ao espaço, por favor?' },
+  { id: 'chorando', label: '😢 Chorando', tipo: 'nao_adaptou', texto: 'A criança está chorando e precisando de você por aqui. Pode vir ao espaço?' },
+  { id: 'buscar', label: '🔔 Vir buscar', tipo: 'outro', texto: 'Pode vir buscar a criança, por favor? Estamos aguardando por aqui.' },
 ]

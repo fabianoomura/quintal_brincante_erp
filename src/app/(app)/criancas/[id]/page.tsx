@@ -29,7 +29,7 @@ export default async function FichaPage({
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('id, nome, nascimento, saude, ativo, foto, consentimento_em, consentimento_por')
+    .select('id, nome, primeiro_nome, sobrenome, nascimento, saude, endereco, ativo, foto, consentimento_em, consentimento_por')
     .eq('id', id)
     .maybeSingle()
 
@@ -37,7 +37,7 @@ export default async function FichaPage({
 
   const { data: vinculos } = await supabase
     .from('crianca_contato')
-    .select('papel, contato:contato_id (id, nome, telefone, email, cpf, rg)')
+    .select('papel, contato:contato_id (id, nome, primeiro_nome, sobrenome, telefone, email, cpf, rg, endereco)')
     .eq('crianca_id', id)
 
   const contatos = (vinculos ?? []).map((v) => ({

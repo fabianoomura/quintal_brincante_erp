@@ -9,17 +9,22 @@ import FotoInput from '../../foto-input'
 type Crianca = {
   id: string
   nome: string
+  primeiro_nome: string | null
+  sobrenome: string | null
   nascimento: string | null
   saude: string | null
+  endereco: string | null
   ativo: boolean
   foto: string | null
 }
 
 export default function EditForm({ crianca }: { crianca: Crianca }) {
   const router = useRouter()
-  const [nome, setNome] = useState(crianca.nome)
+  const [primeiroNome, setPrimeiroNome] = useState(crianca.primeiro_nome ?? crianca.nome)
+  const [sobrenome, setSobrenome] = useState(crianca.sobrenome ?? '')
   const [nascimento, setNascimento] = useState(crianca.nascimento ?? '')
   const [saude, setSaude] = useState(crianca.saude ?? '')
+  const [endereco, setEndereco] = useState(crianca.endereco ?? '')
   const [ativo, setAtivo] = useState(crianca.ativo)
   const [foto, setFoto] = useState<string | null>(crianca.foto)
   const [erro, setErro] = useState<string | null>(null)
@@ -31,7 +36,16 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
     setErro(null)
     setMsg(null)
     setSalvando(true)
-    const res = await updateCrianca(crianca.id, { nome, nascimento, saude, ativo, foto })
+    const res = await updateCrianca(crianca.id, {
+      nome: crianca.nome,
+      primeiroNome,
+      sobrenome,
+      nascimento,
+      saude,
+      endereco,
+      ativo,
+      foto,
+    })
     setSalvando(false)
     if (!res.ok) {
       setErro(res.erro)
@@ -47,21 +61,40 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
         <span className={labelText}>Foto</span>
         <FotoInput value={foto} onChange={setFoto} />
       </div>
-      <label className={label}>
-        <span className={labelText}>Nome *</span>
-        <input
-          required
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className={input}
-        />
-      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className={label}>
+          <span className={labelText}>Nome *</span>
+          <input
+            required
+            value={primeiroNome}
+            onChange={(e) => setPrimeiroNome(e.target.value)}
+            className={input}
+          />
+        </label>
+        <label className={label}>
+          <span className={labelText}>Sobrenome</span>
+          <input
+            value={sobrenome}
+            onChange={(e) => setSobrenome(e.target.value)}
+            className={input}
+          />
+        </label>
+      </div>
       <label className={label}>
         <span className={labelText}>Nascimento</span>
         <input
           type="date"
           value={nascimento}
           onChange={(e) => setNascimento(e.target.value)}
+          className={input}
+        />
+      </label>
+      <label className={label}>
+        <span className={labelText}>Endereço</span>
+        <input
+          value={endereco}
+          onChange={(e) => setEndereco(e.target.value)}
+          placeholder="Rua, número, bairro, cidade"
           className={input}
         />
       </label>

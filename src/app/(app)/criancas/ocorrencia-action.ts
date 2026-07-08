@@ -10,10 +10,10 @@ import type { Database } from '@/lib/database.types'
 type TipoOcorrencia = Database['public']['Enums']['tipo_ocorrencia']
 
 const MOTIVO_LABEL: Record<TipoOcorrencia, string> = {
-  banheiro: 'banheiro',
-  nao_adaptou: 'não se adaptou',
-  saude: 'saúde',
-  comportamento: 'comportamento',
+  banheiro: 'pediu para ir ao banheiro. Pode vir ajudar, por favor?',
+  nao_adaptou: 'está precisando de você por aqui. Pode vir ao espaço?',
+  saude: 'precisa de atenção por uma questão de saúde. Pode vir ao espaço?',
+  comportamento: 'precisamos conversar sobre uma situação que aconteceu. Pode vir ao espaço?',
   outro: 'uma ocorrência',
 }
 
@@ -46,6 +46,12 @@ export async function registrarOcorrencia(
     .single()
   if (errOc) return { ok: false, erro: errOc.message }
 
+  const { data: crianca } = await supabase
+    .from('crianca')
+    .select('nome')
+    .eq('id', criancaId)
+    .maybeSingle()
+
   // Acha o responsável correto (papel='responsavel') com telefone.
   const { data: vinculo } = await supabase
     .from('crianca_contato')
@@ -64,15 +70,14 @@ export async function registrarOcorrencia(
     }
   }
 
-  const motivo = MOTIVO_LABEL[tipo]
-  const detalhe = descricao.trim() === '' ? motivo : descricao.trim()
+  const detalhe = descricao.trim() === '' ? MOTIVO_LABEL[tipo] : descricao.trim()
   const { data: tpl } = await supabase
     .from('mensagem_template')
     .select('texto')
     .eq('chave', 'ocorrencia')
     .eq('ativo', true)
     .maybeSingle()
-  const render = tplOcorrencia(responsavel.nome, motivo, detalhe, tpl?.texto)
+  const render = tplOcorrencia(responsavel.nome, crianca?.nome ?? 'a criança', detalhe, tpl?.texto)
 
   const res = await enviarNotificacao(supabase, getSender(), {
     crianca_id: criancaId,

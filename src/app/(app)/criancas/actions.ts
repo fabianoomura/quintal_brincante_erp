@@ -9,21 +9,40 @@ type PapelContato = Database['public']['Enums']['papel_contato']
 
 export type ContatoInput = {
   nome: string
+  primeiroNome?: string
+  sobrenome?: string
   telefone: string
   email: string
   cpf: string
   rg: string
+  endereco?: string
   papel: PapelContato
 }
 
 export type CriancaInput = {
   nome: string
+  primeiroNome?: string
+  sobrenome?: string
   nascimento: string // 'YYYY-MM-DD' ou ''
   saude: string
+  endereco?: string
   contatos: ContatoInput[]
 }
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
+
+function textoOuNull(v: string | undefined): string | null {
+  const t = v?.trim() ?? ''
+  return t === '' ? null : t
+}
+
+function comporNome(primeiroNome: string | undefined, sobrenome: string | undefined, legado: string): string {
+  const partes = [primeiroNome, sobrenome]
+    .map((p) => p?.trim() ?? '')
+    .filter(Boolean)
+  const composto = partes.join(' ')
+  return composto || legado.trim()
+}
 
 // Insere um contato e o vínculo com a criança. Lança em caso de erro.
 async function inserirContato(
@@ -31,15 +50,19 @@ async function inserirContato(
   criancaId: string,
   c: ContatoInput,
 ) {
+  const nome = comporNome(c.primeiroNome, c.sobrenome, c.nome)
   const telefone = c.telefone.trim() === '' ? null : normalizeE164BR(c.telefone)
   if (c.telefone.trim() !== '' && telefone === null) {
-    throw new Error(`Telefone inválido para "${c.nome}".`)
+    throw new Error(`Telefone inválido para "${nome}".`)
   }
 
   const { data: contato, error: errC } = await supabase
     .from('contato')
     .insert({
-      nome: c.nome.trim(),
+      nome,
+      primeiro_nome: textoOuNull(c.primeiroNome),
+      sobrenome: textoOuNull(c.sobrenome),
+      endereco: textoOuNull(c.endereco),
       telefone,
       email: c.email.trim() === '' ? null : c.email.trim(),
       cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),
@@ -58,14 +81,18 @@ async function inserirContato(
 }
 
 export async function createCrianca(input: CriancaInput): Promise<Resultado> {
-  if (input.nome.trim() === '') return { ok: false, erro: 'Nome é obrigatório.' }
+  const nome = comporNome(input.primeiroNome, input.sobrenome, input.nome)
+  if (nome === '') return { ok: false, erro: 'Nome é obrigatório.' }
 
   const supabase = await createClient()
 
   const { data: crianca, error } = await supabase
     .from('crianca')
     .insert({
-      nome: input.nome.trim(),
+      nome,
+      primeiro_nome: textoOuNull(input.primeiroNome),
+      sobrenome: textoOuNull(input.sobrenome),
+      endereco: textoOuNull(input.endereco),
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
     })
@@ -75,7 +102,7 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
 
   try {
     for (const c of input.contatos) {
-      if (c.nome.trim() === '') continue // linha vazia → ignora
+      if (comporNome(c.primeiroNome, c.sobrenome, c.nome) === '') continue // linha vazia → ignora
       await inserirContato(supabase, crianca.id, c)
     }
   } catch (e) {
@@ -88,15 +115,28 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
 
 export async function updateCrianca(
   id: string,
-  input: { nome: string; nascimento: string; saude: string; ativo: boolean; foto: string | null },
+  input: {
+    nome: string
+    primeiroNome?: string
+    sobrenome?: string
+    nascimento: string
+    saude: string
+    endereco?: string
+    ativo: boolean
+    foto: string | null
+  },
 ): Promise<Resultado> {
-  if (input.nome.trim() === '') return { ok: false, erro: 'Nome é obrigatório.' }
+  const nome = comporNome(input.primeiroNome, input.sobrenome, input.nome)
+  if (nome === '') return { ok: false, erro: 'Nome é obrigatório.' }
 
   const supabase = await createClient()
   const { error } = await supabase
     .from('crianca')
     .update({
-      nome: input.nome.trim(),
+      nome,
+      primeiro_nome: textoOuNull(input.primeiroNome),
+      sobrenome: textoOuNull(input.sobrenome),
+      endereco: textoOuNull(input.endereco),
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
       ativo: input.ativo,
@@ -114,7 +154,8 @@ export async function addContato(
   criancaId: string,
   c: ContatoInput,
 ): Promise<Resultado> {
-  if (c.nome.trim() === '') return { ok: false, erro: 'Nome do contato é obrigatório.' }
+  if (comporNome(c.primeiroNome, c.sobrenome, c.nome) === '')
+    return { ok: false, erro: 'Nome do contato é obrigatório.' }
 
   const supabase = await createClient()
   try {
@@ -135,7 +176,8 @@ export async function updateContato(
   papelAtual: PapelContato,
   c: ContatoInput,
 ): Promise<Resultado> {
-  if (c.nome.trim() === '') return { ok: false, erro: 'Nome do contato é obrigatório.' }
+  const nome = comporNome(c.primeiroNome, c.sobrenome, c.nome)
+  if (nome === '') return { ok: false, erro: 'Nome do contato é obrigatório.' }
   const telefone = c.telefone.trim() === '' ? null : normalizeE164BR(c.telefone)
   if (c.telefone.trim() !== '' && telefone === null) {
     return { ok: false, erro: 'Telefone inválido — informe com DDD.' }
@@ -146,7 +188,10 @@ export async function updateContato(
     const { data, error } = await supabase
       .from('contato')
       .update({
-        nome: c.nome.trim(),
+        nome,
+        primeiro_nome: textoOuNull(c.primeiroNome),
+        sobrenome: textoOuNull(c.sobrenome),
+        endereco: textoOuNull(c.endereco),
         telefone,
         email: c.email.trim() === '' ? null : c.email.trim(),
         cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),

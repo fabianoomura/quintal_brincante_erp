@@ -20,7 +20,7 @@ const VARIAVEIS: Record<string, { v: string; desc: string }[]> = {
   ],
   ocorrencia: [
     { v: '{{1}}', desc: 'nome do responsável' },
-    { v: '{{2}}', desc: 'motivo (ex.: banheiro)' },
+    { v: '{{2}}', desc: 'nome da criança' },
     { v: '{{3}}', desc: 'detalhe do aviso' },
   ],
   aviso_geral: [
@@ -73,13 +73,13 @@ export default function TemplateRow({
 
   return (
     <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <input
           value={f.nome}
           onChange={(e) => setF({ ...f, nome: e.target.value })}
-          className="font-display font-semibold text-slate-800 outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-transparent px-1 py-1 font-display font-semibold text-slate-800 outline-none focus:border-slate-200"
         />
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${stCls}`}>
+        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${stCls}`}>
           {STATUS.find((s) => s.v === f.status)?.label}
         </span>
       </div>
@@ -87,8 +87,8 @@ export default function TemplateRow({
       <textarea
         value={f.texto}
         onChange={(e) => setF({ ...f, texto: e.target.value })}
-        rows={2}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        rows={chave === 'boas_vindas' ? 8 : 3}
+        className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed"
       />
       {VARIAVEIS[chave] ? (
         <div className="flex flex-wrap items-center gap-1.5">

@@ -9,8 +9,8 @@ export type TemplateRender = {
 }
 
 const TEXTO_AVISO_TEMPO =
-  'Olá {{1}}, o tempo do(a) {{2}} no play está acabando (faltam {{3}} min).'
-const TEXTO_OCORRENCIA = 'Olá {{1}}, sobre {{2}}: {{3}}. Pode vir ao espaço?'
+  'Olá {{1}}, o tempo de {{2}} no play está chegando ao fim. Faltam {{3}} min. Pode vir se aproximando, por favor?'
+const TEXTO_OCORRENCIA = 'Olá {{1}}, sobre {{2}}: {{3}}'
 
 export function renderizarTemplate(texto: string, variaveis: string[]): string {
   return variaveis.reduce(
@@ -34,14 +34,14 @@ export function tplAvisoTempo(
   }
 }
 
-// ocorrencia — "Olá {{1}}, sobre {{2}}: {{3}}. Pode vir ao espaço?"
+// ocorrencia — "Olá {{1}}, sobre {{2}}: {{3}}"
 export function tplOcorrencia(
   responsavel: string,
-  motivo: string,
+  crianca: string,
   detalhe: string,
   textoTemplate = TEXTO_OCORRENCIA,
 ): TemplateRender {
-  const variaveis = [responsavel, motivo, detalhe]
+  const variaveis = [responsavel, crianca, detalhe]
   return {
     template: 'ocorrencia',
     variaveis,
