@@ -1,6 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { renderizarTemplate, tplAvisoTempo, tplOcorrencia } from './templates'
+import {
+  nomeResponsavelMensagem,
+  renderizarTemplate,
+  tplAvisoTempo,
+  tplOcorrencia,
+} from './templates'
 
 test('renderizarTemplate troca variáveis por posição', () => {
   assert.equal(
@@ -13,8 +18,13 @@ test('renderizarTemplate preserva variáveis sem valor', () => {
   assert.equal(renderizarTemplate('Oi {{1}} {{2}}', ['Ana']), 'Oi Ana {{2}}')
 })
 
+test('nomeResponsavelMensagem prefere primeiro_nome e usa fallback do nome completo', () => {
+  assert.equal(nomeResponsavelMensagem('Fabiano Omura'), 'Fabiano')
+  assert.equal(nomeResponsavelMensagem('Fabiano Omura', 'Biano'), 'Biano')
+})
+
 test('tplAvisoTempo renderiza texto e variáveis', () => {
-  const r = tplAvisoTempo('Ana', 'Beto', 15)
+  const r = tplAvisoTempo('Ana Silva', 'Beto', 15)
   assert.equal(r.template, 'aviso_tempo')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto', '15'])
   assert.equal(
@@ -28,8 +38,13 @@ test('tplAvisoTempo aceita texto vindo do banco', () => {
   assert.equal(r.conteudo, 'Oi Ana: Beto tem 15 min.')
 })
 
+test('tplAvisoTempo prefere o primeiro_nome separado do banco', () => {
+  const r = tplAvisoTempo('Ana Clara Silva', 'Beto', 15, undefined, 'Ana Clara')
+  assert.deepEqual(r.variaveis, ['Ana Clara', 'Beto', '15'])
+})
+
 test('tplOcorrencia renderiza texto e variáveis', () => {
-  const r = tplOcorrencia('Ana', 'Beto', 'chorou bastante')
+  const r = tplOcorrencia('Ana Silva', 'Beto', 'chorou bastante')
   assert.equal(r.template, 'ocorrencia')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto', 'chorou bastante'])
   assert.equal(

@@ -12,6 +12,17 @@ const TEXTO_AVISO_TEMPO =
   'Olá {{1}}, o tempo de {{2}} no play está chegando ao fim. Faltam {{3}} min. Pode vir se aproximando, por favor?'
 const TEXTO_OCORRENCIA = 'Olá {{1}}, sobre {{2}}: {{3}}'
 
+export function nomeResponsavelMensagem(
+  nome: string | null | undefined,
+  primeiroNome?: string | null,
+): string {
+  const preferido = primeiroNome?.trim()
+  if (preferido) return preferido
+
+  const nomeLimpo = nome?.trim() ?? ''
+  return nomeLimpo.split(/\s+/)[0] ?? ''
+}
+
 export function renderizarTemplate(texto: string, variaveis: string[]): string {
   return variaveis.reduce(
     (acc, valor, index) => acc.replaceAll(`{{${index + 1}}}`, valor),
@@ -25,8 +36,13 @@ export function tplAvisoTempo(
   crianca: string,
   minutosRestantes: number,
   textoTemplate = TEXTO_AVISO_TEMPO,
+  primeiroNomeResponsavel?: string | null,
 ): TemplateRender {
-  const variaveis = [responsavel, crianca, String(minutosRestantes)]
+  const variaveis = [
+    nomeResponsavelMensagem(responsavel, primeiroNomeResponsavel),
+    crianca,
+    String(minutosRestantes),
+  ]
   return {
     template: 'aviso_tempo',
     variaveis,
@@ -40,8 +56,13 @@ export function tplOcorrencia(
   crianca: string,
   detalhe: string,
   textoTemplate = TEXTO_OCORRENCIA,
+  primeiroNomeResponsavel?: string | null,
 ): TemplateRender {
-  const variaveis = [responsavel, crianca, detalhe]
+  const variaveis = [
+    nomeResponsavelMensagem(responsavel, primeiroNomeResponsavel),
+    crianca,
+    detalhe,
+  ]
   return {
     template: 'ocorrencia',
     variaveis,

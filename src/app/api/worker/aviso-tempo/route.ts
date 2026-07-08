@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     const { data: vinculo } = await sb
       .from('crianca_contato')
-      .select('contato:contato_id (id, nome, telefone)')
+      .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
       .eq('crianca_id', orig.crianca_id)
       .eq('papel', 'responsavel')
       .limit(1)
@@ -94,6 +94,7 @@ export async function POST(request: Request) {
       orig.crianca?.nome ?? '',
       faltam,
       tpl?.texto,
+      responsavel.primeiro_nome,
     )
 
     const res = await enviarNotificacao(sb, sender, {

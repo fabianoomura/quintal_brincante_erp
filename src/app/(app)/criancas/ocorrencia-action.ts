@@ -55,7 +55,7 @@ export async function registrarOcorrencia(
   // Acha o responsável correto (papel='responsavel') com telefone.
   const { data: vinculo } = await supabase
     .from('crianca_contato')
-    .select('contato:contato_id (id, nome, telefone)')
+    .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
     .eq('crianca_id', criancaId)
     .eq('papel', 'responsavel')
     .limit(1)
@@ -77,7 +77,13 @@ export async function registrarOcorrencia(
     .eq('chave', 'ocorrencia')
     .eq('ativo', true)
     .maybeSingle()
-  const render = tplOcorrencia(responsavel.nome, crianca?.nome ?? 'a criança', detalhe, tpl?.texto)
+  const render = tplOcorrencia(
+    responsavel.nome,
+    crianca?.nome ?? 'a criança',
+    detalhe,
+    tpl?.texto,
+    responsavel.primeiro_nome,
+  )
 
   const res = await enviarNotificacao(supabase, getSender(), {
     crianca_id: criancaId,
