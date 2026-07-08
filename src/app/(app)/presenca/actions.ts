@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
-import { precoProporcional, duracaoMinutos } from '@/lib/tarifador'
+import { precoProporcional, duracaoMinutos, minutosCobraveis } from '@/lib/tarifador'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import type { Database } from '@/lib/database.types'
@@ -214,21 +214,30 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
 
     const { data: p, error: errP } = await supabase
       .from('presenca')
-      .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, valor, crianca:crianca_id (nome)')
+      .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, tempo_contratado_min, valor, crianca:crianca_id (nome)')
       .eq('id', presencaId)
       .maybeSingle()
     if (errP) return { ok: false, erro: errP.message }
     if (!p) return { ok: false, erro: 'Presença não encontrada.' }
     if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
-    // Play: calcula pelo tempo (tarifa/hora travada no check-in).
+    // Play: calcula pelo tempo (tarifa/hora travada no check-in), respeitando a
+    // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado.
     // Diária: usa o valor definido no check-in (null = experimental, não cobra).
-    const valor: number | null =
-      p.origem === 'espaco_kids' && p.tarifa_hora != null
-        ? precoProporcional(Math.ceil(duracaoMinutos(p.entrada, saida)), Number(p.tarifa_hora))
-        : p.valor != null
-          ? Number(p.valor)
-          : null
+    let valor: number | null = null
+    if (p.origem === 'espaco_kids' && p.tarifa_hora != null) {
+      const { data: cfg } = await supabase
+        .from('config_sistema')
+        .select('tolerancia_min')
+        .eq('id', 1)
+        .maybeSingle()
+      const tolerancia = cfg?.tolerancia_min ?? 0
+      const decorrido = Math.ceil(duracaoMinutos(p.entrada, saida))
+      const cobraveis = minutosCobraveis(decorrido, p.tempo_contratado_min, tolerancia)
+      valor = precoProporcional(cobraveis, Number(p.tarifa_hora))
+    } else if (p.valor != null) {
+      valor = Number(p.valor)
+    }
 
     const { error: errU } = await supabase
       .from('presenca')

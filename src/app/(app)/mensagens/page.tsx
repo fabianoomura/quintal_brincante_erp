@@ -9,7 +9,7 @@ export default async function MensagensPage() {
   const supabase = await createClient()
   const { data: templates } = await supabase
     .from('mensagem_template')
-    .select('id, nome, tipo, texto, categoria, status_aprovacao, ativo')
+    .select('id, chave, nome, tipo, texto, categoria, status_aprovacao, ativo')
     .order('ordem')
 
   const rapidos = (templates ?? []).filter((t) => t.tipo === 'aviso_rapido')
@@ -20,6 +20,7 @@ export default async function MensagensPage() {
       <TemplateRow
         key={t.id}
         id={t.id}
+        chave={t.chave}
         nome={t.nome}
         tipo={t.tipo}
         texto={t.texto}

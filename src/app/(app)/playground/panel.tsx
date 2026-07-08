@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
-import { duracaoMinutos, precoProporcional } from '@/lib/tarifador'
+import { duracaoMinutos, minutosCobraveis, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
@@ -35,10 +35,12 @@ export default function PlaygroundPanel({
   presentes,
   criancas,
   avisos,
+  toleranciaMin = 0,
 }: {
   presentes: Presente[]
   criancas: { id: string; nome: string }[]
   avisos: AvisoRapido[]
+  toleranciaMin?: number
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -171,7 +173,13 @@ export default function PlaygroundPanel({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {presentes.map((p) => {
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
-          const valor = p.tarifaHora != null ? precoProporcional(decorrido, p.tarifaHora) : null
+          const valor =
+            p.tarifaHora != null
+              ? precoProporcional(
+                  minutosCobraveis(decorrido, p.tempoContratadoMin, toleranciaMin),
+                  p.tarifaHora,
+                )
+              : null
           const restante =
             p.tempoContratadoMin != null ? p.tempoContratadoMin - decorrido : null
           const estourou = restante != null && restante <= 0

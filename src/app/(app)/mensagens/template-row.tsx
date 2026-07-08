@@ -11,8 +11,31 @@ const STATUS = [
   { v: 'reprovado', label: 'Reprovado', cls: 'bg-rose-100 text-rose-700' },
 ]
 
+// O que cada {{n}} significa, por template (chave). O sistema preenche na hora do envio.
+const VARIAVEIS: Record<string, { v: string; desc: string }[]> = {
+  aviso_tempo: [
+    { v: '{{1}}', desc: 'nome do responsável' },
+    { v: '{{2}}', desc: 'nome da criança' },
+    { v: '{{3}}', desc: 'minutos restantes' },
+  ],
+  ocorrencia: [
+    { v: '{{1}}', desc: 'nome do responsável' },
+    { v: '{{2}}', desc: 'motivo (ex.: banheiro)' },
+    { v: '{{3}}', desc: 'detalhe do aviso' },
+  ],
+  aviso_geral: [
+    { v: '{{1}}', desc: 'nome do responsável' },
+    { v: '{{2}}', desc: 'texto do aviso' },
+  ],
+  boas_vindas: [
+    { v: '{{1}}', desc: 'primeiro nome do responsável' },
+    { v: '{{2}}', desc: 'nome da criança' },
+  ],
+}
+
 export default function TemplateRow({
   id,
+  chave,
   nome,
   tipo,
   texto,
@@ -21,6 +44,7 @@ export default function TemplateRow({
   ativo,
 }: {
   id: string
+  chave: string
   nome: string
   tipo: string
   texto: string
@@ -66,7 +90,25 @@ export default function TemplateRow({
         rows={2}
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
-      <p className="text-[11px] text-slate-400">Use {'{{1}}'}, {'{{2}}'}… para as variáveis do template.</p>
+      {VARIAVEIS[chave] ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-400">Variáveis:</span>
+          {VARIAVEIS[chave].map((x) => (
+            <span
+              key={x.v}
+              className="rounded-full bg-sky-50 px-2 py-0.5 font-mono text-[11px] text-sky-700 ring-1 ring-sky-200"
+            >
+              {x.v} <span className="font-sans text-slate-500">= {x.desc}</span>
+            </span>
+          ))}
+        </div>
+      ) : tipo === 'aviso_rapido' ? (
+        <p className="text-[11px] text-slate-400">
+          Sem variáveis — este texto vira o “detalhe” da mensagem de Ocorrência ({'{{3}}'}).
+        </p>
+      ) : (
+        <p className="text-[11px] text-slate-400">Use {'{{1}}'}, {'{{2}}'}… para as variáveis.</p>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <select value={f.categoria} onChange={(e) => setF({ ...f, categoria: e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">

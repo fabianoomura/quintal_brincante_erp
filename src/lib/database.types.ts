@@ -134,6 +134,7 @@ export type Database = {
           desconto_ativo: boolean
           desconto_irmao_percentual: number | null
           id: number
+          tolerancia_min: number
           valor_feriado: number | null
         }
         Insert: {
@@ -145,6 +146,7 @@ export type Database = {
           desconto_ativo?: boolean
           desconto_irmao_percentual?: number | null
           id?: number
+          tolerancia_min?: number
           valor_feriado?: number | null
         }
         Update: {
@@ -156,6 +158,7 @@ export type Database = {
           desconto_ativo?: boolean
           desconto_irmao_percentual?: number | null
           id?: number
+          tolerancia_min?: number
           valor_feriado?: number | null
         }
         Relationships: []

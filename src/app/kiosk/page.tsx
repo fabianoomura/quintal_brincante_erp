@@ -27,22 +27,24 @@ export default async function KioskPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }, { data: avisos }] = await Promise.all([
-    supabase
-      .from('presenca')
-      .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto)')
-      .eq('data', hoje)
-      .eq('origem', 'espaco_kids')
-      .is('saida', null)
-      .order('entrada', { ascending: true }),
-    supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
-    supabase
-      .from('mensagem_template')
-      .select('id, nome, tipo_ocorrencia, texto')
-      .eq('tipo', 'aviso_rapido')
-      .eq('ativo', true)
-      .order('ordem'),
-  ])
+  const [{ data: presentes }, { data: criancas }, { data: avisos }, { data: cfg }] =
+    await Promise.all([
+      supabase
+        .from('presenca')
+        .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto)')
+        .eq('data', hoje)
+        .eq('origem', 'espaco_kids')
+        .is('saida', null)
+        .order('entrada', { ascending: true }),
+      supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
+      supabase
+        .from('mensagem_template')
+        .select('id, nome, tipo_ocorrencia, texto')
+        .eq('tipo', 'aviso_rapido')
+        .eq('ativo', true)
+        .order('ordem'),
+      supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
+    ])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 to-white">
@@ -76,6 +78,7 @@ export default async function KioskPage() {
           avisos={(avisos ?? [])
             .filter((a) => a.tipo_ocorrencia)
             .map((a) => ({ id: a.id, label: a.nome, tipo: a.tipo_ocorrencia!, texto: a.texto }))}
+          toleranciaMin={cfg?.tolerancia_min ?? 0}
         />
 
         <div className="mt-6">

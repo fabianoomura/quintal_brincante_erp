@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ConfigToggle from './config-toggle'
 import CapacidadeInput from './capacidade-input'
 import AntecedenciaInput from './antecedencia-input'
+import ToleranciaInput from './tolerancia-input'
 import DescontoIrmao from './desconto-irmao'
 import { requireAdmin } from '@/lib/colaborador'
 
@@ -11,7 +12,7 @@ export default async function ConfiguracoesPage() {
   const supabase = await createClient()
   const { data: cfg } = await supabase
     .from('config_sistema')
-    .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia, aviso_antecedencia_min, desconto_ativo, desconto_irmao_percentual')
+    .select('conciliacao_automatica, aviso_tempo_ativo, capacidade_dia, aviso_antecedencia_min, tolerancia_min, desconto_ativo, desconto_irmao_percentual')
     .eq('id', 1)
     .maybeSingle()
 
@@ -41,6 +42,8 @@ export default async function ConfiguracoesPage() {
       <CapacidadeInput inicial={cfg?.capacidade_dia ?? null} />
 
       <AntecedenciaInput inicial={cfg?.aviso_antecedencia_min ?? 15} />
+
+      <ToleranciaInput inicial={cfg?.tolerancia_min ?? 0} />
 
       <ConfigToggle
         campo="desconto_ativo"

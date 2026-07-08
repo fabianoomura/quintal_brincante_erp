@@ -55,6 +55,24 @@ export async function setAntecedencia(
   return { ok: true }
 }
 
+// Tolerância após o tempo contratado do play (min). Passou até X min do contratado
+// → cobra só o contratado; além disso → cobra o tempo real. Só admin (RLS).
+export async function setTolerancia(
+  minutos: number,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  if (!(minutos >= 0)) return { ok: false, erro: 'Valor inválido.' }
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('config_sistema')
+    .update({ tolerancia_min: Math.round(minutos) })
+    .eq('id', 1)
+    .select('id')
+  if (error) return { ok: false, erro: error.message }
+  if (!data || data.length === 0) return { ok: false, erro: 'Sem permissão (apenas admin).' }
+  revalidatePath('/configuracoes')
+  return { ok: true }
+}
+
 // Capacidade máxima de crianças no dia. null = sem limite. Só admin (RLS).
 export async function setCapacidade(
   valor: number | null,

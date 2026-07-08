@@ -32,6 +32,20 @@ export function precoProporcional(minutos: number, valorHora: number): number {
   return centavos / 100
 }
 
+// Minutos a COBRAR considerando a tolerância após o tempo contratado:
+// passou do contratado em até `toleranciaMin` → cobra só o contratado;
+// passou da tolerância → cobra o tempo real. Sem contratado, cobra o real.
+export function minutosCobraveis(
+  minutos: number,
+  contratadoMin: number | null,
+  toleranciaMin: number,
+): number {
+  if (contratadoMin == null || contratadoMin <= 0) return minutos
+  if (minutos <= contratadoMin) return minutos
+  if (minutos - contratadoMin <= toleranciaMin) return contratadoMin
+  return minutos
+}
+
 export type ResultadoPlay = {
   minutosCobrados: number
   valorCentavos: number

@@ -1,6 +1,26 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularValorPlay, duracaoMinutos, precoProporcional, type TarifaCalculo } from './tarifador'
+import { calcularValorPlay, duracaoMinutos, minutosCobraveis, precoProporcional, type TarifaCalculo } from './tarifador'
+
+// Tolerância após o contratado: até X min além, cobra só o contratado
+test('minutosCobraveis: dentro do contratado cobra o real', () => {
+  assert.equal(minutosCobraveis(50, 60, 10), 50)
+})
+test('minutosCobraveis: passou 8min com tolerância 10 → cobra o contratado', () => {
+  assert.equal(minutosCobraveis(68, 60, 10), 60)
+})
+test('minutosCobraveis: passou exatamente a tolerância → cobra o contratado', () => {
+  assert.equal(minutosCobraveis(70, 60, 10), 60)
+})
+test('minutosCobraveis: passou além da tolerância → cobra o tempo real', () => {
+  assert.equal(minutosCobraveis(75, 60, 10), 75)
+})
+test('minutosCobraveis: tolerância 0 → qualquer excedente cobra o real', () => {
+  assert.equal(minutosCobraveis(61, 60, 0), 61)
+})
+test('minutosCobraveis: sem contratado → cobra o real', () => {
+  assert.equal(minutosCobraveis(90, null, 10), 90)
+})
 
 // FIXTURE — valores fictícios só para o teste (NÃO são a tarifa real; essa vem da tabela
 // `tarifa` e ainda está pendente de confirmação do dono). Aqui: X=valor_hora, Y=valor_fracao.
