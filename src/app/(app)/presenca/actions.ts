@@ -100,19 +100,21 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 }
 
 // Envia a mensagem de boas-vindas com os combinados (template editável em /mensagens,
-// chave 'boas_vindas') na primeira presença de play da criança. {{1}}=responsável, {{2}}=criança.
+// chave 'boas_vindas') em TODA entrada no play — no máx. 1× por dia por criança
+// (entra/sai no mesmo dia não repete). {{1}}=responsável, {{2}}=criança.
 async function enviarBoasVindas(
   supabase: Awaited<ReturnType<typeof createClient>>,
   criancaId: string,
   presencaId: string,
 ) {
-  // é a primeira entrada no play? (a presença recém-criada conta 1)
+  // já enviou (ou tentou) hoje? BRT fixo -03:00 (Brasil sem horário de verão)
   const { count } = await supabase
-    .from('presenca')
+    .from('notificacao')
     .select('id', { count: 'exact', head: true })
     .eq('crianca_id', criancaId)
-    .eq('origem', 'espaco_kids')
-  if ((count ?? 0) > 1) return
+    .eq('tipo', 'boas_vindas')
+    .gte('created_at', `${hojeISO()}T00:00:00-03:00`)
+  if ((count ?? 0) > 0) return
 
   const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
     supabase
