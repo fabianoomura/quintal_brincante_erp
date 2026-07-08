@@ -127,6 +127,53 @@ export async function addContato(
   return { ok: true, id: criancaId }
 }
 
+// Edita os dados de um contato (e o papel do vínculo, se mudou). O telefone é
+// normalizado p/ E.164 — corrigir número errado aqui conserta os avisos WhatsApp.
+export async function updateContato(
+  criancaId: string,
+  contatoId: string,
+  papelAtual: PapelContato,
+  c: ContatoInput,
+): Promise<Resultado> {
+  if (c.nome.trim() === '') return { ok: false, erro: 'Nome do contato é obrigatório.' }
+  const telefone = c.telefone.trim() === '' ? null : normalizeE164BR(c.telefone)
+  if (c.telefone.trim() !== '' && telefone === null) {
+    return { ok: false, erro: 'Telefone inválido — informe com DDD.' }
+  }
+
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('contato')
+      .update({
+        nome: c.nome.trim(),
+        telefone,
+        email: c.email.trim() === '' ? null : c.email.trim(),
+        cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),
+        rg: c.rg.trim() === '' ? null : c.rg.trim(),
+      })
+      .eq('id', contatoId)
+      .select('id')
+    if (error) return { ok: false, erro: error.message }
+    if (!data || data.length === 0) return { ok: false, erro: 'Contato não encontrado.' }
+
+    if (c.papel !== papelAtual) {
+      const { error: errV } = await supabase
+        .from('crianca_contato')
+        .update({ papel: c.papel })
+        .eq('crianca_id', criancaId)
+        .eq('contato_id', contatoId)
+        .eq('papel', papelAtual)
+      if (errV) return { ok: false, erro: errV.message }
+    }
+
+    revalidatePath(`/criancas/${criancaId}`)
+    return { ok: true, id: contatoId }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
 export async function removeContato(
   criancaId: string,
   contatoId: string,
