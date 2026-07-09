@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
-import { precoProporcional, duracaoMinutos, minutosCobraveis } from '@/lib/tarifador'
+import { calcularValorCheckout } from '@/lib/playground'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import { nomePessoaMensagem } from '@/lib/whatsapp/templates'
@@ -226,20 +226,20 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
     // Play: calcula pelo tempo (tarifa/hora travada no check-in), respeitando a
     // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado.
     // Diária: usa o valor definido no check-in (null = experimental, não cobra).
-    let valor: number | null = null
-    if (p.origem === 'espaco_kids' && p.tarifa_hora != null) {
-      const { data: cfg } = await supabase
-        .from('config_sistema')
-        .select('tolerancia_min')
-        .eq('id', 1)
-        .maybeSingle()
-      const tolerancia = cfg?.tolerancia_min ?? 0
-      const decorrido = Math.ceil(duracaoMinutos(p.entrada, saida))
-      const cobraveis = minutosCobraveis(decorrido, p.tempo_contratado_min, tolerancia)
-      valor = precoProporcional(cobraveis, Number(p.tarifa_hora))
-    } else if (p.valor != null) {
-      valor = Number(p.valor)
-    }
+    const { data: cfg } = await supabase
+      .from('config_sistema')
+      .select('tolerancia_min')
+      .eq('id', 1)
+      .maybeSingle()
+    const valor = calcularValorCheckout({
+      origem: p.origem,
+      entrada: p.entrada,
+      saida,
+      tarifaHora: p.tarifa_hora == null ? null : Number(p.tarifa_hora),
+      tempoContratadoMin: p.tempo_contratado_min,
+      toleranciaMin: cfg?.tolerancia_min ?? 0,
+      valorDiaria: p.valor == null ? null : Number(p.valor),
+    })
 
     const { error: errU } = await supabase
       .from('presenca')

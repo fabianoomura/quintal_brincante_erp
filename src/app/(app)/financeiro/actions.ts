@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { Modalidade } from '@/lib/modalidades'
+import { calcularDescontoBaixa } from '@/lib/financeiro'
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 
@@ -52,17 +53,23 @@ export async function baixaManual(
     .maybeSingle()
   if (!lanc) return { ok: false, erro: 'Lançamento não encontrado.' }
 
-  let desc = Number(lanc.desconto)
+  let descontoAtivo = false
   if (descontoReais > 0) {
     const { data: cfg } = await supabase
       .from('config_sistema')
       .select('desconto_ativo')
       .eq('id', 1)
       .maybeSingle()
-    if (cfg?.desconto_ativo) desc = Math.min(Number(lanc.valor), desc + descontoReais)
+    descontoAtivo = cfg?.desconto_ativo ?? false
   }
+  const desc = calcularDescontoBaixa({
+    valor: Number(lanc.valor),
+    descontoAtual: Number(lanc.desconto),
+    descontoReais,
+    descontoAtivo,
+  })
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('lancamento')
     .update({
       status: 'pago',
@@ -73,7 +80,10 @@ export async function baixaManual(
     })
     .eq('id', lancamentoId)
     .eq('status', 'pendente')
+    .select('id')
+    .maybeSingle()
   if (error) return { ok: false, erro: error.message }
+  if (!data) return { ok: false, erro: 'Lançamento já recebido ou não está pendente.' }
 
   revalidatePath('/financeiro')
   return { ok: true, id: lancamentoId }
