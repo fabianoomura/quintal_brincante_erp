@@ -16,6 +16,8 @@ usado **apenas pela equipe**. Cuida de cadastro de crianças, presença (check-i
 cobrança do play por tempo, financeiro e avisos no WhatsApp. Sem cobrança pelo sistema;
 o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular/tablet.
 Cadastros têm nome/sobrenome e endereço estruturados como campos opcionais para BI futuro.
+Mensagens operacionais são editáveis em `/mensagens`, com variáveis padronizadas e até
+6 avisos rápidos ativos no playground.
 
 ---
 
@@ -65,7 +67,8 @@ Cadastros têm nome/sobrenome e endereço estruturados como campos opcionais par
 4. **Play por grade hora x dia.** Decisão atual: o play usa valor/hora por planilha
    (`preco_hora`, gerida em `/grade`) + valor próprio de feriado (`/calendario`). A tarifa/hora
    é travada no **check-in** pela hora de entrada; o check-out cobra **piso de 1h + proporcional**
-   e respeita `config_sistema.tolerancia_min` quando houver tempo contratado.
+   e respeita `config_sistema.tolerancia_min` quando houver tempo contratado. Ao encerrar
+   check-out do play, o sistema tenta enviar o template editável `agradecimento_checkout`.
 5. **Dinheiro:** `numeric`, nunca `float`. **Telefone:** E.164 (`+55DDDNUMERO`).
 6. **Segredos** (chaves Supabase, token WhatsApp, credencial InfinitePay) só em variáveis de
    ambiente. Nunca commitados.
@@ -80,6 +83,8 @@ Valores editáveis pela operação vivem no banco, não no código:
 - Feriados: `feriado.valor`
 - Flags e limites: `config_sistema`
 - Templates de mensagens: `mensagem_template`
+- Variáveis padronizadas de mensagens: `mensagem_variavel` (`{{responsavel_nome}}`,
+  `{{crianca_nome}}`, `{{minutos_restantes}}`, `{{detalhe}}`, etc.)
 - Antecedência do aviso de tempo: `config_sistema.aviso_antecedencia_min` (padrão 15)
 - Campos de BI/cadastro: `primeiro_nome`, `sobrenome`, `cep`, `logradouro`, `numero`,
   `complemento`, `bairro`, `cidade`, `uf`

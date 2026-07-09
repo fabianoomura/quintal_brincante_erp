@@ -11,16 +11,20 @@ MVP em produção, com Supabase + Vercel. O estado operacional mais recente fica
 A spec inicial [`quintal-brincante-mvp.md`](quintal-brincante-mvp.md) é histórica.
 
 Desde 2026-07-09, o aviso real de tempo do play via WhatsApp/Evolution foi validado em
-produção. Os testes unitários cobrem os pontos críticos de playground, recebimentos,
-mensagens, endereço e regras financeiras.
+produção. O módulo de mensagens usa variáveis padronizadas, avisos rápidos configuráveis
+e mensagem de agradecimento no check-out. Os testes unitários cobrem os pontos críticos de
+playground, recebimentos, mensagens, endereço e regras financeiras.
 
 ## Principais fluxos
 
-- Cadastro de crianças e responsáveis, com nome/sobrenome separados e dados opcionais para BI.
+- Cadastro de crianças e responsáveis, com nome/sobrenome separados, foto por webcam/arquivo
+  e dados opcionais para BI.
 - Endereço estruturado com CEP, logradouro, número, complemento, bairro, cidade e UF; o CEP
   usa ViaCEP para preencher automaticamente quando possível.
-- Playground com check-in/out, tempo contratado, aviso antecipado e recebimento no checkout.
-- Mensagens editáveis, usando primeiro nome do responsável e primeiro nome da criança.
+- Playground com check-in/out, tempo contratado, aviso antecipado, agradecimento no check-out
+  e recebimento no checkout.
+- Mensagens editáveis com variáveis padrão, como `{{responsavel_nome}}` e
+  `{{crianca_nome}}`; avisos rápidos do play têm até 6 ativos por vez.
 - Financeiro com lançamentos, baixa manual, descontos e exportação CSV.
 
 ## Stack

@@ -83,9 +83,12 @@ Conferir: `select * from cron.job;` — e depois `select * from cron.job_run_det
 - [ ] Janela anônima: nenhuma tela/dado acessível (RLS ok).
 - [ ] Check-in/out no play cobra pela planilha (`/grade`).
 - [ ] Cadastro de criança/responsável salva nome separado e endereço estruturado.
+- [ ] Cadastro vindo do play permite foto por webcam/arquivo.
+- [ ] `/mensagens` mostra variáveis padrão e template `agradecimento_checkout`.
 - [ ] Tablet do play: abrir `https://<APP>/kiosk` e fixar a aba.
 - [ ] `cron.job_run_details` mostra execuções com status `succeeded`.
 - [ ] Aviso de tempo real chega no WhatsApp quando houver `tempo_contratado_min`.
+- [ ] Check-out do play registra/envia agradecimento quando o template estiver ativo.
 - [ ] Trocar as senhas iniciais dos usuários.
 
 ## Quando as integrações reais chegarem
