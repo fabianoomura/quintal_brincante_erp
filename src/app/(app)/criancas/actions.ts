@@ -2,12 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { comporEndereco, formatarCEP, normalizarUF, type EnderecoCampos } from '@/lib/endereco'
 import { normalizeE164BR } from '@/lib/fone'
 import type { Database } from '@/lib/database.types'
 
 type PapelContato = Database['public']['Enums']['papel_contato']
 
-export type ContatoInput = {
+export type EnderecoInput = EnderecoCampos
+
+export type ContatoInput = EnderecoInput & {
   nome: string
   primeiroNome?: string
   sobrenome?: string
@@ -15,17 +18,15 @@ export type ContatoInput = {
   email: string
   cpf: string
   rg: string
-  endereco?: string
   papel: PapelContato
 }
 
-export type CriancaInput = {
+export type CriancaInput = EnderecoInput & {
   nome: string
   primeiroNome?: string
   sobrenome?: string
   nascimento: string // 'YYYY-MM-DD' ou ''
   saude: string
-  endereco?: string
   contatos: ContatoInput[]
 }
 
@@ -42,6 +43,19 @@ function comporNome(primeiroNome: string | undefined, sobrenome: string | undefi
     .filter(Boolean)
   const composto = partes.join(' ')
   return composto || legado.trim()
+}
+
+function enderecoParaBanco(campos: EnderecoInput) {
+  return {
+    endereco: comporEndereco(campos) ?? textoOuNull(campos.endereco ?? undefined),
+    cep: textoOuNull(formatarCEP(campos.cep)),
+    logradouro: textoOuNull(campos.logradouro ?? undefined),
+    numero: textoOuNull(campos.numero ?? undefined),
+    complemento: textoOuNull(campos.complemento ?? undefined),
+    bairro: textoOuNull(campos.bairro ?? undefined),
+    cidade: textoOuNull(campos.cidade ?? undefined),
+    uf: textoOuNull(normalizarUF(campos.uf)),
+  }
 }
 
 // Insere um contato e o vínculo com a criança. Lança em caso de erro.
@@ -62,7 +76,7 @@ async function inserirContato(
       nome,
       primeiro_nome: textoOuNull(c.primeiroNome),
       sobrenome: textoOuNull(c.sobrenome),
-      endereco: textoOuNull(c.endereco),
+      ...enderecoParaBanco(c),
       telefone,
       email: c.email.trim() === '' ? null : c.email.trim(),
       cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),
@@ -92,7 +106,7 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
       nome,
       primeiro_nome: textoOuNull(input.primeiroNome),
       sobrenome: textoOuNull(input.sobrenome),
-      endereco: textoOuNull(input.endereco),
+      ...enderecoParaBanco(input),
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
     })
@@ -115,13 +129,12 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
 
 export async function updateCrianca(
   id: string,
-  input: {
+  input: EnderecoInput & {
     nome: string
     primeiroNome?: string
     sobrenome?: string
     nascimento: string
     saude: string
-    endereco?: string
     ativo: boolean
     foto: string | null
   },
@@ -136,7 +149,7 @@ export async function updateCrianca(
       nome,
       primeiro_nome: textoOuNull(input.primeiroNome),
       sobrenome: textoOuNull(input.sobrenome),
-      endereco: textoOuNull(input.endereco),
+      ...enderecoParaBanco(input),
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
       ativo: input.ativo,
@@ -191,7 +204,7 @@ export async function updateContato(
         nome,
         primeiro_nome: textoOuNull(c.primeiroNome),
         sobrenome: textoOuNull(c.sobrenome),
-        endereco: textoOuNull(c.endereco),
+        ...enderecoParaBanco(c),
         telefone,
         email: c.email.trim() === '' ? null : c.email.trim(),
         cpf: c.cpf.trim() === '' ? null : c.cpf.trim(),

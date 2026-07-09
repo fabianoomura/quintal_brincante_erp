@@ -6,6 +6,8 @@ import { addContato, removeContato, updateContato, type ContatoInput } from '../
 import { card, input, btnGrape } from '@/lib/ui'
 import { formatarCPF } from '@/lib/cpf'
 import { formatarTelefoneBR } from '@/lib/fone'
+import { comporEndereco } from '@/lib/endereco'
+import EnderecoFields from '../endereco-fields'
 
 type Papel = ContatoInput['papel']
 
@@ -20,6 +22,13 @@ type Contato = {
   cpf: string | null
   rg: string | null
   endereco: string | null
+  cep: string | null
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
 }
 
 const PAPEL_LABEL: Record<Papel, string> = {
@@ -45,6 +54,13 @@ export default function ContatosManager({
     cpf: '',
     rg: '',
     endereco: '',
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
     papel: 'responsavel',
   })
   const [erro, setErro] = useState<string | null>(null)
@@ -61,6 +77,13 @@ export default function ContatosManager({
     cpf: '',
     rg: '',
     endereco: '',
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
     papel: 'responsavel',
   })
   const [editErro, setEditErro] = useState<string | null>(null)
@@ -77,6 +100,13 @@ export default function ContatosManager({
       cpf: c.cpf ? formatarCPF(c.cpf) : '',
       rg: c.rg ?? '',
       endereco: c.endereco ?? '',
+      cep: c.cep ?? '',
+      logradouro: c.logradouro ?? '',
+      numero: c.numero ?? '',
+      complemento: c.complemento ?? '',
+      bairro: c.bairro ?? '',
+      cidade: c.cidade ?? '',
+      uf: c.uf ?? '',
       papel: c.papel,
     })
   }
@@ -119,6 +149,13 @@ export default function ContatosManager({
       cpf: '',
       rg: '',
       endereco: '',
+      cep: '',
+      logradouro: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      uf: '',
       papel: 'responsavel',
     })
     router.refresh()
@@ -186,11 +223,10 @@ export default function ContatosManager({
                     onChange={(e) => setEdit({ ...edit, email: e.target.value })}
                     className={input}
                   />
-                  <input
-                    placeholder="Endereço (opcional)"
-                    value={edit.endereco ?? ''}
-                    onChange={(e) => setEdit({ ...edit, endereco: e.target.value })}
-                    className={input}
+                  <EnderecoFields
+                    titulo="Endereço do contato"
+                    value={edit}
+                    onChange={(enderecoAtualizado) => setEdit({ ...edit, ...enderecoAtualizado })}
                   />
                   <div className="flex gap-2">
                     <input
@@ -229,6 +265,7 @@ export default function ContatosManager({
               </li>
             )
           }
+          const enderecoTexto = comporEndereco(c) ?? c.endereco
           return (
             <li key={chave} className={`flex items-center justify-between ${card}`}>
               <div className="min-w-0">
@@ -237,7 +274,7 @@ export default function ContatosManager({
                   {PAPEL_LABEL[c.papel]}
                   {c.telefone ? ` · ${c.telefone}` : ''}
                   {c.cpf ? ` · CPF ${c.cpf}` : c.rg ? ` · RG ${c.rg}` : ''}
-                  {c.endereco ? ` · ${c.endereco}` : ''}
+                  {enderecoTexto ? ` · ${enderecoTexto}` : ''}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -306,11 +343,10 @@ export default function ContatosManager({
           onChange={(e) => setNovo({ ...novo, email: e.target.value })}
           className={input}
         />
-        <input
-          placeholder="Endereço (opcional)"
-          value={novo.endereco ?? ''}
-          onChange={(e) => setNovo({ ...novo, endereco: e.target.value })}
-          className={input}
+        <EnderecoFields
+          titulo="Endereço do contato"
+          value={novo}
+          onChange={(enderecoAtualizado) => setNovo({ ...novo, ...enderecoAtualizado })}
         />
         <div className="flex gap-2">
           <input

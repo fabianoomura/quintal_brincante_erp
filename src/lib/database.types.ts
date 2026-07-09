@@ -165,85 +165,127 @@ export type Database = {
       }
       contato: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
           cpf: string | null
           created_at: string
           email: string | null
           endereco: string | null
           id: string
+          logradouro: string | null
           nome: string
+          numero: string | null
           primeiro_nome: string | null
           rg: string | null
           sobrenome: string | null
           telefone: string | null
+          uf: string | null
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          logradouro?: string | null
           nome: string
+          numero?: string | null
           primeiro_nome?: string | null
           rg?: string | null
           sobrenome?: string | null
           telefone?: string | null
+          uf?: string | null
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           endereco?: string | null
           id?: string
+          logradouro?: string | null
           nome?: string
+          numero?: string | null
           primeiro_nome?: string | null
           rg?: string | null
           sobrenome?: string | null
           telefone?: string | null
+          uf?: string | null
         }
         Relationships: []
       }
       crianca: {
         Row: {
           ativo: boolean
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
           consentimento_em: string | null
           consentimento_por: string | null
           created_at: string
           endereco: string | null
           foto: string | null
           id: string
+          logradouro: string | null
           nascimento: string | null
           nome: string
+          numero: string | null
           primeiro_nome: string | null
           saude: string | null
           sobrenome: string | null
+          uf: string | null
         }
         Insert: {
           ativo?: boolean
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           consentimento_em?: string | null
           consentimento_por?: string | null
           created_at?: string
           endereco?: string | null
           foto?: string | null
           id?: string
+          logradouro?: string | null
           nascimento?: string | null
           nome: string
+          numero?: string | null
           primeiro_nome?: string | null
           saude?: string | null
           sobrenome?: string | null
+          uf?: string | null
         }
         Update: {
           ativo?: boolean
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           consentimento_em?: string | null
           consentimento_por?: string | null
           created_at?: string
           endereco?: string | null
           foto?: string | null
           id?: string
+          logradouro?: string | null
           nascimento?: string | null
           nome?: string
+          numero?: string | null
           primeiro_nome?: string | null
           saude?: string | null
           sobrenome?: string | null
+          uf?: string | null
         }
         Relationships: []
       }

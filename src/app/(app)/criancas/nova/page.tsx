@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createCrianca, type ContatoInput } from '../actions'
+import { createCrianca, type ContatoInput, type EnderecoInput } from '../actions'
 import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
 import { formatarCPF } from '@/lib/cpf'
 import { formatarTelefoneBR } from '@/lib/fone'
+import EnderecoFields from '../endereco-fields'
 
 const PAPEIS = [
   { value: 'responsavel', label: 'Responsável' },
@@ -24,6 +25,13 @@ function contatoVazio(papel: ContatoInput['papel']): ContatoInput {
     cpf: '',
     rg: '',
     endereco: '',
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
     papel,
   }
 }
@@ -34,7 +42,7 @@ export default function NovaCriancaPage() {
   const [sobrenome, setSobrenome] = useState('')
   const [nascimento, setNascimento] = useState('')
   const [saude, setSaude] = useState('')
-  const [endereco, setEndereco] = useState('')
+  const [endereco, setEndereco] = useState<EnderecoInput>({})
   const [contatos, setContatos] = useState<ContatoInput[]>([
     contatoVazio('responsavel'),
   ])
@@ -55,7 +63,7 @@ export default function NovaCriancaPage() {
       sobrenome,
       nascimento,
       saude,
-      endereco,
+      ...endereco,
       contatos,
     })
     if (!res.ok) {
@@ -108,15 +116,7 @@ export default function NovaCriancaPage() {
             className={input}
           />
         </label>
-        <label className={label}>
-          <span className={labelText}>Endereço</span>
-          <input
-            value={endereco}
-            onChange={(e) => setEndereco(e.target.value)}
-            placeholder="Rua, número, bairro, cidade"
-            className={input}
-          />
-        </label>
+        <EnderecoFields value={endereco} onChange={setEndereco} />
         <label className={label}>
           <span className={labelText}>Saúde</span>
           <textarea
@@ -199,11 +199,10 @@ export default function NovaCriancaPage() {
               onChange={(e) => atualizarContato(i, { email: e.target.value })}
               className={input}
             />
-            <input
-              placeholder="Endereço (opcional)"
-              value={c.endereco ?? ''}
-              onChange={(e) => atualizarContato(i, { endereco: e.target.value })}
-              className={input}
+            <EnderecoFields
+              titulo="Endereço do contato"
+              value={c}
+              onChange={(enderecoAtualizado) => atualizarContato(i, enderecoAtualizado)}
             />
             <div className="flex gap-2">
               <input

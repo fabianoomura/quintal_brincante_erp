@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateCrianca } from '../actions'
+import { updateCrianca, type EnderecoInput } from '../actions'
 import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
 import FotoInput from '../../foto-input'
+import EnderecoFields from '../endereco-fields'
 
 type Crianca = {
   id: string
@@ -14,6 +15,13 @@ type Crianca = {
   nascimento: string | null
   saude: string | null
   endereco: string | null
+  cep: string | null
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
   ativo: boolean
   foto: string | null
 }
@@ -24,7 +32,16 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
   const [sobrenome, setSobrenome] = useState(crianca.sobrenome ?? '')
   const [nascimento, setNascimento] = useState(crianca.nascimento ?? '')
   const [saude, setSaude] = useState(crianca.saude ?? '')
-  const [endereco, setEndereco] = useState(crianca.endereco ?? '')
+  const [endereco, setEndereco] = useState<EnderecoInput>({
+    endereco: crianca.endereco ?? '',
+    cep: crianca.cep ?? '',
+    logradouro: crianca.logradouro ?? '',
+    numero: crianca.numero ?? '',
+    complemento: crianca.complemento ?? '',
+    bairro: crianca.bairro ?? '',
+    cidade: crianca.cidade ?? '',
+    uf: crianca.uf ?? '',
+  })
   const [ativo, setAtivo] = useState(crianca.ativo)
   const [foto, setFoto] = useState<string | null>(crianca.foto)
   const [erro, setErro] = useState<string | null>(null)
@@ -42,7 +59,7 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
       sobrenome,
       nascimento,
       saude,
-      endereco,
+      ...endereco,
       ativo,
       foto,
     })
@@ -89,15 +106,7 @@ export default function EditForm({ crianca }: { crianca: Crianca }) {
           className={input}
         />
       </label>
-      <label className={label}>
-        <span className={labelText}>Endereço</span>
-        <input
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
-          placeholder="Rua, número, bairro, cidade"
-          className={input}
-        />
-      </label>
+      <EnderecoFields value={endereco} onChange={setEndereco} />
       <label className={label}>
         <span className={labelText}>Saúde</span>
         <textarea
