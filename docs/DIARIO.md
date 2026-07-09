@@ -1,9 +1,9 @@
 # Diário do projeto — Quintal Brincante ERP
 
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
-(plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra) e o
-[WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-07-08**.
+(plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra), o [OPERACAO.md](OPERACAO.md)
+(rotinas do dia a dia) e o [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
+Última atualização: **2026-07-09**.
 
 ---
 
@@ -11,12 +11,14 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 
 - **App:** https://quintal-brincante-erp.vercel.app (Vercel; deploy automático a cada
   `git push` na `main` — repo `fabianoomura/quintal_brincante_erp`)
-- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 21 migrations, RLS em tudo
+- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 23 migrations versionadas,
+  RLS em tudo
 - **Workers:** `pg_cron` → `aviso-tempo` (a cada 5 min) e `mensalidades` (dia 1, 06h BRT)
 - **WhatsApp:** Evolution API no Railway (instância `quintal`) — mensagens reais chegando;
-  aguardando conexão do **chip dedicado** (QR)
-- **Dados:** banco de produção limpo (2026-07-05) — só cadastros (4 crianças + responsáveis),
-  grade de preços (60 células), templates e configs; financeiro/presenças zerados p/ operação real
+  aviso real de tempo do play validado em 2026-07-09
+- **Dados:** cadastros, grade, templates e configs preservados. Para remover apenas dados
+  de teste operacionais (presenças, lançamentos, ocorrências etc.), usar o runbook em
+  [OPERACAO.md](OPERACAO.md)
 
 ---
 
@@ -26,6 +28,10 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 - Schema completo + RLS/RBAC por colaborador (anônimo = 0 linhas, testado em produção)
 - Cadastro de crianças: responsáveis/autorizados/emergência, saúde, foto (webcam/arquivo),
   CPF/RG do responsável, consentimento LGPD com selo de pendência
+- Nome de criança e responsável separado em `primeiro_nome` + `sobrenome`, mantendo `nome`
+  como campo de exibição/compatibilidade
+- Endereço opcional estruturado para BI: `cep`, `logradouro`, `numero`, `complemento`,
+  `bairro`, `cidade`, `uf`, com preenchimento por ViaCEP quando possível
 - Presença (check-in/out) com origem (play/diária/mensalista/colônia), ambientes e lotação
 - Financeiro: lançamentos, baixa manual com modalidade + desconto, export CSV, avulsos
 - Webhook InfinitePay atrás de flag `conciliacao_automatica` (default off)
@@ -36,6 +42,9 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
   (ex.: 20/h → 40min = R$20 · 1h15 = R$25) — travado no check-in, calculado no check-out
 - **Playground:** cronômetro ao vivo por criança, custo em tempo real, barra de tempo
   contratado, avisos rápidos (banheiro/trocar/chorando/buscar), modo quiosque p/ tablet
+- **Aviso de tempo:** quando a presença tem `tempo_contratado_min`, o worker dispara uma
+  notificação única antes do fim. A antecedência padrão é `aviso_antecedencia_min = 15`
+  minutos e pode ser alterada em `config_sistema`
 - **Busca de criança** (filtra digitando, sem acento) + botão **“+ Cadastrar criança”**
   que abre a ficha completa e volta pro play
 - **Recebimento no check-out:** pop-up com Dinheiro / Pix / Débito / Crédito → baixa na
@@ -46,13 +55,18 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
   irmão automático (mesmo responsável/CPF), geração mensal idempotente (worker + botão)
 - Colônias com vagas/valor, edição, inscrição gera lançamento (com desconto de irmão)
 - Faturamento por operação/mês · Gerencial (admin) · RBAC admin/operador · Colaboradores
-- `/mensagens`: textos dos avisos editáveis + status de aprovação (p/ era Meta; hoje serve
-  de catálogo dos textos)
+- `/mensagens`: textos dos avisos editáveis + status de aprovação; hoje funciona como
+  catálogo dos textos enviados pela Evolution API
+- Templates revisados para tom mais amigável. As variáveis usam o primeiro nome do
+  responsável e o primeiro nome da criança
 - Ajuda contextual: botão “?” em toda tela explica o que ela faz (textos em `src/lib/ajuda.ts`)
 
 ### Qualidade
-- 66 testes unitários (tarifador, grade, feriados, irmãos, aviso-tempo, adapters WhatsApp,
-  máscaras) + testes de integração contra Supabase local
+- 86 testes unitários cobrindo tarifador, grade, feriados, irmãos, aviso-tempo, adapters
+  WhatsApp, renderização de mensagens, playground/checkout, recebimentos, endereço/ViaCEP e
+  máscaras
+- Testes de integração existem contra Supabase local, mas exigem Supabase/Docker rodando.
+  Ver [OPERACAO.md](OPERACAO.md) para a sequência segura
 - Máscaras de digitação: CPF (`054.593.509-13`) e telefone (`(43) 99120-3404`); servidor
   normaliza telefone p/ E.164 e recusa número sem DDD
 
@@ -61,11 +75,14 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 ## Deploy em produção (2026-07-04)
 
 1. Supabase cloud criado (região East US — casa com a Vercel free, também US)
-2. `supabase db push` (19 migrations) + **bootstrap virou migration idempotente**
+2. `supabase db push` inicial (19 migrations) + **bootstrap virou migration idempotente**
    (config, grade, templates — `db push` deixa a base pronta sozinho)
 3. Admin criado; RLS verificada; extensões `pg_cron`/`pg_net` + 2 jobs agendados
 4. Vercel conectada ao GitHub; envs; domínio `quintal-brincante-erp.vercel.app`
 5. Verificação ponta a ponta: login, worker 401 sem secret / 200 com secret
+
+Desde então, as migrations evoluíram para nomes/endereço estruturados, templates revisados,
+integração ViaCEP e reforço dos testes.
 
 ## Consertos importantes pós-deploy (aprendizados)
 
@@ -76,7 +93,7 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 | Webcam “retângulo preto gigante” | vídeo esticado + attach do stream por `setTimeout` | preview compacto + attach via `useEffect` + botão só habilita com vídeo rodando |
 | Botões presos em “Salvando…” | handlers sem try/catch/finally | todo handler de action com try/catch/finally e erro visível |
 
-## WhatsApp — Evolution API (2026-07-05)
+## WhatsApp — Evolution API (2026-07-05 → validado em 2026-07-09)
 
 - **Decisão do dono:** API não-oficial (Evolution/Baileys), sem burocracia Meta.
   `EvolutionSender` no adapter (`WHATSAPP_PROVIDER=evolution`); `CloudSender` Meta oficial
@@ -87,20 +104,20 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
   `CONFIG_SESSION_PHONE_VERSION` no Railway com a versão atual do WhatsApp Web
   (fonte: `wppconnect-team/wa-version` no GitHub)
 - Mensagens de teste **chegaram** (acentos/emojis ok — enviar via Node/fetch; curl no
-  terminal Windows corrompe UTF-8)
+  terminal Windows pode corromper UTF-8)
+- Aviso real de tempo do play **chegou no WhatsApp** em 2026-07-09. A auditoria segue na
+  tabela `notificacao`, com status, conteúdo renderizado, provider e datas
 - **Privacidade:** conectar um chip sincroniza contatos/conversas pro banco do Evolution;
-  “Disconnect” NÃO apaga — **deletar a instância** apaga (feito; instância atual nasceu
-  zerada). Chip dedicado deve ter agenda mínima
-- **Pendente:** equipe escanear o QR com o chip dedicado → validação final do aviso de
-  tempo (worker já provado: detectou, tentou enviar, registrou `falha` sem celular — auditoria ok)
+  “Disconnect” NÃO apaga — **deletar a instância** apaga. Chip dedicado deve ter agenda mínima
 
 ## Fila de próximos passos
 
-1. ⏳ Chip dedicado no QR → validação final (aviso de tempo chegando)
+1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar
 2. Botão **“💬 Cobrar”** nos lançamentos pendentes (texto editável, com nome/valor)
-3. ROADMAP P1: backup + “sinal de vida” dos workers (alerta se pararem)
+3. Backup: confirmar retenção do plano Supabase e decidir se precisa dump adicional
 4. InfinitePay real (HMAC + checkout) atrás da flag
-5. Supabase Pro / Vercel Pro quando o uso firmar (free pausa por inatividade / termo não-comercial)
+5. Testes ponta a ponta dos fluxos críticos: check-in → checkout → baixa → mensagem
+6. Supabase Pro / Vercel Pro quando o uso firmar (free pausa por inatividade / termo não-comercial)
 
 ## Regras de trabalho que valem ouro aqui
 

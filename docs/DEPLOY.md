@@ -17,7 +17,7 @@ Tempo estimado: ~40 min. Pré-requisito: conta no GitHub (o repo já está lá).
    ```bash
    supabase login                       # abre o navegador
    supabase link --project-ref <REF>   # REF = id do projeto (Settings → General)
-   supabase db push                    # aplica as 19 migrations
+   supabase db push                    # aplica as migrations versionadas
    ```
    O `db push` já cria o **bootstrap** (config_sistema, planilha de preços do play,
    templates de mensagem) — isso virou migration idempotente, não precisa rodar seed à mão.
@@ -42,7 +42,10 @@ Tempo estimado: ~40 min. Pré-requisito: conta no GitHub (o repo já está lá).
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key |
    | `SUPABASE_SERVICE_ROLE_KEY` | service_role key (⚠️ secreta) |
    | `CRON_SECRET` | um segredo forte (ex.: `openssl rand -hex 24`) |
-   | `WHATSAPP_PROVIDER` | `fake` (até as credenciais da Meta) |
+   | `WHATSAPP_PROVIDER` | `evolution` em produção atual; `fake` para ambiente local sem envio |
+   | `EVOLUTION_URL` | URL pública do servidor Evolution |
+   | `EVOLUTION_API_KEY` | chave da Evolution API |
+   | `EVOLUTION_INSTANCE` | nome da instância, ex.: `quintal` |
    | `INFINITEPAY_WEBHOOK_SECRET` | um segredo forte (troca quando integrar de verdade) |
 
 3. **Deploy.** A URL final fica tipo `https://quintal-brincante.vercel.app`.
@@ -79,16 +82,21 @@ Conferir: `select * from cron.job;` — e depois `select * from cron.job_run_det
 - [ ] Login com o admin real funciona; operador vê só o operacional.
 - [ ] Janela anônima: nenhuma tela/dado acessível (RLS ok).
 - [ ] Check-in/out no play cobra pela planilha (`/grade`).
+- [ ] Cadastro de criança/responsável salva nome separado e endereço estruturado.
 - [ ] Tablet do play: abrir `https://<APP>/kiosk` e fixar a aba.
 - [ ] `cron.job_run_details` mostra execuções com status `succeeded`.
+- [ ] Aviso de tempo real chega no WhatsApp quando houver `tempo_contratado_min`.
 - [ ] Trocar as senhas iniciais dos usuários.
 
 ## Quando as integrações reais chegarem
 
+- **WhatsApp (Evolution):** provider atual documentado em
+  [`docs/WHATSAPP-EVOLUTION.md`](WHATSAPP-EVOLUTION.md). A instância precisa permanecer
+  conectada/open para os avisos chegarem.
 - **WhatsApp (Meta):** o `CloudSender` **já está implementado** (`src/lib/whatsapp/adapter.ts`).
-  Para ligar, basta pôr nas envs da Vercel: `WHATSAPP_PROVIDER=cloud`, `WHATSAPP_TOKEN`,
-  `WHATSAPP_PHONE_ID` (e `WHATSAPP_LANG` se não for `pt_BR`). Serve tanto para o **número de
-  teste** (grátis, sem verificação — ótimo para começar) quanto para produção. Passo a passo
-  em [`docs/WHATSAPP.md`](WHATSAPP.md).
+  Para voltar, use `WHATSAPP_PROVIDER=cloud`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID` e
+  `WHATSAPP_LANG` se não for `pt_BR`. Passo a passo em [`docs/WHATSAPP.md`](WHATSAPP.md).
 - **InfinitePay:** validar assinatura HMAC real no webhook
   (`src/app/api/webhook/infinitepay/route.ts`) e ligar `conciliacao_automatica` nas Configurações.
+
+Rotinas de limpeza seletiva, testes e diagnóstico estão em [`docs/OPERACAO.md`](OPERACAO.md).

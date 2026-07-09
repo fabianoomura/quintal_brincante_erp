@@ -3,7 +3,8 @@
 Arquivo de orientação para o Claude Code. Leia isto primeiro, sempre.
 A **fonte de verdade do schema** são as migrations em `supabase/migrations/` e os tipos em
 `src/lib/database.types.ts`. O **estado operacional atual** fica em `docs/DIARIO.md`; o plano
-ativo fica em `docs/ROADMAP.md`. `quintal-brincante-mvp.md` é a spec histórica inicial.
+ativo fica em `docs/ROADMAP.md`; rotinas de produção ficam em `docs/OPERACAO.md`.
+`quintal-brincante-mvp.md` é a spec histórica inicial.
 Este arquivo é o resumo operacional para agentes.
 
 ---
@@ -14,6 +15,7 @@ Sistema interno de gestão de um quintal brincante (espaço de recreação infan
 usado **apenas pela equipe**. Cuida de cadastro de crianças, presença (check-in/out),
 cobrança do play por tempo, financeiro e avisos no WhatsApp. Sem cobrança pelo sistema;
 o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular/tablet.
+Cadastros têm nome/sobrenome e endereço estruturados como campos opcionais para BI futuro.
 
 ---
 
@@ -36,9 +38,10 @@ o objetivo é organização e aprendizado. Mobile-first: a equipe usa no celular
 
 - **Frontend:** Next.js (App Router), PWA, mobile-first.
 - **Banco + Auth:** Supabase (Postgres + Auth + RLS).
-- **Integrações:** WhatsApp via **Evolution API** (não-oficial; **decisão do dono 2026-07-05** —
-  ver `docs/WHATSAPP-EVOLUTION.md`; o `CloudSender` da Meta oficial segue implementado em
-  stand-by, voltar = trocar envs); InfinitePay (Checkout + webhook).
+- **Integrações:** WhatsApp via **Evolution API** (não-oficial; **decisão do dono 2026-07-05**,
+  aviso real validado em 2026-07-09 — ver `docs/WHATSAPP-EVOLUTION.md`; o `CloudSender` da
+  Meta oficial segue implementado em stand-by, voltar = trocar envs); InfinitePay
+  (Checkout + webhook).
 - **Worker agendado (aviso de tempo):** **DECIDIDO (2026-06-30) — Supabase (`pg_cron` chamando
   um endpoint do worker).** Motivo: zero-ops, sem herdar uptime de VPS. Arquitetura escolhida p/
   ficar testável e portável: a **lógica** vive em `src/lib/whatsapp/avisoTempo.ts` (função pura,
@@ -77,13 +80,17 @@ Valores editáveis pela operação vivem no banco, não no código:
 - Feriados: `feriado.valor`
 - Flags e limites: `config_sistema`
 - Templates de mensagens: `mensagem_template`
+- Antecedência do aviso de tempo: `config_sistema.aviso_antecedencia_min` (padrão 15)
+- Campos de BI/cadastro: `primeiro_nome`, `sobrenome`, `cep`, `logradouro`, `numero`,
+  `complemento`, `bairro`, `cidade`, `uf`
 
 ---
 
 ## Plano de construção
 
-O núcleo (1a/1b) sai primeiro; alertas e modo automático vêm depois. Cada tarefa só está
-"pronta" quando o critério de aceite passa.
+O núcleo 1a–1d já foi implementado. Esta seção fica como mapa histórico/arquitetural; o plano
+ativo atual está em `docs/ROADMAP.md`. Cada tarefa só está "pronta" quando o critério de aceite
+passa.
 
 ### Etapa 1a — Coluna vertebral
 
@@ -167,6 +174,7 @@ quando testar o webhook.
 /quintal-brincante-mvp.md       (spec histórica inicial)
 /docs/DIARIO.md                 (estado real do projeto)
 /docs/ROADMAP.md                (plano ativo)
+/docs/OPERACAO.md               (runbooks de produção, testes e limpeza)
 /supabase/migrations/           (SQL)
 /src/app/                       (Next.js App Router)
 /src/lib/                       (tarifador, adapter WhatsApp, helpers)

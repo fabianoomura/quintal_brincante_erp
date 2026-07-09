@@ -10,6 +10,19 @@ MVP em produção, com Supabase + Vercel. O estado operacional mais recente fica
 [`docs/DIARIO.md`](docs/DIARIO.md) e o plano de evolução em [`docs/ROADMAP.md`](docs/ROADMAP.md).
 A spec inicial [`quintal-brincante-mvp.md`](quintal-brincante-mvp.md) é histórica.
 
+Desde 2026-07-09, o aviso real de tempo do play via WhatsApp/Evolution foi validado em
+produção. Os testes unitários cobrem os pontos críticos de playground, recebimentos,
+mensagens, endereço e regras financeiras.
+
+## Principais fluxos
+
+- Cadastro de crianças e responsáveis, com nome/sobrenome separados e dados opcionais para BI.
+- Endereço estruturado com CEP, logradouro, número, complemento, bairro, cidade e UF; o CEP
+  usa ViaCEP para preencher automaticamente quando possível.
+- Playground com check-in/out, tempo contratado, aviso antecipado e recebimento no checkout.
+- Mensagens editáveis, usando primeiro nome do responsável e primeiro nome da criança.
+- Financeiro com lançamentos, baixa manual, descontos e exportação CSV.
+
 ## Stack
 
 - Next.js 16 App Router, React 19 e Tailwind CSS 4
@@ -46,12 +59,14 @@ npm run test:it   # integração contra Supabase local
 ```
 
 Antes de rodar `npm run test:it`, confirme que `.env.local` aponta para um Supabase local
-ou ambiente descartável, porque os testes criam e alteram dados.
+ou ambiente descartável, porque os testes criam e alteram dados. Na prática, rode antes
+`supabase start`, `supabase db reset`, `npm run setup:users` e `npm run seed:dev`.
 
 ## Documentação
 
 - [`docs/DIARIO.md`](docs/DIARIO.md): histórico e estado real do projeto
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): prioridades e próximos passos
 - [`docs/DEPLOY.md`](docs/DEPLOY.md): deploy em Supabase/Vercel
+- [`docs/OPERACAO.md`](docs/OPERACAO.md): comandos de operação, testes e limpeza segura
 - [`docs/WHATSAPP-EVOLUTION.md`](docs/WHATSAPP-EVOLUTION.md): provider atual de WhatsApp
 - [`docs/WHATSAPP.md`](docs/WHATSAPP.md): Meta Cloud API, mantida em stand-by

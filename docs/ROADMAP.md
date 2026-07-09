@@ -1,33 +1,36 @@
 # Estado & Evolução — Quintal Brincante ERP
 
 Doc vivo. Avaliação honesta do sistema + plano de evolução priorizado.
-Atualizado em **2026-07-08**. Marque `[x]` conforme concluir.
+Atualizado em **2026-07-09**. Marque `[x]` conforme concluir.
 
 > Contexto: o sistema entrou em produção em 2026-07-04 (Vercel + Supabase) e a equipe
-> começou a testar. Detalhes de infra em [DEPLOY.md](DEPLOY.md); WhatsApp atual em
-> [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md).
+> começou a testar. Detalhes de infra em [DEPLOY.md](DEPLOY.md), operação em
+> [OPERACAO.md](OPERACAO.md) e WhatsApp atual em [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md).
 
 ---
 
 ## 1. Estado atual
 
 **MVP no ar e funcionando.** Login, RLS, presença/play, financeiro, mensalistas, colônia,
-RBAC e workers agendados estão operando em produção. Está no ponto **"MVP no ar"**, não
-ainda **"produto redondo"** — a diferença está no plano abaixo.
+RBAC, workers agendados e WhatsApp operacional via Evolution estão rodando em produção.
+Está no ponto **"MVP em uso assistido"**, não ainda **"produto redondo"** — a diferença está
+no plano abaixo.
 
 Ligado hoje:
 - Cadastro de crianças (contatos, saúde, consentimento LGPD)
+- Nome/sobrenome separados para criança e responsável, preservando o nome de exibição
+- Endereço estruturado opcional para BI, com CEP e autopreenchimento por ViaCEP
 - Presença (check-in/out) + tarifador do play (piso 1h + proporcional)
+- Aviso de tempo do play via WhatsApp/Evolution, validado com envio real
 - Financeiro (baixa manual, descontos, export CSV) + Faturamento
 - Mensalistas + planos + reposição de dias · Colônia
 - RBAC (admin/operador) · Ambientes · Configurações
 - Workers `pg_cron` (aviso de tempo a cada 5 min, mensalidades dia 1)
 
 Ainda **não** ligado de verdade:
-- **WhatsApp final do chip dedicado** — o adapter Evolution está implementado e testado; falta
-  manter a instância conectada no número dedicado e validar o fluxo real de ponta a ponta.
-  O `CloudSender` da Meta segue pronto em stand-by.
 - **InfinitePay** — conciliação automática atrás de flag (`conciliacao_automatica=false`).
+- **Sinal de vida dos workers** — jobs rodam, mas ainda não alertam o admin se ficarem mudos.
+- **Testes ponta a ponta das telas** — há testes unitários robustos, mas E2E ainda é próximo passo.
 
 ---
 
@@ -38,9 +41,11 @@ Estas decisões são o que separa uma ferramenta de um protótipo — e já est�
 - **RLS em todas as tabelas.** Dado de criança é sensível; anônimo enxerga zero (testado).
 - **Regra de negócio em tabela de config, não no código.** Preços, descontos, capacidade e
   antecedência são editáveis pela equipe, sem mexer em código.
-- **Lógica crítica com teste puro.** Tarifador, feriados e desconto de irmão têm testes —
-  mudanças futuras avisam se quebrarem algo.
-- **Boas práticas de dados.** Dinheiro em centavos, telefone E.164, migrations idempotentes,
+- **Dados preparados para BI sem travar a operação.** Nome/sobrenome e endereço estruturado
+  são opcionais, então melhoram análise futura sem impedir cadastro rápido no balcão.
+- **Lógica crítica com teste puro.** Tarifador, feriados, desconto de irmão, playground,
+  recebimentos, mensagens e endereço têm testes — mudanças futuras avisam se quebrarem algo.
+- **Boas práticas de dados.** Dinheiro em `numeric`, telefone E.164, migrations idempotentes,
   segredos só em variáveis de ambiente.
 
 ---
@@ -51,12 +56,13 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 
 1. **É um MVP interno.** Construído rápido; vão aparecer bugs quando a equipe usar de verdade.
    Normal — é assim que amadurece. Colher feedback do teste é a prioridade agora.
-2. **O aviso de tempo depende do WhatsApp conectado.** A lógica e auditoria estão prontas; a
-   confiabilidade operacional depende da instância Evolution/chip dedicado.
+2. **O aviso de tempo depende da Evolution conectada.** O fluxo real foi validado, mas a
+   confiabilidade operacional depende da instância e do chip permanecerem saudáveis.
 3. **Backup não está definido.** Hoje dependemos do que o plano do Supabase oferece por padrão.
 4. **Sem "sinal de vida" dos workers.** Se um agendamento parar, ninguém é avisado (falha calada).
 5. **Sem trilha de auditoria completa.** Sabemos das notificações; não de "quem alterou o quê".
-6. **Cobertura de teste é da lógica pura.** Não há teste ponta-a-ponta das telas.
+6. **Cobertura E2E ainda falta.** Há 86 testes unitários, mas os fluxos de tela ainda precisam
+   de testes ponta a ponta.
 7. **Dependência de dev.** Sob medida = exatamente o que você quer, sem taxa por aluno; o preço
    é depender de alguém que mexa no código pra mudanças grandes.
 
@@ -65,23 +71,26 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 ## 4. Plano de evolução (priorizado)
 
 ### P1 — Provar o valor e proteger contra dor silenciosa
-- [ ] **Validar o WhatsApp do chip dedicado.** Com `WHATSAPP_PROVIDER=evolution` e instância
-      conectada. *Aceite:* 1 aviso de tempo real chega no celular de um responsável de teste.
+- [x] **Validar o WhatsApp do chip dedicado/Evolution.** Aceite cumprido: aviso de tempo real
+      chegou no celular em 2026-07-09.
 - [ ] **Sinal de vida dos workers.** Um aviso (e-mail/WhatsApp p/ admin) se um worker falhar ou
       ficar X horas sem rodar. *Aceite:* derrubar o worker de propósito gera alerta.
 - [ ] **Backup.** Confirmar retenção do plano e, se preciso, um dump agendado extra. *Aceite:*
       existe cópia recuperável de ontem.
 - [ ] **Coletar feedback do teste da equipe** e corrigir os bugs que aparecerem.
+- [ ] **Cobrança por WhatsApp.** Botão “Cobrar” nos lançamentos pendentes, usando template
+      editável com nome, valor e referência.
 
 ### P2 — Robustez e confiança
 - [ ] Trilha de auditoria (quem deu baixa, quem editou preço/ficha).
-- [ ] Alguns testes ponta-a-ponta dos fluxos críticos (check-in→out→baixa).
+- [ ] Testes ponta a ponta dos fluxos críticos (check-in→out→baixa→mensagem).
 - [ ] Revisão de LGPD além do consentimento: política de retenção e exclusão a pedido.
 - [ ] Página de "saúde do sistema" simples pro admin (últimas execuções dos workers).
+- [ ] Melhorar relatórios/BI usando os novos campos estruturados de nome e endereço.
 
 ### P3 — Depois que o núcleo estiver redondo
-- [ ] WhatsApp de **produção** robusto: chip dedicado estável no Evolution ou migração para Meta
-      Cloud API se a operação pedir mais garantia.
+- [ ] WhatsApp de **produção** robusto: manter chip dedicado estável no Evolution ou migrar para
+      Meta Cloud API se a operação pedir mais garantia.
 - [ ] InfinitePay real (assinatura HMAC + link de checkout), ligar `conciliacao_automatica`.
 - [ ] Marketing/captação (Fase 3 da spec) — número separado, opt-in obrigatório.
 
