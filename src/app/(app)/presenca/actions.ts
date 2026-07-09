@@ -7,7 +7,7 @@ import { valorHoraPlay } from '@/lib/grade'
 import { calcularValorCheckout } from '@/lib/playground'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
-import { nomePessoaMensagem } from '@/lib/whatsapp/templates'
+import { tplAgradecimentoCheckout, tplBoasVindas } from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -136,20 +136,73 @@ async function enviarBoasVindas(
   const responsavel = vinculo?.contato
   if (!tpl || !responsavel?.telefone || !crianca) return
 
-  const primeiroNome = nomePessoaMensagem(responsavel.nome, responsavel.primeiro_nome)
-  const primeiroNomeCrianca = nomePessoaMensagem(crianca.nome, crianca.primeiro_nome)
-  const conteudo = tpl.texto
-    .replaceAll('{{1}}', primeiroNome)
-    .replaceAll('{{2}}', primeiroNomeCrianca)
+  const render = tplBoasVindas(
+    responsavel.nome,
+    crianca.nome,
+    tpl.texto,
+    responsavel.primeiro_nome,
+    crianca.primeiro_nome,
+  )
 
   await enviarNotificacao(supabase, getSender(), {
     crianca_id: criancaId,
     contato_id: responsavel.id,
     para: responsavel.telefone,
     tipo: 'boas_vindas',
-    template: 'boas_vindas',
-    variaveis: [primeiroNome, primeiroNomeCrianca],
-    conteudo,
+    template: render.template,
+    variaveis: render.variaveis,
+    conteudo: render.conteudo,
+    presenca_id: presencaId,
+  })
+}
+
+async function enviarAgradecimentoCheckout(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  criancaId: string,
+  presencaId: string,
+) {
+  const { count } = await supabase
+    .from('notificacao')
+    .select('id', { count: 'exact', head: true })
+    .eq('presenca_id', presencaId)
+    .eq('tipo', 'agradecimento_checkout')
+  if ((count ?? 0) > 0) return
+
+  const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
+    supabase
+      .from('mensagem_template')
+      .select('texto')
+      .eq('chave', 'agradecimento_checkout')
+      .eq('ativo', true)
+      .maybeSingle(),
+    supabase.from('crianca').select('nome, primeiro_nome').eq('id', criancaId).single(),
+    supabase
+      .from('crianca_contato')
+      .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
+      .eq('crianca_id', criancaId)
+      .eq('papel', 'responsavel')
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const responsavel = vinculo?.contato
+  if (!tpl || !responsavel?.telefone || !crianca) return
+
+  const render = tplAgradecimentoCheckout(
+    responsavel.nome,
+    crianca.nome,
+    tpl.texto,
+    responsavel.primeiro_nome,
+    crianca.primeiro_nome,
+  )
+
+  await enviarNotificacao(supabase, getSender(), {
+    crianca_id: criancaId,
+    contato_id: responsavel.id,
+    para: responsavel.telefone,
+    tipo: 'agradecimento_checkout',
+    template: render.template,
+    variaveis: render.variaveis,
+    conteudo: render.conteudo,
     presenca_id: presencaId,
   })
 }
@@ -265,6 +318,14 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
         .single()
       if (errL) return { ok: false, erro: errL.message }
       lancamentoId = lanc.id
+    }
+
+    if (p.origem === 'espaco_kids') {
+      try {
+        await enviarAgradecimentoCheckout(supabase, p.crianca_id, presencaId)
+      } catch {
+        // Falha de WhatsApp nao deve travar saida nem recebimento.
+      }
     }
 
     revalidatePath('/presenca')

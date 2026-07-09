@@ -42,7 +42,8 @@ export default async function KioskPage() {
         .select('id, nome, tipo_ocorrencia, texto')
         .eq('tipo', 'aviso_rapido')
         .eq('ativo', true)
-        .order('ordem'),
+        .order('ordem')
+        .limit(6),
       supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
     ])
 

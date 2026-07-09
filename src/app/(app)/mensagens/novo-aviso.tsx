@@ -16,11 +16,13 @@ const TIPOS: { v: Tipo; l: string }[] = [
   { v: 'outro', l: 'Outro' },
 ]
 
-export default function NovoAviso() {
+export default function NovoAviso({ ativosRapidos }: { ativosRapidos: number }) {
   const router = useRouter()
+  const podeAtivar = ativosRapidos < 6
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState<Tipo>('outro')
   const [texto, setTexto] = useState('')
+  const [ativo, setAtivo] = useState(podeAtivar)
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -28,12 +30,13 @@ export default function NovoAviso() {
     e.preventDefault()
     setErro(null)
     setOcupado(true)
-    const res = await criarAvisoRapido(nome, tipo, texto)
+    const res = await criarAvisoRapido(nome, tipo, texto, ativo)
     setOcupado(false)
     if (!res.ok) return setErro(res.erro)
     setNome('')
     setTexto('')
     setTipo('outro')
+    setAtivo(podeAtivar)
     router.refresh()
   }
 
@@ -41,10 +44,18 @@ export default function NovoAviso() {
     <form onSubmit={salvar} className={`space-y-2 ${card}`}>
       <div className="font-display text-base font-bold text-slate-600">➕ Novo aviso rápido do play</div>
       <div className="flex gap-2">
-        <input placeholder="Rótulo do botão (ex.: 🥤 Lanche)" value={nome} onChange={(e) => setNome(e.target.value)} className={`flex-1 ${input}`} required />
+        <input
+          placeholder="Rótulo do botão (ex.: 🥤 Lanche)"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className={`flex-1 ${input}`}
+          required
+        />
         <select value={tipo} onChange={(e) => setTipo(e.target.value as Tipo)} className={input}>
           {TIPOS.map((t) => (
-            <option key={t.v} value={t.v}>{t.l}</option>
+            <option key={t.v} value={t.v}>
+              {t.l}
+            </option>
           ))}
         </select>
       </div>
@@ -52,8 +63,25 @@ export default function NovoAviso() {
         <span className={labelText}>Texto da mensagem</span>
         <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} className={input} required />
       </label>
+      <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+        <input
+          type="checkbox"
+          checked={ativo}
+          disabled={!podeAtivar && !ativo}
+          onChange={(e) => setAtivo(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Ativo no playground
+      </label>
+      {!podeAtivar && (
+        <p className="text-xs font-semibold text-amber-600">
+          Já existem 6 avisos ativos. Crie este inativo ou desative outro aviso acima.
+        </p>
+      )}
       {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
-      <button type="submit" disabled={ocupado} className={btnPrimary}>Criar aviso</button>
+      <button type="submit" disabled={ocupado} className={btnPrimary}>
+        Criar aviso
+      </button>
     </form>
   )
 }

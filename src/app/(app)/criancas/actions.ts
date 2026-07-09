@@ -27,6 +27,7 @@ export type CriancaInput = EnderecoInput & {
   sobrenome?: string
   nascimento: string // 'YYYY-MM-DD' ou ''
   saude: string
+  foto?: string | null
   contatos: ContatoInput[]
 }
 
@@ -109,6 +110,7 @@ export async function createCrianca(input: CriancaInput): Promise<Resultado> {
       ...enderecoParaBanco(input),
       nascimento: input.nascimento.trim() === '' ? null : input.nascimento,
       saude: input.saude.trim() === '' ? null : input.saude.trim(),
+      foto: input.foto ?? null,
     })
     .select('id')
     .single()

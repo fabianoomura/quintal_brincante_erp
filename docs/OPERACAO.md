@@ -17,7 +17,7 @@ npm run lint
 npm run build
 ```
 
-Em 2026-07-09, a suíte unitária estava com **86 testes passando**. Ela cobre playground,
+Em 2026-07-09, a suíte unitária estava com **89 testes passando**. Ela cobre playground,
 checkout, recebimentos, mensagens/WhatsApp, aviso de tempo, endereço/ViaCEP, tarifador,
 grade, feriados, mensalidades e regras financeiras.
 
@@ -151,6 +151,7 @@ Evite apagar estas tabelas em limpeza comum:
 - `crianca_contato`
 - `config_sistema`
 - `mensagem_template`
+- `mensagem_variavel`
 - `preco_hora`
 - `feriado`
 - `ambiente`

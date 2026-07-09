@@ -11,7 +11,7 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 
 - **App:** https://quintal-brincante-erp.vercel.app (Vercel; deploy automático a cada
   `git push` na `main` — repo `fabianoomura/quintal_brincante_erp`)
-- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 23 migrations versionadas,
+- **Banco/Auth:** Supabase cloud (ref `verzmbntyibvtwfozhdu`), 24 migrations versionadas,
   RLS em tudo
 - **Workers:** `pg_cron` → `aviso-tempo` (a cada 5 min) e `mensalidades` (dia 1, 06h BRT)
 - **WhatsApp:** Evolution API no Railway (instância `quintal`) — mensagens reais chegando;
@@ -46,9 +46,11 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
   notificação única antes do fim. A antecedência padrão é `aviso_antecedencia_min = 15`
   minutos e pode ser alterada em `config_sistema`
 - **Busca de criança** (filtra digitando, sem acento) + botão **“+ Cadastrar criança”**
-  que abre a ficha completa e volta pro play
+  que abre a ficha completa, permite foto por webcam/arquivo e volta pro play
 - **Recebimento no check-out:** pop-up com Dinheiro / Pix / Débito / Crédito → baixa na
   hora, ou “deixar pendente” (caso “foi embora sem pagar” fica registrado no Financeiro)
+- **Agradecimento no check-out:** ao encerrar uma sessão do play, envia mensagem editável
+  de agradecimento ao responsável, com auditoria em `notificacao`
 
 ### Mensalistas / Colônia / Gestão
 - Planos por frequência (2x, 3x/semana…), matrículas, reposição de dias, desconto por
@@ -57,12 +59,14 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 - Faturamento por operação/mês · Gerencial (admin) · RBAC admin/operador · Colaboradores
 - `/mensagens`: textos dos avisos editáveis + status de aprovação; hoje funciona como
   catálogo dos textos enviados pela Evolution API
-- Templates revisados para tom mais amigável. As variáveis usam o primeiro nome do
-  responsável e o primeiro nome da criança
+- Templates revisados para tom mais amigável. As variáveis usam nomes padronizados em
+  `mensagem_variavel`, como `{{responsavel_nome}}` e `{{crianca_nome}}`
+- Avisos rápidos do play são editáveis, ordenáveis e limitados a 6 ativos na tela; é possível
+  criar avisos extras como inativos e substituir depois
 - Ajuda contextual: botão “?” em toda tela explica o que ela faz (textos em `src/lib/ajuda.ts`)
 
 ### Qualidade
-- 86 testes unitários cobrindo tarifador, grade, feriados, irmãos, aviso-tempo, adapters
+- 89 testes unitários cobrindo tarifador, grade, feriados, irmãos, aviso-tempo, adapters
   WhatsApp, renderização de mensagens, playground/checkout, recebimentos, endereço/ViaCEP e
   máscaras
 - Testes de integração existem contra Supabase local, mas exigem Supabase/Docker rodando.

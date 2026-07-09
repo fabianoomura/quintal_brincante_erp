@@ -4,7 +4,9 @@ import {
   nomePessoaMensagem,
   nomeResponsavelMensagem,
   renderizarTemplate,
+  tplAgradecimentoCheckout,
   tplAvisoTempo,
+  tplBoasVindas,
   tplOcorrencia,
 } from './templates'
 
@@ -15,8 +17,19 @@ test('renderizarTemplate troca variáveis por posição', () => {
   )
 })
 
+test('renderizarTemplate troca variáveis nomeadas padronizadas', () => {
+  assert.equal(
+    renderizarTemplate('Oi {{responsavel_nome}}, {{crianca_nome}} chegou.', [], {
+      responsavel_nome: 'Ana',
+      crianca_nome: 'Beto',
+    }),
+    'Oi Ana, Beto chegou.',
+  )
+})
+
 test('renderizarTemplate preserva variáveis sem valor', () => {
   assert.equal(renderizarTemplate('Oi {{1}} {{2}}', ['Ana']), 'Oi Ana {{2}}')
+  assert.equal(renderizarTemplate('Oi {{responsavel_nome}}'), 'Oi {{responsavel_nome}}')
 })
 
 test('nomeResponsavelMensagem prefere primeiro_nome e usa fallback do nome completo', () => {
@@ -36,7 +49,7 @@ test('tplAvisoTempo renderiza texto e variáveis', () => {
   )
 })
 
-test('tplAvisoTempo aceita texto vindo do banco', () => {
+test('tplAvisoTempo aceita texto antigo por posição vindo do banco', () => {
   const r = tplAvisoTempo('Ana', 'Beto Souza', 15, 'Oi {{1}}: {{2}} tem {{3}} min.')
   assert.equal(r.conteudo, 'Oi Ana: Beto tem 15 min.')
 })
@@ -50,13 +63,24 @@ test('tplOcorrencia renderiza texto e variáveis', () => {
   const r = tplOcorrencia('Ana Silva', 'Beto Souza', 'chorou bastante')
   assert.equal(r.template, 'ocorrencia')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto', 'chorou bastante'])
-  assert.equal(
-    r.conteudo,
-    'Olá Ana, sobre Beto: chorou bastante',
-  )
+  assert.equal(r.conteudo, 'Olá Ana, sobre Beto: chorou bastante')
 })
 
-test('tplOcorrencia aceita texto vindo do banco', () => {
-  const r = tplOcorrencia('Ana', 'Helena Omura', 'precisa de ajuda', '{{1}} / {{2}} / {{3}}')
-  assert.equal(r.conteudo, 'Ana / Helena / precisa de ajuda')
+test('tplOcorrencia aceita detalhe com variável nomeada', () => {
+  const r = tplOcorrencia('Ana', 'Helena Omura', '{{crianca_nome}} precisa de ajuda')
+  assert.equal(r.conteudo, 'Olá Ana, sobre Helena: Helena precisa de ajuda')
+})
+
+test('tplBoasVindas renderiza variáveis nomeadas e posicionais', () => {
+  const r = tplBoasVindas('Ana Silva', 'Beto Souza', 'Oi {{responsavel_nome}}/{{1}}: {{crianca_nome}}/{{2}}')
+  assert.equal(r.template, 'boas_vindas')
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
+  assert.equal(r.conteudo, 'Oi Ana/Ana: Beto/Beto')
+})
+
+test('tplAgradecimentoCheckout renderiza agradecimento', () => {
+  const r = tplAgradecimentoCheckout('Ana Silva', 'Beto Souza')
+  assert.equal(r.template, 'agradecimento_checkout')
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
+  assert.equal(r.conteudo, 'Obrigado pela visita, Ana! Beto já saiu do play. Até a próxima! 💚')
 })

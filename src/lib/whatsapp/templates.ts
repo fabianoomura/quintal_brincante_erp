@@ -1,6 +1,6 @@
-// Templates WhatsApp (utility) — spec §7. Poucos, com variáveis.
-// A renderização produz: o texto final (auditoria em notificacao.conteudo) e o array de
-// variáveis (o que a Cloud API precisa quando o envio real existir).
+// Templates WhatsApp (utility).
+// A renderizacao produz texto final para auditoria/Evolution e tambem o array posicional
+// que a Cloud API da Meta usa quando o provider oficial estiver ativo.
 
 export type TemplateRender = {
   template: string
@@ -8,9 +8,21 @@ export type TemplateRender = {
   conteudo: string
 }
 
+export type VariaveisMensagem = Record<string, string | number | null | undefined>
+
 const TEXTO_AVISO_TEMPO =
-  'Olá {{1}}, o tempo de {{2}} no play está chegando ao fim. Faltam {{3}} min. Pode vir se aproximando, por favor?'
-const TEXTO_OCORRENCIA = 'Olá {{1}}, sobre {{2}}: {{3}}'
+  'Olá {{responsavel_nome}}, o tempo de {{crianca_nome}} no play está chegando ao fim. Faltam {{minutos_restantes}} min. Pode vir se aproximando, por favor?'
+const TEXTO_OCORRENCIA = 'Olá {{responsavel_nome}}, sobre {{crianca_nome}}: {{detalhe}}'
+const TEXTO_BOAS_VINDAS = `Olá {{responsavel_nome}}! 🌳 {{crianca_nome}} acabou de entrar no play.
+
+Combinados do Quintal:
+• As crianças permanecem no espaço do play.
+• Se a criança quiser sair, o responsável vem buscá-la.
+• Adultos não permanecem no espaço do play.
+
+Qualquer coisa, avisamos por aqui. 💚`
+const TEXTO_AGRADECIMENTO_CHECKOUT =
+  'Obrigado pela visita, {{responsavel_nome}}! {{crianca_nome}} já saiu do play. Até a próxima! 💚'
 
 export function nomePessoaMensagem(
   nome: string | null | undefined,
@@ -25,14 +37,34 @@ export function nomePessoaMensagem(
 
 export const nomeResponsavelMensagem = nomePessoaMensagem
 
-export function renderizarTemplate(texto: string, variaveis: string[]): string {
-  return variaveis.reduce(
+export function renderizarTemplate(
+  texto: string,
+  variaveis: string[] = [],
+  variaveisNomeadas: VariaveisMensagem = {},
+): string {
+  const comPosicionais = variaveis.reduce(
     (acc, valor, index) => acc.replaceAll(`{{${index + 1}}}`, valor),
     texto,
   )
+
+  return Object.entries(variaveisNomeadas).reduce((acc, [chave, valor]) => {
+    if (valor == null) return acc
+    return acc.replaceAll(`{{${chave}}}`, String(valor))
+  }, comPosicionais)
 }
 
-// aviso_tempo — "Olá {{1}}, o tempo do(a) {{2}} no play está acabando (faltam {{3}} min)."
+function nomesMensagem(
+  responsavel: string,
+  crianca: string,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+) {
+  return {
+    responsavel_nome: nomePessoaMensagem(responsavel, primeiroNomeResponsavel),
+    crianca_nome: nomePessoaMensagem(crianca, primeiroNomeCrianca),
+  }
+}
+
 export function tplAvisoTempo(
   responsavel: string,
   crianca: string,
@@ -41,19 +73,18 @@ export function tplAvisoTempo(
   primeiroNomeResponsavel?: string | null,
   primeiroNomeCrianca?: string | null,
 ): TemplateRender {
-  const variaveis = [
-    nomePessoaMensagem(responsavel, primeiroNomeResponsavel),
-    nomePessoaMensagem(crianca, primeiroNomeCrianca),
-    String(minutosRestantes),
-  ]
+  const ctx = {
+    ...nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca),
+    minutos_restantes: String(minutosRestantes),
+  }
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome, ctx.minutos_restantes]
   return {
     template: 'aviso_tempo',
     variaveis,
-    conteudo: renderizarTemplate(textoTemplate, variaveis),
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }
 }
 
-// ocorrencia — "Olá {{1}}, sobre {{2}}: {{3}}"
 export function tplOcorrencia(
   responsavel: string,
   crianca: string,
@@ -62,14 +93,45 @@ export function tplOcorrencia(
   primeiroNomeResponsavel?: string | null,
   primeiroNomeCrianca?: string | null,
 ): TemplateRender {
-  const variaveis = [
-    nomePessoaMensagem(responsavel, primeiroNomeResponsavel),
-    nomePessoaMensagem(crianca, primeiroNomeCrianca),
-    detalhe,
-  ]
+  const nomes = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const detalheRenderizado = renderizarTemplate(detalhe, [], nomes)
+  const ctx = { ...nomes, detalhe: detalheRenderizado }
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome, ctx.detalhe]
   return {
     template: 'ocorrencia',
     variaveis,
-    conteudo: renderizarTemplate(textoTemplate, variaveis),
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+export function tplBoasVindas(
+  responsavel: string,
+  crianca: string,
+  textoTemplate = TEXTO_BOAS_VINDAS,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
+  return {
+    template: 'boas_vindas',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+export function tplAgradecimentoCheckout(
+  responsavel: string,
+  crianca: string,
+  textoTemplate = TEXTO_AGRADECIMENTO_CHECKOUT,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
+  return {
+    template: 'agradecimento_checkout',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }
 }

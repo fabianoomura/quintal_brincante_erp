@@ -21,7 +21,7 @@ Ligado hoje:
 - Nome/sobrenome separados para criança e responsável, preservando o nome de exibição
 - Endereço estruturado opcional para BI, com CEP e autopreenchimento por ViaCEP
 - Presença (check-in/out) + tarifador do play (piso 1h + proporcional)
-- Aviso de tempo do play via WhatsApp/Evolution, validado com envio real
+- Aviso de tempo e agradecimento de check-out via WhatsApp/Evolution
 - Financeiro (baixa manual, descontos, export CSV) + Faturamento
 - Mensalistas + planos + reposição de dias · Colônia
 - RBAC (admin/operador) · Ambientes · Configurações
@@ -43,6 +43,8 @@ Estas decisões são o que separa uma ferramenta de um protótipo — e já est�
   antecedência são editáveis pela equipe, sem mexer em código.
 - **Dados preparados para BI sem travar a operação.** Nome/sobrenome e endereço estruturado
   são opcionais, então melhoram análise futura sem impedir cadastro rápido no balcão.
+- **Mensagens configuráveis com variáveis padronizadas.** Templates editáveis usam catálogo
+  comum de variáveis, e avisos rápidos do play têm até 6 ativos por vez.
 - **Lógica crítica com teste puro.** Tarifador, feriados, desconto de irmão, playground,
   recebimentos, mensagens e endereço têm testes — mudanças futuras avisam se quebrarem algo.
 - **Boas práticas de dados.** Dinheiro em `numeric`, telefone E.164, migrations idempotentes,
@@ -61,7 +63,7 @@ Nada aqui é "defeito" — é o mapa do que falta pra virar produto maduro:
 3. **Backup não está definido.** Hoje dependemos do que o plano do Supabase oferece por padrão.
 4. **Sem "sinal de vida" dos workers.** Se um agendamento parar, ninguém é avisado (falha calada).
 5. **Sem trilha de auditoria completa.** Sabemos das notificações; não de "quem alterou o quê".
-6. **Cobertura E2E ainda falta.** Há 86 testes unitários, mas os fluxos de tela ainda precisam
+6. **Cobertura E2E ainda falta.** Há 89 testes unitários, mas os fluxos de tela ainda precisam
    de testes ponta a ponta.
 7. **Dependência de dev.** Sob medida = exatamente o que você quer, sem taxa por aluno; o preço
    é depender de alguém que mexa no código pra mudanças grandes.

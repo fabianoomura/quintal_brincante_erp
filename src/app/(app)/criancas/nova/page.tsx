@@ -8,6 +8,7 @@ import { card, input, label, labelText, btnPrimary } from '@/lib/ui'
 import { formatarCPF } from '@/lib/cpf'
 import { formatarTelefoneBR } from '@/lib/fone'
 import EnderecoFields from '../endereco-fields'
+import FotoInput from '../../foto-input'
 
 const PAPEIS = [
   { value: 'responsavel', label: 'Responsável' },
@@ -42,6 +43,7 @@ export default function NovaCriancaPage() {
   const [sobrenome, setSobrenome] = useState('')
   const [nascimento, setNascimento] = useState('')
   const [saude, setSaude] = useState('')
+  const [foto, setFoto] = useState<string | null>(null)
   const [endereco, setEndereco] = useState<EnderecoInput>({})
   const [contatos, setContatos] = useState<ContatoInput[]>([
     contatoVazio('responsavel'),
@@ -63,6 +65,7 @@ export default function NovaCriancaPage() {
       sobrenome,
       nascimento,
       saude,
+      foto,
       ...endereco,
       contatos,
     })
@@ -127,6 +130,10 @@ export default function NovaCriancaPage() {
             className={input}
           />
         </label>
+        <div className={label}>
+          <span className={labelText}>Foto</span>
+          <FotoInput value={foto} onChange={setFoto} />
+        </div>
       </section>
 
       <section className="space-y-3">

@@ -3,6 +3,17 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { salvarTemplate, removerTemplate } from './actions'
+import type { Database } from '@/lib/database.types'
+
+type TipoOcorrencia = Database['public']['Enums']['tipo_ocorrencia']
+
+export type VariavelMensagemUI = {
+  chave: string
+  placeholder: string
+  rotulo: string
+  descricao: string
+  exemplo: string | null
+}
 
 const STATUS = [
   { v: 'rascunho', label: 'Rascunho', cls: 'bg-slate-200 text-slate-600' },
@@ -11,26 +22,19 @@ const STATUS = [
   { v: 'reprovado', label: 'Reprovado', cls: 'bg-rose-100 text-rose-700' },
 ]
 
-// O que cada {{n}} significa, por template (chave). O sistema preenche na hora do envio.
-const VARIAVEIS: Record<string, { v: string; desc: string }[]> = {
-  aviso_tempo: [
-    { v: '{{1}}', desc: 'primeiro nome do responsável' },
-    { v: '{{2}}', desc: 'primeiro nome da criança' },
-    { v: '{{3}}', desc: 'minutos restantes' },
-  ],
-  ocorrencia: [
-    { v: '{{1}}', desc: 'primeiro nome do responsável' },
-    { v: '{{2}}', desc: 'primeiro nome da criança' },
-    { v: '{{3}}', desc: 'detalhe do aviso' },
-  ],
-  aviso_geral: [
-    { v: '{{1}}', desc: 'nome do responsável' },
-    { v: '{{2}}', desc: 'texto do aviso' },
-  ],
-  boas_vindas: [
-    { v: '{{1}}', desc: 'primeiro nome do responsável' },
-    { v: '{{2}}', desc: 'primeiro nome da criança' },
-  ],
+const VARIAVEIS_RECOMENDADAS: Record<string, string[]> = {
+  aviso_tempo: ['responsavel_nome', 'crianca_nome', 'minutos_restantes'],
+  ocorrencia: ['responsavel_nome', 'crianca_nome', 'detalhe'],
+  boas_vindas: ['responsavel_nome', 'crianca_nome'],
+  agradecimento_checkout: ['responsavel_nome', 'crianca_nome'],
+}
+
+const TIPO_LABEL: Record<string, string> = {
+  banheiro: 'Banheiro',
+  nao_adaptou: 'Não se adaptou',
+  saude: 'Saúde',
+  comportamento: 'Comportamento',
+  outro: 'Outro',
 }
 
 export default function TemplateRow({
@@ -38,22 +42,28 @@ export default function TemplateRow({
   chave,
   nome,
   tipo,
+  tipoOcorrencia,
   texto,
   categoria,
   status,
   ativo,
+  ordem,
+  variaveis,
 }: {
   id: string
   chave: string
   nome: string
   tipo: string
+  tipoOcorrencia: TipoOcorrencia | null
   texto: string
   categoria: string
   status: string
   ativo: boolean
+  ordem: number
+  variaveis: VariavelMensagemUI[]
 }) {
   const router = useRouter()
-  const [f, setF] = useState({ nome, texto, categoria, status, ativo })
+  const [f, setF] = useState({ nome, texto, categoria, status, ativo, ordem })
   const [msg, setMsg] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -69,7 +79,27 @@ export default function TemplateRow({
     router.refresh()
   }
 
+  async function remover() {
+    setMsg(null)
+    setErro(null)
+    setOcupado(true)
+    const res = await removerTemplate(id)
+    setOcupado(false)
+    if (!res.ok) return setErro(res.erro)
+    router.refresh()
+  }
+
+  function inserirVariavel(v: VariavelMensagemUI) {
+    setF((atual) => ({ ...atual, texto: `${atual.texto}${atual.texto.endsWith(' ') ? '' : ' '}${v.placeholder}` }))
+  }
+
   const stCls = STATUS.find((s) => s.v === f.status)?.cls ?? ''
+  const recomendadas =
+    VARIAVEIS_RECOMENDADAS[chave] ??
+    (tipo === 'aviso_rapido' ? ['responsavel_nome', 'crianca_nome'] : undefined)
+  const listaVariaveis = recomendadas
+    ? variaveis.filter((v) => recomendadas.includes(v.chave))
+    : variaveis
 
   return (
     <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -90,50 +120,84 @@ export default function TemplateRow({
         rows={chave === 'boas_vindas' ? 8 : 3}
         className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed"
       />
-      {VARIAVEIS[chave] ? (
+
+      <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-semibold text-slate-400">Variáveis:</span>
-          {VARIAVEIS[chave].map((x) => (
-            <span
-              key={x.v}
-              className="rounded-full bg-sky-50 px-2 py-0.5 font-mono text-[11px] text-sky-700 ring-1 ring-sky-200"
+          {listaVariaveis.map((v) => (
+            <button
+              key={v.chave}
+              type="button"
+              onClick={() => inserirVariavel(v)}
+              title={`${v.descricao}${v.exemplo ? ` Ex.: ${v.exemplo}` : ''}`}
+              className="rounded-full bg-sky-50 px-2 py-0.5 font-mono text-[11px] text-sky-700 ring-1 ring-sky-200 hover:bg-sky-100"
             >
-              {x.v} <span className="font-sans text-slate-500">= {x.desc}</span>
-            </span>
+              {v.placeholder}
+            </button>
           ))}
         </div>
-      ) : tipo === 'aviso_rapido' ? (
-        <p className="text-[11px] text-slate-400">
-          Sem variáveis — este texto vira o “detalhe” da mensagem de Ocorrência ({'{{3}}'}).
-        </p>
-      ) : (
-        <p className="text-[11px] text-slate-400">Use {'{{1}}'}, {'{{2}}'}… para as variáveis.</p>
-      )}
+        {tipo === 'aviso_rapido' && (
+          <p className="text-[11px] text-slate-400">
+            Este texto vira o detalhe do aviso. No playground aparecem no máximo 6 avisos rápidos ativos.
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <select value={f.categoria} onChange={(e) => setF({ ...f, categoria: e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+        <label className="flex items-center gap-1 text-sm text-slate-600">
+          <span className="text-xs font-semibold text-slate-400">Ordem</span>
+          <input
+            type="number"
+            value={f.ordem}
+            onChange={(e) => setF({ ...f, ordem: Number(e.target.value) })}
+            className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        {tipo === 'aviso_rapido' && tipoOcorrencia && (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+            {TIPO_LABEL[tipoOcorrencia] ?? tipoOcorrencia}
+          </span>
+        )}
+        <select
+          value={f.categoria}
+          onChange={(e) => setF({ ...f, categoria: e.target.value })}
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+        >
           <option value="utility">utility</option>
           <option value="marketing">marketing</option>
         </select>
-        <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+        <select
+          value={f.status}
+          onChange={(e) => setF({ ...f, status: e.target.value })}
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+        >
           {STATUS.map((s) => (
-            <option key={s.v} value={s.v}>{s.label}</option>
+            <option key={s.v} value={s.v}>
+              {s.label}
+            </option>
           ))}
         </select>
         <label className="flex items-center gap-1 text-sm text-slate-600">
-          <input type="checkbox" checked={f.ativo} onChange={(e) => setF({ ...f, ativo: e.target.checked })} className="h-4 w-4" />
+          <input
+            type="checkbox"
+            checked={f.ativo}
+            onChange={(e) => setF({ ...f, ativo: e.target.checked })}
+            className="h-4 w-4"
+          />
           ativo
         </label>
-        <button onClick={salvar} disabled={ocupado} className="pop rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button
+          onClick={salvar}
+          disabled={ocupado}
+          className="pop rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
           Salvar
         </button>
         {tipo === 'aviso_rapido' && (
           <button
-            onClick={async () => {
-              await removerTemplate(id)
-              router.refresh()
-            }}
-            className="text-sm font-semibold text-rose-500"
+            onClick={remover}
+            disabled={ocupado}
+            className="text-sm font-semibold text-rose-500 disabled:opacity-50"
           >
             remover
           </button>

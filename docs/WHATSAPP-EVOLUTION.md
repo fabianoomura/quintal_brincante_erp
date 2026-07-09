@@ -16,8 +16,9 @@ dedicado** (como WhatsApp Web). O sistema chama a API REST dele e a mensagem sai
 - Uso principal: avisos operacionais aos responsáveis
 - Aviso de tempo: validado com envio real
 - Templates: editáveis em `/mensagens`; a Evolution envia o texto renderizado diretamente
-- Variáveis principais: primeiro nome do responsável, primeiro nome da criança e, quando
-  necessário, minutos restantes/descrição da ocorrência
+- Variáveis principais: `{{responsavel_nome}}`, `{{crianca_nome}}`, `{{minutos_restantes}}`
+  e `{{detalhe}}`, vindas do catálogo `mensagem_variavel`
+- Avisos rápidos do play: até 6 ativos por vez, ordenados pela tela de mensagens
 
 O `CloudSender` da Meta oficial segue implementado em stand-by. Voltar para a Meta é troca de
 envs e revisão dos templates aprovados.
@@ -106,6 +107,8 @@ ou emojis.
 
 - `EvolutionSender` (`src/lib/whatsapp/adapter.ts`), com testes.
 - Renderização dos templates de `/mensagens`.
+- Agradecimento de check-out (`agradecimento_checkout`) e boas-vindas usam os mesmos helpers
+  de renderização dos avisos.
 - Aviso de tempo em `src/lib/whatsapp/avisoTempo.ts`, com lógica pura e testes.
 - Auditoria na tabela `notificacao` (conteúdo, status, provider, id externo, data).
 - `CloudSender` da Meta oficial em stand-by.

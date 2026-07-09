@@ -499,6 +499,40 @@ export type Database = {
         }
         Relationships: []
       }
+      mensagem_variavel: {
+        Row: {
+          ativo: boolean
+          chave: string
+          created_at: string
+          descricao: string
+          exemplo: string | null
+          id: string
+          ordem: number
+          placeholder: string
+          rotulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          created_at?: string
+          descricao: string
+          exemplo?: string | null
+          id?: string
+          ordem?: number
+          rotulo: string
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          created_at?: string
+          descricao?: string
+          exemplo?: string | null
+          id?: string
+          ordem?: number
+          rotulo?: string
+        }
+        Relationships: []
+      }
       mensalidade: {
         Row: {
           ativo: boolean
@@ -831,6 +865,7 @@ export type Database = {
         | "ocorrencia"
         | "aviso_geral"
         | "boas_vindas"
+        | "agradecimento_checkout"
       tipo_ocorrencia:
         | "banheiro"
         | "nao_adaptou"
@@ -977,6 +1012,7 @@ export const Constants = {
         "ocorrencia",
         "aviso_geral",
         "boas_vindas",
+        "agradecimento_checkout",
       ],
       tipo_ocorrencia: [
         "banheiro",
