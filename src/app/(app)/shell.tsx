@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from './logout-action'
 import AjudaButton from './ajuda-button'
+import { createClient } from '@/lib/supabase/client'
 
 type Item = { href: string; label: string; icon: string; cor: string; adminOnly?: boolean }
 type Grupo = { titulo: string; itens: Item[] }
@@ -65,14 +66,40 @@ function tituloDaRota(path: string): string {
 export default function Shell({
   nome,
   ehAdmin,
+  totalNaoLidasInicial,
   children,
 }: {
   nome: string
   ehAdmin: boolean
+  totalNaoLidasInicial: number
   children: React.ReactNode
 }) {
   const pathname = usePathname()
   const [aberto, setAberto] = useState(false)
+  const [totalNaoLidas, setTotalNaoLidas] = useState(totalNaoLidasInicial)
+
+  useEffect(() => {
+    const supabase = createClient()
+    async function atualizarTotal() {
+      const { data } = await supabase
+        .from('whatsapp_conversa')
+        .select('nao_lidas')
+        .eq('ativo', true)
+        .gt('nao_lidas', 0)
+      if (data) setTotalNaoLidas(data.reduce((soma, c) => soma + c.nao_lidas, 0))
+    }
+    const canal = supabase
+      .channel('shell-conversas-nao-lidas')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'whatsapp_conversa' },
+        atualizarTotal,
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(canal)
+    }
+  }, [])
 
   const NavConteudo = (
     <nav className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
@@ -109,6 +136,11 @@ export default function Shell({
                     {i.icon}
                   </span>
                   {i.label}
+                  {i.href === '/conversas' && totalNaoLidas > 0 && (
+                    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white shadow-sm">
+                      {totalNaoLidas > 99 ? '99+' : totalNaoLidas}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -161,6 +193,23 @@ export default function Shell({
             <AjudaButton />
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/conversas"
+              className="relative grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-lg ring-1 ring-amber-200 transition hover:bg-amber-100"
+              aria-label={
+                totalNaoLidas > 0
+                  ? `${totalNaoLidas} mensagem(ns) não lida(s)`
+                  : 'Conversas, nenhuma mensagem não lida'
+              }
+              title={totalNaoLidas > 0 ? `${totalNaoLidas} mensagem(ns) não lida(s)` : 'Conversas'}
+            >
+              🔔
+              {totalNaoLidas > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                  {totalNaoLidas > 99 ? '99+' : totalNaoLidas}
+                </span>
+              )}
+            </Link>
             <span className="hidden rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 sm:inline">
               {nome.split(' ')[0]} · {ehAdmin ? 'admin' : 'operador'}
             </span>

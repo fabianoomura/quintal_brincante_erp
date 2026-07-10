@@ -1,5 +1,6 @@
 import { logout } from './logout-action'
 import { getColaboradorAtual } from '@/lib/colaborador'
+import { createClient } from '@/lib/supabase/server'
 import Shell from './shell'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -26,8 +27,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     )
   }
 
+  const supabase = await createClient()
+  const { data: conversasNaoLidas } = await supabase
+    .from('whatsapp_conversa')
+    .select('nao_lidas')
+    .eq('ativo', true)
+    .gt('nao_lidas', 0)
+  const totalNaoLidas = (conversasNaoLidas ?? []).reduce((soma, c) => soma + c.nao_lidas, 0)
+
   return (
-    <Shell nome={colaborador.nome} ehAdmin={colaborador.papel_acesso === 'admin'}>
+    <Shell
+      nome={colaborador.nome}
+      ehAdmin={colaborador.papel_acesso === 'admin'}
+      totalNaoLidasInicial={totalNaoLidas}
+    >
       {children}
     </Shell>
   )

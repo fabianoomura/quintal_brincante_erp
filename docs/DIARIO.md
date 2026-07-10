@@ -177,6 +177,9 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   (sem distinção de maiúsculas ou acentos) atualizam a ficha da criança da pergunta
   pendente mais recente daquele contato. Respostas livres não são inferidas.
 - Futuro: status de entrega/leitura
+- **Avisos globais de conversa:** sino no cabeçalho e badge no menu mostram o total de
+  mensagens não lidas em tempo real. Em `Quem está aqui`, cada criança tem atalho para
+  o chat do responsável, com badge próprio e vínculo à presença atual.
   (`MESSAGES_UPDATE`), mídia.
 
 ## Fila de próximos passos

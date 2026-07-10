@@ -5,6 +5,9 @@ import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
 import NovaEntradaButton from './nova-entrada-button'
 import CheckoutButton from './checkout-button'
 import PresencasAntigas from './presencas-antigas'
+import ConversaButton from './conversa-button'
+import RealtimeRefresh from '../conversas/realtime-refresh'
+import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 
 import { card } from '@/lib/ui'
 
@@ -63,6 +66,10 @@ export default async function PresencaPage() {
 
   const lotacao = calcularLotacao(presentes?.length ?? 0, cfg?.capacidade_dia ?? null)
   const estilo = LOTACAO_ESTILO[lotacao.nivel]
+  const naoLidas = await naoLidasPorCrianca(
+    supabase,
+    (presentes ?? []).map((p) => p.crianca?.id ?? '').filter(Boolean),
+  )
 
   // Ocupação por ambiente (só mostra se há ambientes cadastrados).
   const porAmbiente = (ambientes ?? []).map((a) => ({
@@ -73,6 +80,7 @@ export default async function PresencaPage() {
 
   return (
     <div className="space-y-5">
+      <RealtimeRefresh tabela="whatsapp_conversa" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <Link href="/" className="text-sm font-semibold text-slate-500">
@@ -158,7 +166,16 @@ export default async function PresencaPage() {
                   {p.ambiente ? ` · 🏠 ${p.ambiente.nome}` : ''}
                 </div>
               </div>
-              <CheckoutButton presencaId={p.id} />
+              <div className="flex shrink-0 items-center gap-2">
+                {p.crianca?.id && (
+                  <ConversaButton
+                    criancaId={p.crianca.id}
+                    presencaId={p.id}
+                    naoLidas={naoLidas.get(p.crianca.id) ?? 0}
+                  />
+                )}
+                <CheckoutButton presencaId={p.id} />
+              </div>
             </li>
           ))}
         </ul>
