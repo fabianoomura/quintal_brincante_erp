@@ -176,7 +176,7 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Autorização automática:** respostas isoladas `SIM`/`S` e `NÃO`/`NAO`/`N`
   (sem distinção de maiúsculas ou acentos) atualizam a ficha da criança da pergunta
   pendente mais recente daquele contato. Respostas livres não são inferidas.
-- Futuro: status de entrega/leitura
+- Futuro: status de entrega/leitura (`MESSAGES_UPDATE`), mídia.
 - **Avisos globais de conversa:** sino no cabeçalho e badge no menu mostram o total de
   mensagens não lidas em tempo real. Em `Quem está aqui`, cada criança tem atalho para
   o chat do responsável, com badge próprio e vínculo à presença atual.
@@ -192,7 +192,9 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   Assim, até 30 min excedentes = meia hora; de 31 a 60 min = hora adicional cheia.
 - **Recebimento com ajuste:** o valor pode ser editado no modal antes de escolher a forma
   de pagamento; o lançamento é atualizado com o valor efetivamente recebido antes da baixa.
-  (`MESSAGES_UPDATE`), mídia.
+- **Fix instalação PWA:** o middleware de auth redirecionava `/manifest.webmanifest`,
+  `/sw.js` e `/offline` para `/login` (o navegador busca o manifest sem cookies), então o
+  Chrome não oferecia "Instalar app". Corrigido excluindo esses caminhos do matcher.
 
 ## Fila de próximos passos
 
