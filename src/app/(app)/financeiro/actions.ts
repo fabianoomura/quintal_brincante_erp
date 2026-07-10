@@ -43,6 +43,7 @@ export async function baixaManual(
   lancamentoId: string,
   modalidade: Modalidade,
   descontoReais = 0,
+  valorAjustado?: number,
 ): Promise<Resultado> {
   const supabase = await createClient()
 
@@ -52,6 +53,11 @@ export async function baixaManual(
     .eq('id', lancamentoId)
     .maybeSingle()
   if (!lanc) return { ok: false, erro: 'Lançamento não encontrado.' }
+
+  const valorFinal = valorAjustado == null ? Number(lanc.valor) : Math.round(valorAjustado * 100) / 100
+  if (!Number.isFinite(valorFinal) || valorFinal <= 0) {
+    return { ok: false, erro: 'Informe um valor maior que zero.' }
+  }
 
   let descontoAtivo = false
   if (descontoReais > 0) {
@@ -63,7 +69,7 @@ export async function baixaManual(
     descontoAtivo = cfg?.desconto_ativo ?? false
   }
   const desc = calcularDescontoBaixa({
-    valor: Number(lanc.valor),
+    valor: valorFinal,
     descontoAtual: Number(lanc.desconto),
     descontoReais,
     descontoAtivo,
@@ -72,6 +78,7 @@ export async function baixaManual(
   const { data, error } = await supabase
     .from('lancamento')
     .update({
+      valor: valorFinal,
       status: 'pago',
       conciliado_por: 'manual',
       capture_method: modalidade,

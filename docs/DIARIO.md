@@ -190,6 +190,8 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Excedente do Play em blocos:** tolerância inicial `0` (continua configurável); após
   o tempo contratado, cada bloco iniciado de 30 min acrescenta 50% da tarifa/hora.
   Assim, até 30 min excedentes = meia hora; de 31 a 60 min = hora adicional cheia.
+- **Recebimento com ajuste:** o valor pode ser editado no modal antes de escolher a forma
+  de pagamento; o lançamento é atualizado com o valor efetivamente recebido antes da baixa.
   (`MESSAGES_UPDATE`), mídia.
 
 ## Fila de próximos passos

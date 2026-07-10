@@ -29,16 +29,48 @@ export default function RecebimentoModal({
   nome: string
   onFechar: () => void
 }) {
+  if (!aberto) return null
+
+  return (
+    <RecebimentoConteudo
+      key={`${lancamentoId ?? 'sem-lancamento'}-${valor}`}
+      lancamentoId={lancamentoId}
+      valor={valor}
+      nome={nome}
+      onFechar={onFechar}
+    />
+  )
+}
+
+function RecebimentoConteudo({
+  lancamentoId,
+  valor,
+  nome,
+  onFechar,
+}: {
+  lancamentoId: string | null
+  valor: number
+  nome: string
+  onFechar: () => void
+}) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [valorDigitado, setValorDigitado] = useState(valor.toFixed(2))
+
+  const valorEditado = Number(valorDigitado.replace(',', '.'))
+  const valorValido = Number.isFinite(valorEditado) && valorEditado > 0
 
   async function receber(m: Modalidade) {
     if (!lancamentoId) return
+    if (!valorValido) {
+      setErro('Informe um valor maior que zero.')
+      return
+    }
     setErro(null)
     setOcupado(m)
     try {
-      const res = await baixaManual(lancamentoId, m)
+      const res = await baixaManual(lancamentoId, m, 0, valorEditado)
       if (!res.ok) {
         setErro(res.erro)
         return
@@ -53,10 +85,26 @@ export default function RecebimentoModal({
   }
 
   return (
-    <Modal open={aberto} onClose={onFechar} title="💰 Receber pagamento">
+    <Modal open onClose={onFechar} title="💰 Receber pagamento">
       <p className="text-sm text-slate-500">{nome}</p>
       <div className="my-3 text-center">
-        <div className="font-display text-4xl font-bold text-emerald-700">{formatBRL(valor)}</div>
+        <div className="font-display text-4xl font-bold text-emerald-700">
+          {valorValido ? formatBRL(valorEditado) : '—'}
+        </div>
+        <label className="mx-auto mt-2 block max-w-48 text-left">
+          <span className="mb-1 block text-xs font-bold text-slate-500">✏️ Valor a receber</span>
+          <div className="flex items-center rounded-xl border border-slate-300 bg-white px-3 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100">
+            <span className="font-bold text-slate-500">R$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={valorDigitado}
+              onChange={(e) => setValorDigitado(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-right text-lg font-bold outline-none"
+              aria-label="Valor a receber"
+            />
+          </div>
+        </label>
         <div className="text-xs text-slate-400">Como o responsável vai pagar?</div>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -64,7 +112,7 @@ export default function RecebimentoModal({
           <button
             key={o.k}
             onClick={() => receber(o.k)}
-            disabled={!!ocupado}
+            disabled={!!ocupado || !valorValido}
             className={`pop rounded-2xl ${o.cls} py-5 font-display text-base font-bold text-white shadow-sm disabled:opacity-50`}
           >
             {ocupado === o.k ? '…' : o.label}
