@@ -180,6 +180,11 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Avisos globais de conversa:** sino no cabeçalho e badge no menu mostram o total de
   mensagens não lidas em tempo real. Em `Quem está aqui`, cada criança tem atalho para
   o chat do responsável, com badge próprio e vínculo à presença atual.
+- **Colaboradores editáveis:** admin pode alterar nome, função e telefone de uma ficha
+  existente; papel e status continuam nos controles dedicados.
+- **Base PWA:** manifesto, modo standalone, service worker com headers seguros e fallback
+  offline neutro. Dados autenticados não são armazenados no cache do navegador.
+- Pendente: fila offline transacional para check-in/check-out, com idempotência no banco.
   (`MESSAGES_UPDATE`), mídia.
 
 ## Fila de próximos passos

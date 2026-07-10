@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
+import PwaRegister from "./pwa-register";
 
 // Fredoka: títulos/marca, bem arredondada e divertida. Nunito: corpo, redondinha e legível.
 const fredoka = Fredoka({
@@ -17,6 +18,8 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Quintal Brincante",
   description: "Gestão do quintal brincante — uso interno da equipe.",
+  applicationName: "Quintal Brincante",
+  appleWebApp: { capable: true, title: "Quintal" },
 };
 
 export default function RootLayout({
@@ -29,7 +32,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${fredoka.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col text-slate-800">{children}</body>
+      <body className="min-h-full flex flex-col text-slate-800">
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }

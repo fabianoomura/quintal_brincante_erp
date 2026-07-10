@@ -10,7 +10,7 @@ export default async function ColaboradoresPage() {
 
   const { data: colaboradores } = await supabase
     .from('colaborador')
-    .select('id, nome, funcao, papel_acesso, ativo')
+    .select('id, nome, funcao, telefone, papel_acesso, ativo')
     .order('ativo', { ascending: false })
     .order('nome', { ascending: true })
 
@@ -30,6 +30,7 @@ export default async function ColaboradoresPage() {
             id={c.id}
             nome={c.nome}
             funcao={c.funcao}
+            telefone={c.telefone}
             papel={c.papel_acesso}
             ativo={c.ativo}
             ehVoce={c.id === me.id}

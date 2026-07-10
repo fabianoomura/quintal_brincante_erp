@@ -92,3 +92,34 @@ export async function setColaboradorPapel(id: string, papel: Papel): Promise<Res
   revalidatePath('/colaboradores')
   return { ok: true }
 }
+
+export async function atualizarColaborador(
+  id: string,
+  input: { nome: string; funcao: string; telefone: string },
+): Promise<Resultado> {
+  const me = await exigirAdmin()
+  if (!me) return { ok: false, erro: 'Apenas admin.' }
+
+  const nome = input.nome.trim()
+  if (!nome) return { ok: false, erro: 'Informe o nome.' }
+  const telefone = input.telefone.replace(/\D/g, '')
+  if (telefone && (telefone.length < 10 || telefone.length > 13)) {
+    return { ok: false, erro: 'Telefone inválido.' }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('colaborador')
+    .update({
+      nome,
+      funcao: input.funcao.trim() || null,
+      telefone: telefone ? `+${telefone.startsWith('55') ? telefone : `55${telefone}`}` : null,
+    })
+    .eq('id', id)
+    .select('id')
+  if (error) return { ok: false, erro: error.message }
+  if (!data || data.length === 0) return { ok: false, erro: 'Sem permissão.' }
+
+  revalidatePath('/colaboradores')
+  return { ok: true }
+}

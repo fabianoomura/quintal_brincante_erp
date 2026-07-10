@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { setColaboradorAtivo, setColaboradorPapel } from './actions'
+import { atualizarColaborador, setColaboradorAtivo, setColaboradorPapel } from './actions'
+import { input, label, labelText } from '@/lib/ui'
 import type { Database } from '@/lib/database.types'
 
 type Papel = Database['public']['Enums']['papel_acesso']
@@ -11,6 +12,7 @@ export default function ColaboradorRow({
   id,
   nome,
   funcao,
+  telefone,
   papel,
   ativo,
   ehVoce,
@@ -18,6 +20,7 @@ export default function ColaboradorRow({
   id: string
   nome: string
   funcao: string | null
+  telefone: string | null
   papel: Papel
   ativo: boolean
   ehVoce: boolean
@@ -25,6 +28,27 @@ export default function ColaboradorRow({
   const router = useRouter()
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [editando, setEditando] = useState(false)
+  const [nomeEditado, setNomeEditado] = useState(nome)
+  const [funcaoEditada, setFuncaoEditada] = useState(funcao ?? '')
+  const [telefoneEditado, setTelefoneEditado] = useState(telefone ?? '')
+
+  async function salvarEdicao(e: React.FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    setOcupado(true)
+    const res = await atualizarColaborador(id, {
+      nome: nomeEditado,
+      funcao: funcaoEditada,
+      telefone: telefoneEditado,
+    })
+    setOcupado(false)
+    if (!res.ok) setErro(res.erro)
+    else {
+      setEditando(false)
+      router.refresh()
+    }
+  }
 
   async function togglePapel() {
     setErro(null)
@@ -54,6 +78,7 @@ export default function ColaboradorRow({
           </div>
           <div className="text-xs text-slate-500">
             {funcao ?? 'sem função'}
+            {telefone && ` · ${telefone}`}
             {!ativo && ' · inativo'}
           </div>
         </div>
@@ -66,6 +91,13 @@ export default function ColaboradorRow({
         </span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={() => setEditando((valor) => !valor)}
+          disabled={ocupado}
+          className="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-700 disabled:opacity-40"
+        >
+          {editando ? 'Cancelar edição' : '✏️ Editar'}
+        </button>
         <button
           onClick={togglePapel}
           disabled={ocupado || ehVoce}
@@ -83,6 +115,46 @@ export default function ColaboradorRow({
           {ativo ? 'Desativar' : 'Reativar'}
         </button>
       </div>
+      {editando && (
+        <form onSubmit={salvarEdicao} className="mt-3 grid gap-3 rounded-xl bg-slate-50 p-3 sm:grid-cols-3">
+          <label className={label}>
+            <span className={labelText}>Nome</span>
+            <input
+              required
+              value={nomeEditado}
+              onChange={(e) => setNomeEditado(e.target.value)}
+              className={input}
+            />
+          </label>
+          <label className={label}>
+            <span className={labelText}>Função</span>
+            <input
+              value={funcaoEditada}
+              onChange={(e) => setFuncaoEditada(e.target.value)}
+              className={input}
+            />
+          </label>
+          <label className={label}>
+            <span className={labelText}>Telefone</span>
+            <input
+              inputMode="tel"
+              value={telefoneEditado}
+              onChange={(e) => setTelefoneEditado(e.target.value)}
+              placeholder="(43) 99999-9999"
+              className={input}
+            />
+          </label>
+          <div className="sm:col-span-3">
+            <button
+              type="submit"
+              disabled={ocupado}
+              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {ocupado ? 'Salvando…' : 'Salvar alterações'}
+            </button>
+          </div>
+        </form>
+      )}
       {erro && <p className="mt-2 text-sm font-semibold text-rose-500">{erro}</p>}
     </li>
   )
