@@ -3,13 +3,19 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeISO } from '@/lib/datas'
 import PlaygroundPanel from './panel'
 import ConcluidasHoje from './concluidas-hoje'
+import PresencasAntigas from '../presenca/presencas-antigas'
 
 export default async function PlaygroundPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }, { data: avisos }, { data: cfg }] =
-    await Promise.all([
+  const [
+    { data: presentes },
+    { data: criancas },
+    { data: avisos },
+    { data: cfg },
+    { data: antigas },
+  ] = await Promise.all([
       supabase
         .from('presenca')
         .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto)')
@@ -26,6 +32,13 @@ export default async function PlaygroundPage() {
         .order('ordem')
         .limit(6),
       supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
+      // Check-outs esquecidos: abertas de dias ANTERIORES (invisíveis na lista de hoje).
+      supabase
+        .from('presenca')
+        .select('id, data, entrada, crianca:crianca_id (nome)')
+        .lt('data', hoje)
+        .is('saida', null)
+        .order('data', { ascending: true }),
     ])
   const avisosRapidos = (avisos ?? [])
     .filter((a) => a.tipo_ocorrencia)
@@ -42,6 +55,15 @@ export default async function PlaygroundPage() {
           ⛶ Modo quiosque
         </Link>
       </div>
+
+      <PresencasAntigas
+        presencas={(antigas ?? []).map((p) => ({
+          id: p.id,
+          nome: p.crianca?.nome ?? '—',
+          data: p.data,
+          entrada: p.entrada,
+        }))}
+      />
 
       <PlaygroundPanel
         presentes={(presentes ?? []).map((p) => ({

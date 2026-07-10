@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularValorCheckout } from './playground'
+import { calcularValorCheckout, validarSaidaManual } from './playground'
 
 test('checkout play: dentro da tolerancia cobra apenas o contratado', () => {
   assert.equal(
@@ -85,4 +85,19 @@ test('checkout play: segundos contam como minuto cheio', () => {
     }),
     20.33,
   )
+})
+
+// ── validarSaidaManual (check-out esquecido) ─────────────────────────────────
+
+test('saida manual valida: depois da entrada, formato HH:MM', () => {
+  assert.deepEqual(validarSaidaManual('14:00:00', '16:30'), { ok: true })
+})
+
+test('saida manual invalida: formato errado', () => {
+  assert.equal(validarSaidaManual('14:00:00', '16h30').ok, false)
+})
+
+test('saida manual invalida: antes ou igual a entrada', () => {
+  assert.equal(validarSaidaManual('14:00:00', '13:59').ok, false)
+  assert.equal(validarSaidaManual('14:00:00', '14:00').ok, false)
 })

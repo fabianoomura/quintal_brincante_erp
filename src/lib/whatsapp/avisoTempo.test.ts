@@ -5,6 +5,9 @@ import {
   selecionarAvisos,
   minutosRestantes,
   limiteAvisoMin,
+  situacaoAviso,
+  MAX_TENTATIVAS_AVISO,
+  type NotificacaoAvisoExistente,
   type PresencaAberta,
 } from './avisoTempo'
 
@@ -59,4 +62,39 @@ test('selecionarAvisos filtra só quem cruzou o limite e não foi avisado', () =
   ]
   const ids = selecionarAvisos(lista, 15 * 60 + 45, ANTEC).map((p) => p.id)
   assert.deepEqual(ids, ['no-limite'])
+})
+
+// ── situacaoAviso (retry do aviso que falhou) ────────────────────────────────
+
+const notif = (
+  status: string,
+  tentativas = 1,
+  tipo = 'aviso_tempo',
+): NotificacaoAvisoExistente => ({ id: `n-${status}-${tentativas}`, tipo, status, tentativas })
+
+test('situacaoAviso: sem notificação → novo', () => {
+  assert.deepEqual(situacaoAviso([]), { acao: 'novo' })
+})
+
+test('situacaoAviso: notificação de OUTRO tipo não conta', () => {
+  assert.deepEqual(situacaoAviso([notif('falha', 1, 'boas_vindas')]), { acao: 'novo' })
+})
+
+test('situacaoAviso: enviada → resolvido (nunca de novo)', () => {
+  assert.deepEqual(situacaoAviso([notif('enviada')]), { acao: 'resolvido' })
+})
+
+test('situacaoAviso: pendente → resolvido (pode estar em voo; não arrisca dupla)', () => {
+  assert.deepEqual(situacaoAviso([notif('pendente')]), { acao: 'resolvido' })
+})
+
+test('situacaoAviso: falha com saldo → reenviar a mesma linha', () => {
+  const sit = situacaoAviso([notif('falha', 1)])
+  assert.deepEqual(sit, { acao: 'reenviar', notificacaoId: 'n-falha-1', tentativas: 1 })
+})
+
+test('situacaoAviso: falha com tentativas esgotadas → resolvido (desiste)', () => {
+  assert.deepEqual(situacaoAviso([notif('falha', MAX_TENTATIVAS_AVISO)]), {
+    acao: 'resolvido',
+  })
 })

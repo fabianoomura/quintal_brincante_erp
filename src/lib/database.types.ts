@@ -600,6 +600,7 @@ export type Database = {
           provider_msg_id: string | null
           status: Database["public"]["Enums"]["status_notificacao"]
           template: string | null
+          tentativas: number
           tipo: Database["public"]["Enums"]["tipo_notificacao"]
         }
         Insert: {
@@ -614,6 +615,7 @@ export type Database = {
           provider_msg_id?: string | null
           status?: Database["public"]["Enums"]["status_notificacao"]
           template?: string | null
+          tentativas?: number
           tipo: Database["public"]["Enums"]["tipo_notificacao"]
         }
         Update: {
@@ -628,6 +630,7 @@ export type Database = {
           provider_msg_id?: string | null
           status?: Database["public"]["Enums"]["status_notificacao"]
           template?: string | null
+          tentativas?: number
           tipo?: Database["public"]["Enums"]["tipo_notificacao"]
         }
         Relationships: [

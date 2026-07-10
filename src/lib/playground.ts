@@ -10,6 +10,21 @@ export type CheckoutPlayInput = {
   valorDiaria?: number | null
 }
 
+// Valida a saída informada à mão (check-out esquecido): formato HH:MM e depois da
+// entrada, no MESMO dia da presença (o tarifador não cruza meia-noite).
+export function validarSaidaManual(
+  entrada: string,
+  saida: string,
+): { ok: true } | { ok: false; erro: string } {
+  if (!/^\d{2}:\d{2}$/.test(saida)) {
+    return { ok: false, erro: 'Horário de saída inválido (use HH:MM).' }
+  }
+  if (duracaoMinutos(entrada, saida) <= 0) {
+    return { ok: false, erro: 'A saída precisa ser depois da entrada.' }
+  }
+  return { ok: true }
+}
+
 export function calcularValorCheckout(input: CheckoutPlayInput): number | null {
   if (input.origem === 'espaco_kids') {
     if (input.tarifaHora == null) return null

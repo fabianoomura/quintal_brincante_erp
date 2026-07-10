@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
-import { calcularValorCheckout } from '@/lib/playground'
+import { calcularValorCheckout, validarSaidaManual } from '@/lib/playground'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import { tplAgradecimentoCheckout, tplBoasVindas } from '@/lib/whatsapp/templates'
@@ -249,7 +249,11 @@ export async function cobrarPresenca(
       })
       .select('id')
       .single()
-    if (errL) return { ok: false, erro: errL.message }
+    if (errL) {
+      // Índice único: outro processo cobrou no meio do caminho.
+      if (errL.code === '23505') return { ok: false, erro: 'Essa sessão já tem cobrança.' }
+      return { ok: false, erro: errL.message }
+    }
 
     // SEM revalidatePath aqui: o re-render desmontaria o CobrarButton (o card vira
     // "pendente") e mataria o modal de recebimento recém-aberto. O refresh acontece
@@ -262,10 +266,15 @@ export async function cobrarPresenca(
 
 // Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela
 // tarifa/hora travada no check-in. Gera o lançamento pendente.
-export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
+// saidaManual ('HH:MM'): encerra um check-out ESQUECIDO informando a hora real da saída
+// (no dia da presença) — sem ela, usa a hora de agora.
+export async function checkOut(
+  presencaId: string,
+  saidaManual?: string,
+): Promise<ResultadoCheckout> {
   try {
     const supabase = await createClient()
-    const saida = agoraHora()
+    const saida = saidaManual ?? agoraHora()
 
     const { data: p, error: errP } = await supabase
       .from('presenca')
@@ -275,6 +284,11 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
     if (errP) return { ok: false, erro: errP.message }
     if (!p) return { ok: false, erro: 'Presença não encontrada.' }
     if (p.saida) return { ok: false, erro: 'Essa presença já teve check-out.' }
+
+    if (saidaManual) {
+      const v = validarSaidaManual(p.entrada, saidaManual)
+      if (!v.ok) return { ok: false, erro: v.erro }
+    }
 
     // Play: calcula pelo tempo (tarifa/hora travada no check-in), respeitando a
     // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado.
@@ -294,12 +308,17 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
       valorDiaria: p.valor == null ? null : Number(p.valor),
     })
 
-    const { error: errU } = await supabase
+    // Guard de corrida: o `.is('saida', null)` + select garante que só UM processo fecha
+    // (dois aparelhos clicando juntos: o segundo não recebe linha e para aqui).
+    const { data: fechada, error: errU } = await supabase
       .from('presenca')
       .update({ saida, valor })
       .eq('id', presencaId)
       .is('saida', null)
+      .select('id')
+      .maybeSingle()
     if (errU) return { ok: false, erro: errU.message }
+    if (!fechada) return { ok: false, erro: 'Essa presença já teve check-out.' }
 
     // Gera lançamento pendente para presenças cobradas (play e diária com valor).
     let lancamentoId: string | null = null
@@ -316,11 +335,25 @@ export async function checkOut(presencaId: string): Promise<ResultadoCheckout> {
         })
         .select('id')
         .single()
-      if (errL) return { ok: false, erro: errL.message }
-      lancamentoId = lanc.id
+      if (errL) {
+        if (errL.code !== '23505') return { ok: false, erro: errL.message }
+        // Índice único: a cobrança desta presença já existe (ex.: cobrarPresenca) — reaproveita.
+        const { data: existente } = await supabase
+          .from('lancamento')
+          .select('id')
+          .eq('origem_tipo', 'presenca')
+          .eq('origem_id', p.id)
+          .limit(1)
+          .maybeSingle()
+        lancamentoId = existente?.id ?? null
+      } else {
+        lancamentoId = lanc.id
+      }
     }
 
-    if (p.origem === 'espaco_kids') {
+    // Agradecimento só no check-out do dia — encerrar um esquecido de ontem não deve
+    // mandar "acabou de sair" com um dia de atraso.
+    if (p.origem === 'espaco_kids' && p.data === hojeISO()) {
       try {
         await enviarAgradecimentoCheckout(supabase, p.crianca_id, presencaId)
       } catch {

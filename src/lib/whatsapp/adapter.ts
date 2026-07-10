@@ -132,10 +132,18 @@ export class EvolutionSender implements EnviarWhatsApp {
   }
 }
 
-// Fábrica: escolhe o provider por env. Default 'fake' enquanto não há credenciais.
+// Fábrica: escolhe o provider por env. Default 'fake' só FORA de produção: em produção
+// cair no fake silenciosamente marcaria notificações como enviadas sem nada sair
+// (auditoria mentirosa) — lá o provider precisa ser explícito.
 export function getSender(): EnviarWhatsApp {
-  const provider = process.env.WHATSAPP_PROVIDER ?? 'fake'
+  const provider =
+    process.env.WHATSAPP_PROVIDER ??
+    (process.env.NODE_ENV === 'production' ? '' : 'fake')
   switch (provider) {
+    case '':
+      throw new Error(
+        'WHATSAPP_PROVIDER não definido — em produção defina evolution, cloud ou fake explicitamente.',
+      )
     case 'fake':
       return new FakeSender()
     case 'evolution': {

@@ -1,17 +1,21 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSender } from '@/lib/whatsapp/adapter'
-import { enviarNotificacao } from '@/lib/whatsapp/notificar'
+import { enviarNotificacao, reenviarNotificacao } from '@/lib/whatsapp/notificar'
 import { tplAvisoTempo } from '@/lib/whatsapp/templates'
 import {
   selecionarAvisos,
   minutosRestantes,
+  situacaoAviso,
   type PresencaAberta,
+  type SituacaoAviso,
 } from '@/lib/whatsapp/avisoTempo'
 import { hojeISO, agoraHora, horaParaMinutos } from '@/lib/datas'
 
 // Worker do aviso de tempo (spec §7). Chamado pelo pg_cron a cada poucos minutos.
 // Guardado por CRON_SECRET; usa service role (sem sessão de usuário). Idempotente: só avisa
-// presenças de play que cruzaram o limite − antecedência e ainda não têm notificacao aviso_tempo.
+// presenças de play que cruzaram o limite − antecedência e ainda não têm aviso RESOLVIDO
+// (enviado ou com tentativas esgotadas). Envio que FALHOU é retentado — até
+// MAX_TENTATIVAS_AVISO — reaproveitando a mesma linha de notificacao.
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET
   const auth = request.headers.get('authorization')
@@ -42,7 +46,7 @@ export async function POST(request: Request) {
   const { data: presencas, error } = await sb
     .from('presenca')
     .select(
-      'id, entrada, tempo_contratado_min, crianca_id, crianca:crianca_id (nome, primeiro_nome), notificacao (tipo)',
+      'id, entrada, tempo_contratado_min, crianca_id, crianca:crianca_id (nome, primeiro_nome), notificacao (id, tipo, status, tentativas)',
     )
     .eq('data', data)
     .eq('origem', 'espaco_kids')
@@ -50,11 +54,14 @@ export async function POST(request: Request) {
     .not('tempo_contratado_min', 'is', null)
   if (error) return Response.json({ erro: error.message }, { status: 500 })
 
+  const situacoes = new Map<string, SituacaoAviso>(
+    (presencas ?? []).map((p) => [p.id, situacaoAviso(p.notificacao ?? [])]),
+  )
   const abertas: PresencaAberta[] = (presencas ?? []).map((p) => ({
     id: p.id,
     entradaMin: horaParaMinutos(p.entrada),
     tempoContratadoMin: p.tempo_contratado_min,
-    jaAvisado: (p.notificacao ?? []).some((n) => n.tipo === 'aviso_tempo'),
+    jaAvisado: situacoes.get(p.id)!.acao === 'resolvido',
   }))
 
   const aAvisar = selecionarAvisos(abertas, agoraMin, antecedencia)
@@ -98,22 +105,39 @@ export async function POST(request: Request) {
       orig.crianca?.primeiro_nome,
     )
 
-    const res = await enviarNotificacao(sb, sender, {
-      crianca_id: orig.crianca_id,
-      contato_id: responsavel.id,
-      para: responsavel.telefone,
-      tipo: 'aviso_tempo',
-      template: render.template,
-      variaveis: render.variaveis,
-      conteudo: render.conteudo,
-      presenca_id: alvo.id,
+    const sit = situacoes.get(alvo.id)!
+    const res =
+      sit.acao === 'reenviar'
+        ? await reenviarNotificacao(
+            sb,
+            sender,
+            { id: sit.notificacaoId, tentativas: sit.tentativas },
+            {
+              para: responsavel.telefone,
+              template: render.template,
+              variaveis: render.variaveis,
+              conteudo: render.conteudo,
+            },
+          )
+        : await enviarNotificacao(sb, sender, {
+            crianca_id: orig.crianca_id,
+            contato_id: responsavel.id,
+            para: responsavel.telefone,
+            tipo: 'aviso_tempo',
+            template: render.template,
+            variaveis: render.variaveis,
+            conteudo: render.conteudo,
+            presenca_id: alvo.id,
+          })
+    detalhes.push({
+      presenca: alvo.id,
+      status: res.ok ? (sit.acao === 'reenviar' ? 'reavisado' : 'avisado') : `falha:${res.erro}`,
     })
-    detalhes.push({ presenca: alvo.id, status: res.ok ? 'avisado' : `falha:${res.erro}` })
   }
 
   return Response.json({
     verificadas: abertas.length,
-    avisadas: detalhes.filter((d) => d.status === 'avisado').length,
+    avisadas: detalhes.filter((d) => d.status === 'avisado' || d.status === 'reavisado').length,
     detalhes,
   })
 }

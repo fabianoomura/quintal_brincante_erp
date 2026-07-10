@@ -4,6 +4,7 @@ import { hojeISO, hhmm } from '@/lib/datas'
 import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
 import NovaEntradaButton from './nova-entrada-button'
 import CheckoutButton from './checkout-button'
+import PresencasAntigas from './presencas-antigas'
 
 import { card } from '@/lib/ui'
 
@@ -25,8 +26,13 @@ export default async function PresencaPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }, { data: cfg }, { data: ambientes }] =
-    await Promise.all([
+  const [
+    { data: presentes },
+    { data: criancas },
+    { data: cfg },
+    { data: ambientes },
+    { data: antigas },
+  ] = await Promise.all([
       supabase
         .from('presenca')
         .select(
@@ -46,6 +52,13 @@ export default async function PresencaPage() {
         .select('id, nome')
         .eq('ativo', true)
         .order('nome', { ascending: true }),
+      // Check-outs esquecidos: abertas de dias ANTERIORES (invisíveis na lista de hoje).
+      supabase
+        .from('presenca')
+        .select('id, data, entrada, crianca:crianca_id (nome)')
+        .lt('data', hoje)
+        .is('saida', null)
+        .order('data', { ascending: true }),
     ])
 
   const lotacao = calcularLotacao(presentes?.length ?? 0, cfg?.capacidade_dia ?? null)
@@ -69,6 +82,15 @@ export default async function PresencaPage() {
         </div>
         <NovaEntradaButton criancas={criancas ?? []} ambientes={ambientes ?? []} />
       </div>
+
+      <PresencasAntigas
+        presencas={(antigas ?? []).map((p) => ({
+          id: p.id,
+          nome: p.crianca?.nome ?? '—',
+          data: p.data,
+          entrada: p.entrada,
+        }))}
+      />
 
       <div
         className={`flex items-center justify-between rounded-2xl px-5 py-4 font-display shadow-sm ${estilo.cls}`}

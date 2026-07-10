@@ -3,7 +3,7 @@
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
 (plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra), o [OPERACAO.md](OPERACAO.md)
 (rotinas do dia a dia) e o [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-07-09**.
+Última atualização: **2026-07-10**.
 
 ---
 
@@ -66,9 +66,10 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
 - Ajuda contextual: botão “?” em toda tela explica o que ela faz (textos em `src/lib/ajuda.ts`)
 
 ### Qualidade
-- 89 testes unitários cobrindo tarifador, grade, feriados, irmãos, aviso-tempo, adapters
-  WhatsApp, renderização de mensagens, playground/checkout, recebimentos, endereço/ViaCEP e
-  máscaras
+- 101 testes unitários cobrindo tarifador, grade, feriados, irmãos, aviso-tempo (incl. retry),
+  adapters WhatsApp, renderização de mensagens, playground/checkout (incl. saída manual),
+  recebimentos, endereço/ViaCEP e máscaras
+- CI no GitHub Actions: lint + typecheck + testes unitários em cada push/PR
 - Testes de integração existem contra Supabase local, mas exigem Supabase/Docker rodando.
   Ver [OPERACAO.md](OPERACAO.md) para a sequência segura
 - Máscaras de digitação: CPF (`054.593.509-13`) e telefone (`(43) 99120-3404`); servidor
@@ -113,6 +114,26 @@ integração ViaCEP e reforço dos testes.
   tabela `notificacao`, com status, conteúdo renderizado, provider e datas
 - **Privacidade:** conectar um chip sincroniza contatos/conversas pro banco do Evolution;
   “Disconnect” NÃO apaga — **deletar a instância** apaga. Chip dedicado deve ter agenda mínima
+
+## Blindagem de concorrência e resiliência (2026-07-10)
+
+Rodada de correções vinda de auditoria do código (corridas e falhas silenciosas):
+
+- **Cobrança em dobro impossível:** índice único em `lancamento (origem_tipo, origem_id,
+  vencimento)` + o check-out só gera lançamento se foi ELE que fechou a presença (update
+  condicional com select). Dois aparelhos clicando juntos: o segundo recebe "já teve check-out".
+- **Check-out esquecido não some mais:** banner em `/presenca` e `/playground` lista presenças
+  abertas de dias anteriores (antes ficavam invisíveis para sempre); a equipe informa a hora
+  real da saída e a cobrança vai pro Financeiro — sem mandar agradecimento atrasado.
+- **Aviso de tempo com retry:** envio que falhou é retentado pelo worker (até 3 tentativas,
+  coluna `notificacao.tentativas`), reaproveitando a mesma linha; índice único garante no
+  máx. 1 aviso por presença mesmo com execuções sobrepostas.
+- **Webhook InfinitePay fail-closed:** sem `INFINITEPAY_WEBHOOK_SECRET` responde 503 e não
+  processa (antes, sem a env, aceitava qualquer chamada).
+- **Produção sem provider explícito quebra alto:** `WHATSAPP_PROVIDER` ausente em produção
+  agora lança erro em vez de cair no fake e marcar notificação como "enviada" sem enviar nada.
+- **CI:** GitHub Actions roda lint + typecheck + testes a cada push (script `npm run typecheck`).
+- Migration `20260710090000_unicidade_lancamento_retry_aviso` aplicada em produção no mesmo dia.
 
 ## Fila de próximos passos
 

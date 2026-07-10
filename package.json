@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start -p 6006",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "test:it": "node --import tsx --env-file=.env.local --test \"tests/**/*.it.test.mts\"",
     "setup:users": "node --import tsx --env-file=.env.local scripts/setup-dev-users.mts",

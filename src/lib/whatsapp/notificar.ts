@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import type { EnviarWhatsApp } from './adapter'
+import type { EnviarWhatsApp, MensagemWhatsApp } from './adapter'
 
 type Tipo = Database['public']['Enums']['tipo_notificacao']
 
@@ -43,12 +43,45 @@ export async function enviarNotificacao(
     .single()
   if (error) return { ok: false, erro: error.message }
 
-  const res = await sender.enviar({
+  return dispararEAtualizar(sb, sender, data.id, {
     para: n.para,
     template: n.template,
     variaveis: n.variaveis,
     conteudo: n.conteudo,
   })
+}
+
+// Reenvio de uma notificação que FALHOU (usado pelo aviso de tempo): reclama a tentativa
+// com update condicional — só um processo consegue subir tentativas de N para N+1 — e
+// dispara de novo atualizando a MESMA linha (o índice único por presença continua valendo).
+export async function reenviarNotificacao(
+  sb: SupabaseClient<Database>,
+  sender: EnviarWhatsApp,
+  alvo: { id: string; tentativas: number },
+  msg: MensagemWhatsApp,
+): Promise<ResultadoNotificacao> {
+  const { data: claimed, error } = await sb
+    .from('notificacao')
+    .update({ tentativas: alvo.tentativas + 1, status: 'pendente', conteudo: msg.conteudo })
+    .eq('id', alvo.id)
+    .eq('tentativas', alvo.tentativas)
+    .eq('status', 'falha')
+    .select('id')
+    .maybeSingle()
+  if (error) return { ok: false, id: alvo.id, erro: error.message }
+  if (!claimed) return { ok: false, id: alvo.id, erro: 'reenvio já reclamado por outro processo' }
+
+  return dispararEAtualizar(sb, sender, alvo.id, msg)
+}
+
+// Dispara pelo adapter e grava o desfecho (enviada/falha) na linha já criada.
+async function dispararEAtualizar(
+  sb: SupabaseClient<Database>,
+  sender: EnviarWhatsApp,
+  id: string,
+  msg: MensagemWhatsApp,
+): Promise<ResultadoNotificacao> {
+  const res = await sender.enviar(msg)
 
   if (res.ok) {
     await sb
@@ -58,10 +91,10 @@ export async function enviarNotificacao(
         provider_msg_id: res.providerMsgId,
         enviada_em: new Date().toISOString(),
       })
-      .eq('id', data.id)
-    return { ok: true, id: data.id }
+      .eq('id', id)
+    return { ok: true, id }
   }
 
-  await sb.from('notificacao').update({ status: 'falha' }).eq('id', data.id)
-  return { ok: false, id: data.id, erro: res.erro }
+  await sb.from('notificacao').update({ status: 'falha' }).eq('id', id)
+  return { ok: false, id, erro: res.erro }
 }

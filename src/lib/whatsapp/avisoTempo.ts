@@ -45,3 +45,33 @@ export function selecionarAvisos(
 ): PresencaAberta[] {
   return presencas.filter((p) => deveAvisar(p, agoraMin, antecedenciaMin))
 }
+
+// ── Retry do aviso que FALHOU ────────────────────────────────────────────────
+// Teto de tentativas de envio (1ª + reenvios). Passou disso, desiste — problema
+// crônico de envio é assunto do sinal de vida dos workers, não de loop de retry.
+export const MAX_TENTATIVAS_AVISO = 3
+
+export type NotificacaoAvisoExistente = {
+  id: string
+  tipo: string
+  status: string
+  tentativas: number
+}
+
+export type SituacaoAviso =
+  | { acao: 'novo' } // nunca tentou → insere e envia
+  | { acao: 'reenviar'; notificacaoId: string; tentativas: number } // falhou, tem saldo → reenvia a MESMA linha
+  | { acao: 'resolvido' } // enviado/pendente/esgotado → não mexe
+
+// O que fazer com o aviso de tempo desta presença, dado o histórico de notificações.
+// 'pendente' conta como resolvido: ou está em voo agora, ou é resto de crash raro —
+// nunca reenviar por cima para não arriscar mensagem dupla.
+export function situacaoAviso(notifs: NotificacaoAvisoExistente[]): SituacaoAviso {
+  const avisos = notifs.filter((n) => n.tipo === 'aviso_tempo')
+  if (avisos.length === 0) return { acao: 'novo' }
+  const falha = avisos.find(
+    (n) => n.status === 'falha' && n.tentativas < MAX_TENTATIVAS_AVISO,
+  )
+  if (falha) return { acao: 'reenviar', notificacaoId: falha.id, tentativas: falha.tentativas }
+  return { acao: 'resolvido' }
+}

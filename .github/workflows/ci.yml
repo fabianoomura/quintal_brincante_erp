@@ -1,0 +1,23 @@
+# CI: lint + typecheck + testes unitários em cada push/PR.
+# O deploy da Vercel é automático no push da main — este check é a rede de segurança
+# para não subir código quebrado (testes de integração ficam de fora: exigem Supabase local).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test

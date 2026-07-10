@@ -10,12 +10,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // TODO(1d-real): quando as credenciais chegarem, trocar a checagem de token por verificação
 // da ASSINATURA (HMAC) real da InfinitePay, e casar o order_nsu gerado na criação do Checkout.
 export async function POST(request: Request) {
+  // Fail-closed: sem o secret configurado, NÃO processa nada. Se a env sumir num redeploy,
+  // ninguém consegue conciliar pagamento forjado chutando order_nsu.
   const secret = process.env.INFINITEPAY_WEBHOOK_SECRET
-  if (secret) {
-    const token = request.headers.get('x-infinitepay-token')
-    if (token !== secret) {
-      return Response.json({ erro: 'assinatura inválida' }, { status: 401 })
-    }
+  if (!secret) {
+    return Response.json({ erro: 'webhook não configurado' }, { status: 503 })
+  }
+  const token = request.headers.get('x-infinitepay-token')
+  if (token !== secret) {
+    return Response.json({ erro: 'assinatura inválida' }, { status: 401 })
   }
 
   const body = await request.json().catch(() => null)
