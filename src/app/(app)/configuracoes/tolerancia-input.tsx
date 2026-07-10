@@ -27,8 +27,8 @@ export default function ToleranciaInput({ inicial }: { inicial: number }) {
     <form onSubmit={salvar} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <div className="font-display text-base font-bold text-slate-700">🕐 Tolerância após o contratado</div>
       <p className="mb-2 text-sm text-slate-500">
-        Passou do tempo contratado em até X min → cobra só o contratado. Além disso → cobra o
-        tempo real. 0 = sem tolerância.
+        Passou do tempo contratado em até X min → cobra só o contratado. Além disso → cobra
+        blocos iniciados de 30 min, cada um a 50% da tarifa/hora. 0 = sem tolerância.
       </p>
       <div className="flex items-center gap-2">
         <input

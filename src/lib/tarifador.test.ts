@@ -12,11 +12,18 @@ test('minutosCobraveis: passou 8min com tolerância 10 → cobra o contratado', 
 test('minutosCobraveis: passou exatamente a tolerância → cobra o contratado', () => {
   assert.equal(minutosCobraveis(70, 60, 10), 60)
 })
-test('minutosCobraveis: passou além da tolerância → cobra o tempo real', () => {
-  assert.equal(minutosCobraveis(75, 60, 10), 75)
+test('minutosCobraveis: excedente até 30min → acrescenta meia hora', () => {
+  assert.equal(minutosCobraveis(75, 60, 10), 90)
 })
-test('minutosCobraveis: tolerância 0 → qualquer excedente cobra o real', () => {
-  assert.equal(minutosCobraveis(61, 60, 0), 61)
+test('minutosCobraveis: tolerância 0 → primeiro minuto acrescenta meia hora', () => {
+  assert.equal(minutosCobraveis(61, 60, 0), 90)
+})
+test('minutosCobraveis: excedente entre 31 e 60min → acrescenta hora cheia', () => {
+  assert.equal(minutosCobraveis(91, 60, 0), 120)
+  assert.equal(minutosCobraveis(120, 60, 0), 120)
+})
+test('minutosCobraveis: blocos continuam depois da primeira hora excedente', () => {
+  assert.equal(minutosCobraveis(121, 60, 0), 150)
 })
 test('minutosCobraveis: sem contratado → cobra o real', () => {
   assert.equal(minutosCobraveis(90, null, 10), 90)

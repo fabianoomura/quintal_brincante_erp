@@ -56,7 +56,7 @@ export async function setAntecedencia(
 }
 
 // Tolerância após o tempo contratado do play (min). Passou até X min do contratado
-// → cobra só o contratado; além disso → cobra o tempo real. Só admin (RLS).
+// → cobra só o contratado; além disso → cobra blocos de 30 min. Só admin (RLS).
 export async function setTolerancia(
   minutos: number,
 ): Promise<{ ok: true } | { ok: false; erro: string }> {

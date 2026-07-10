@@ -344,7 +344,8 @@ export async function checkOut(
     }
 
     // Play: calcula pelo tempo (tarifa/hora travada no check-in), respeitando a
-    // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado.
+    // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado;
+    // depois, cada bloco iniciado de 30 min acrescenta meia hora da tarifa.
     // Diária: usa o valor definido no check-in (null = experimental, não cobra).
     const { data: cfg } = await supabase
       .from('config_sistema')

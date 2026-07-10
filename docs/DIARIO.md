@@ -185,6 +185,9 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Base PWA:** manifesto, modo standalone, service worker com headers seguros e fallback
   offline neutro. Dados autenticados não são armazenados no cache do navegador.
 - Pendente: fila offline transacional para check-in/check-out, com idempotência no banco.
+- **Excedente do Play em blocos:** tolerância inicial `0` (continua configurável); após
+  o tempo contratado, cada bloco iniciado de 30 min acrescenta 50% da tarifa/hora.
+  Assim, até 30 min excedentes = meia hora; de 31 a 60 min = hora adicional cheia.
   (`MESSAGES_UPDATE`), mídia.
 
 ## Fila de próximos passos

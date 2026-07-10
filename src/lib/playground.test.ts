@@ -16,7 +16,7 @@ test('checkout play: dentro da tolerancia cobra apenas o contratado', () => {
   )
 })
 
-test('checkout play: passou da tolerancia cobra o tempo real', () => {
+test('checkout play: passou da tolerancia cobra bloco adicional de meia hora', () => {
   assert.equal(
     calcularValorCheckout({
       origem: 'espaco_kids',
@@ -26,7 +26,21 @@ test('checkout play: passou da tolerancia cobra o tempo real', () => {
       tempoContratadoMin: 60,
       toleranciaMin: 10,
     }),
-    25,
+    30,
+  )
+})
+
+test('checkout play: entre 30min e 1h excedente cobra hora adicional cheia', () => {
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '15:31',
+      tarifaHora: 20,
+      tempoContratadoMin: 60,
+      toleranciaMin: 0,
+    }),
+    40,
   )
 })
 
