@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from './logout-action'
 import AjudaButton from './ajuda-button'
+import InstalarPwa from './instalar-pwa'
 import { createClient } from '@/lib/supabase/client'
 
 type Item = { href: string; label: string; icon: string; cor: string; adminOnly?: boolean }
@@ -193,6 +194,7 @@ export default function Shell({
             <AjudaButton />
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <InstalarPwa />
             <Link
               href="/conversas"
               className="relative grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-lg ring-1 ring-amber-200 transition hover:bg-amber-100"

@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   description: "Gestão do quintal brincante — uso interno da equipe.",
   applicationName: "Quintal Brincante",
   appleWebApp: { capable: true, title: "Quintal" },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({
