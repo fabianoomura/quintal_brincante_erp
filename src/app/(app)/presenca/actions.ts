@@ -205,9 +205,6 @@ async function enviarAutorizacaoImagem(
     template: render.template,
     variaveis: render.variaveis,
     conteudo: render.conteudo,
-    // Enquete nativa (um toque em vez de digitar). O voto ainda é registrado
-    // manualmente na ficha até a Central de Conversas capturar pelo webhook.
-    enquete: { opcoes: ['SIM', 'NÃO'] },
     presenca_id: presencaId,
   })
 }

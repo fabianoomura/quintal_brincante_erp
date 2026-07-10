@@ -173,7 +173,7 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   ficam vinculadas à permanência.
 - Pendente de config p/ ligar em produção: env `EVOLUTION_WEBHOOK_SECRET` na Vercel +
   webhook apontado na instância (runbook no WHATSAPP-EVOLUTION.md).
-- Futuro: captura automática do voto da enquete de autorização, status de entrega/leitura
+- Futuro: captura automática da resposta de autorização, status de entrega/leitura
   (`MESSAGES_UPDATE`), mídia.
 
 ## Fila de próximos passos
