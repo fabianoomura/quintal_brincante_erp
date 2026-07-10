@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { jidParaTelefone, extrairTextoMensagem } from '@/lib/whatsapp/jid'
 import { obterOuCriarConversa, registrarMensagem } from '@/lib/whatsapp/conversas'
+import { capturarRespostaAutorizacao } from '@/lib/whatsapp/autorizacaoImagem'
 
 // Webhook da Evolution API (evento MESSAGES_UPSERT) — Central de Conversas, fase 1.
 // Toda mensagem que passa pelo chip (recebida do responsável OU enviada — fromMe)
@@ -12,8 +13,8 @@ import { obterOuCriarConversa, registrarMensagem } from '@/lib/whatsapp/conversa
 // duplo registro sistema+webhook (mensagens fromMe já espelhadas pelo notificar)
 // caem no mesmo guarda.
 //
-// TODO(central-2+): capturar voto de enquete (autorização de imagem) e status de
-// entrega/leitura (MESSAGES_UPDATE) quando validarmos os eventos na prática.
+// Respostas textuais SIM/NÃO atualizam a autorização de imagem pendente. Status de
+// entrega/leitura (MESSAGES_UPDATE) continua como evolução futura.
 
 type EvoKey = { remoteJid?: string; fromMe?: boolean; id?: string }
 type EvoItem = {
@@ -72,7 +73,29 @@ export async function POST(request: Request) {
         data_mensagem: quando,
         raw_payload: JSON.parse(JSON.stringify(item ?? null)),
       })
-      resultados.push(res.ok ? (res.duplicada ? 'duplicada' : 'gravada') : `falha:${res.erro}`)
+      if (!res.ok) {
+        resultados.push(`falha:${res.erro}`)
+        continue
+      }
+
+      let captura: Awaited<ReturnType<typeof capturarRespostaAutorizacao>> = null
+      if (!res.duplicada && !key?.fromMe) {
+        captura = await capturarRespostaAutorizacao(sb, conversa.contato_id, texto, quando)
+        if (captura && res.id) {
+          await sb
+            .from('whatsapp_mensagem')
+            .update({ crianca_id: captura.criancaId })
+            .eq('id', res.id)
+        }
+      }
+
+      resultados.push(
+        res.duplicada
+          ? 'duplicada'
+          : captura
+            ? `gravada:autorizacao_${captura.autorizado ? 'sim' : 'nao'}`
+            : 'gravada',
+      )
     } catch (e) {
       resultados.push(`falha:${e instanceof Error ? e.message : 'erro'}`)
     }
