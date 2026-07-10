@@ -135,6 +135,22 @@ Rodada de correções vinda de auditoria do código (corridas e falhas silencios
 - **CI:** GitHub Actions roda lint + typecheck + testes a cada push (script `npm run typecheck`).
 - Migration `20260710090000_unicidade_lancamento_retry_aviso` aplicada em produção no mesmo dia.
 
+## Autorização de imagem + boas-vindas Vila Verde (2026-07-10)
+
+- **Novo texto de boas-vindas** (combinados do Play Vila Verde / Equipe Vilarejo Londrina),
+  aplicado por migration e editável em `/mensagens`.
+- **Autorização de uso de imagem**: a pergunta virou template próprio (`autorizacao_imagem`),
+  enviado no check-in do play **apenas enquanto o cadastro não tem resposta** — 1 envio
+  bem-sucedido no total (quem negou não é perguntado de novo). Botão interativo não é
+  confiável na Evolution/Baileys → resposta por texto **SIM/NÃO**, registrada pela equipe.
+- **Onde aparece:** ficha da criança (seção Autorizou/Negou + selos "📸 imagem pendente" /
+  "📸 imagem NÃO autorizada") e card do playground/quiosque (chip 📸 ok / pendente / não usar).
+- **Fix no fluxo de boas-vindas:** a regra continua "no máx. 1× por dia por criança"
+  (entra/sai no mesmo dia não repete — comportamento esperado nos testes exaustivos), mas
+  envio que FALHOU não conta mais — antes, uma falha travava o dia inteiro em silêncio.
+- Futuro (Central de Conversas): a resposta SIM/NÃO poderá ser capturada automaticamente
+  pelo webhook e o registro manual vira só conferência.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

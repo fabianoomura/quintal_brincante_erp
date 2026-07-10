@@ -226,6 +226,8 @@ export type Database = {
       crianca: {
         Row: {
           ativo: boolean
+          autorizacao_imagem: boolean | null
+          autorizacao_imagem_em: string | null
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -247,6 +249,8 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          autorizacao_imagem?: boolean | null
+          autorizacao_imagem_em?: string | null
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -268,6 +272,8 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          autorizacao_imagem?: boolean | null
+          autorizacao_imagem_em?: string | null
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -869,6 +875,7 @@ export type Database = {
         | "aviso_geral"
         | "boas_vindas"
         | "agradecimento_checkout"
+        | "autorizacao_imagem"
       tipo_ocorrencia:
         | "banheiro"
         | "nao_adaptou"
@@ -1016,6 +1023,7 @@ export const Constants = {
         "aviso_geral",
         "boas_vindas",
         "agradecimento_checkout",
+        "autorizacao_imagem",
       ],
       tipo_ocorrencia: [
         "banheiro",

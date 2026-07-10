@@ -13,14 +13,32 @@ export type VariaveisMensagem = Record<string, string | number | null | undefine
 const TEXTO_AVISO_TEMPO =
   'Olá {{responsavel_nome}}, o tempo de {{crianca_nome}} no play está chegando ao fim. Faltam {{minutos_restantes}} min. Pode vir se aproximando, por favor?'
 const TEXTO_OCORRENCIA = 'Olá {{responsavel_nome}}, sobre {{crianca_nome}}: {{detalhe}}'
-const TEXTO_BOAS_VINDAS = `Olá {{responsavel_nome}}! 🌳 {{crianca_nome}} acabou de entrar no play.
+const TEXTO_BOAS_VINDAS = `💚 Boas-vindas ao nosso Play Vila Verde!
 
-Combinados do Quintal:
-• As crianças permanecem no espaço do play.
-• Se a criança quiser sair, o responsável vem buscá-la.
-• Adultos não permanecem no espaço do play.
+Olá, {{responsavel_nome}}! 🌿
+Que alegria receber {{crianca_nome}} por aqui!
 
-Qualquer coisa, avisamos por aqui. 💚`
+Antes da brincadeira começar, alguns combinados de cuidado:
+
+🪟 O Play é território das crianças: adultos não permanecem no espaço. Se quiser ficar pertinho, escolha uma mesa próxima ao vidro.
+
+🚻 Precisou ir ao banheiro? A gente te chama pelo celular para buscar {{crianca_nome}} e, depois, é só trazer de volta.
+
+🍎 Comidas e bebidas ficam do lado de fora, combinado? Assim, a brincadeira acontece sem interrupções.
+
+⏱️ O tempo é contínuo: saídas não pausam o cronômetro e, caso {{crianca_nome}} não se adapte, a primeira hora será contabilizada integralmente.
+
+📹 Nosso espaço é monitorado por câmeras, como parte dos nossos protocolos de cuidado e segurança.
+
+🌿 Pronto. Por aqui começa a nossa grande aventura! 💚
+
+Sempre que precisar, estamos à disposição.
+
+Equipe Vilarejo Londrina 🌿`
+// Botão interativo não é confiável na Evolution/Baileys → resposta por texto SIM/NÃO.
+const TEXTO_AUTORIZACAO_IMAGEM = `📸 Só mais uma coisinha, {{responsavel_nome}}: você autoriza o uso da imagem de {{crianca_nome}} nos registros do Vilarejo?
+
+Responda *SIM* ou *NÃO* por aqui mesmo, por favor. 💚`
 const TEXTO_AGRADECIMENTO_CHECKOUT =
   'Obrigado pela visita, {{responsavel_nome}}! {{crianca_nome}} já saiu do play. Até a próxima! 💚'
 
@@ -115,6 +133,22 @@ export function tplBoasVindas(
   const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
   return {
     template: 'boas_vindas',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+export function tplAutorizacaoImagem(
+  responsavel: string,
+  crianca: string,
+  textoTemplate = TEXTO_AUTORIZACAO_IMAGEM,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
+  return {
+    template: 'autorizacao_imagem',
     variaveis,
     conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }

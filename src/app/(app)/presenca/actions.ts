@@ -7,7 +7,11 @@ import { valorHoraPlay } from '@/lib/grade'
 import { calcularValorCheckout, validarSaidaManual } from '@/lib/playground'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
-import { tplAgradecimentoCheckout, tplBoasVindas } from '@/lib/whatsapp/templates'
+import {
+  tplAgradecimentoCheckout,
+  tplAutorizacaoImagem,
+  tplBoasVindas,
+} from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
 
 type Origem = Database['public']['Enums']['origem_presenca']
@@ -78,13 +82,19 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       .single()
     if (error) return { ok: false, erro: error.message }
 
-    // Boas-vindas ("combinados") na PRIMEIRA entrada do play da criança.
+    // Boas-vindas ("combinados") na PRIMEIRA entrada do play da criança e, se o
+    // cadastro ainda não tem resposta, a pergunta de autorização de imagem.
     // Best-effort: falha de envio NÃO quebra o check-in (fica na auditoria como falha).
     if (input.origem === 'espaco_kids') {
       try {
         await enviarBoasVindas(supabase, input.criancaId, novo.id)
       } catch {
         // silencioso por design — o check-in já foi feito
+      }
+      try {
+        await enviarAutorizacaoImagem(supabase, input.criancaId, novo.id)
+      } catch {
+        // idem
       }
     }
 
@@ -108,12 +118,14 @@ async function enviarBoasVindas(
   criancaId: string,
   presencaId: string,
 ) {
-  // já enviou (ou tentou) hoje? BRT fixo -03:00 (Brasil sem horário de verão)
+  // já enviou hoje? BRT fixo -03:00 (Brasil sem horário de verão). Envio que FALHOU
+  // não conta — não queima o dia; o próximo check-in tenta de novo.
   const { count } = await supabase
     .from('notificacao')
     .select('id', { count: 'exact', head: true })
     .eq('crianca_id', criancaId)
     .eq('tipo', 'boas_vindas')
+    .neq('status', 'falha')
     .gte('created_at', `${hojeISO()}T00:00:00-03:00`)
   if ((count ?? 0) > 0) return
 
@@ -149,6 +161,68 @@ async function enviarBoasVindas(
     contato_id: responsavel.id,
     para: responsavel.telefone,
     tipo: 'boas_vindas',
+    template: render.template,
+    variaveis: render.variaveis,
+    conteudo: render.conteudo,
+    presenca_id: presencaId,
+  })
+}
+
+// Pergunta de AUTORIZAÇÃO DE IMAGEM (template 'autorizacao_imagem'): enviada no
+// check-in do play enquanto o cadastro não tem resposta — no máximo 1 envio bem-
+// sucedido no TOTAL (falha tenta de novo no próximo check-in). A resposta (SIM/NÃO)
+// chega no WhatsApp do chip e a equipe registra na ficha da criança.
+async function enviarAutorizacaoImagem(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  criancaId: string,
+  presencaId: string,
+) {
+  const { data: crianca } = await supabase
+    .from('crianca')
+    .select('nome, primeiro_nome, autorizacao_imagem')
+    .eq('id', criancaId)
+    .single()
+  if (!crianca || crianca.autorizacao_imagem !== null) return
+
+  const { count } = await supabase
+    .from('notificacao')
+    .select('id', { count: 'exact', head: true })
+    .eq('crianca_id', criancaId)
+    .eq('tipo', 'autorizacao_imagem')
+    .neq('status', 'falha')
+  if ((count ?? 0) > 0) return
+
+  const [{ data: tpl }, { data: vinculo }] = await Promise.all([
+    supabase
+      .from('mensagem_template')
+      .select('texto')
+      .eq('chave', 'autorizacao_imagem')
+      .eq('ativo', true)
+      .maybeSingle(),
+    supabase
+      .from('crianca_contato')
+      .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
+      .eq('crianca_id', criancaId)
+      .eq('papel', 'responsavel')
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const responsavel = vinculo?.contato
+  if (!tpl || !responsavel?.telefone) return
+
+  const render = tplAutorizacaoImagem(
+    responsavel.nome,
+    crianca.nome,
+    tpl.texto,
+    responsavel.primeiro_nome,
+    crianca.primeiro_nome,
+  )
+
+  await enviarNotificacao(supabase, getSender(), {
+    crianca_id: criancaId,
+    contato_id: responsavel.id,
+    para: responsavel.telefone,
+    tipo: 'autorizacao_imagem',
     template: render.template,
     variaveis: render.variaveis,
     conteudo: render.conteudo,

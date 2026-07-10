@@ -5,6 +5,7 @@ import {
   nomeResponsavelMensagem,
   renderizarTemplate,
   tplAgradecimentoCheckout,
+  tplAutorizacaoImagem,
   tplAvisoTempo,
   tplBoasVindas,
   tplOcorrencia,
@@ -83,4 +84,13 @@ test('tplAgradecimentoCheckout renderiza agradecimento', () => {
   assert.equal(r.template, 'agradecimento_checkout')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
   assert.equal(r.conteudo, 'Obrigado pela visita, Ana! Beto já saiu do play. Até a próxima! 💚')
+})
+
+test('tplAutorizacaoImagem pergunta com resposta por texto (sem botões)', () => {
+  const r = tplAutorizacaoImagem('Ana Silva', 'Beto Souza')
+  assert.equal(r.template, 'autorizacao_imagem')
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
+  assert.ok(r.conteudo.includes('Ana'))
+  assert.ok(r.conteudo.includes('imagem de Beto'))
+  assert.ok(r.conteudo.includes('*SIM* ou *NÃO*'))
 })

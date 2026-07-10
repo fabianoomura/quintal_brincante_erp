@@ -11,6 +11,7 @@ import OcorrenciaForm from './ocorrencia-form'
 import MatriculaSection from './matricula-section'
 import MensalistaControle from './mensalista-controle'
 import ConsentimentoSection from './consentimento-section'
+import AutorizacaoImagemSection from './autorizacao-imagem-section'
 
 const ORIGEM_LABEL: Record<string, string> = {
   mensalista: '🎟️ Mensalista',
@@ -29,7 +30,7 @@ export default async function FichaPage({
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('id, nome, primeiro_nome, sobrenome, nascimento, saude, endereco, cep, logradouro, numero, complemento, bairro, cidade, uf, ativo, foto, consentimento_em, consentimento_por')
+    .select('id, nome, primeiro_nome, sobrenome, nascimento, saude, endereco, cep, logradouro, numero, complemento, bairro, cidade, uf, ativo, foto, consentimento_em, consentimento_por, autorizacao_imagem, autorizacao_imagem_em')
     .eq('id', id)
     .maybeSingle()
 
@@ -138,6 +139,16 @@ export default async function FichaPage({
             ⚠️ LGPD pendente
           </span>
         )}
+        {crianca.autorizacao_imagem === null && (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">
+            📸 imagem pendente
+          </span>
+        )}
+        {crianca.autorizacao_imagem === false && (
+          <span className="rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">
+            📸 imagem NÃO autorizada
+          </span>
+        )}
         {!crianca.ativo && (
           <span className="rounded-full bg-slate-200 px-3 py-1 text-sm font-bold text-slate-500">
             inativa
@@ -150,6 +161,12 @@ export default async function FichaPage({
         consentimentoEm={crianca.consentimento_em}
         consentimentoPor={crianca.consentimento_por}
         sugestaoResponsavel={contatos.find((c) => c.papel === 'responsavel')?.nome ?? ''}
+      />
+
+      <AutorizacaoImagemSection
+        criancaId={crianca.id}
+        autorizacao={crianca.autorizacao_imagem}
+        autorizacaoEm={crianca.autorizacao_imagem_em}
       />
 
       <EditForm crianca={crianca} />

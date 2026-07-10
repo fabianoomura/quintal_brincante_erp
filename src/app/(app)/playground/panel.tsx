@@ -18,6 +18,7 @@ type Presente = {
   nome: string
   foto: string | null
   tarifaHora: number | null // valor/hora do período travado no check-in
+  autorizacaoImagem: boolean | null // null = pendente · true = ok · false = não usar
 }
 
 function agoraHHMM() {
@@ -203,6 +204,19 @@ export default function PlaygroundPanel({
                     )}
                   </span>
                   <span className="truncate font-display text-lg font-bold">{p.nome}</span>
+                  {p.autorizacaoImagem === null ? (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+                      📸 pendente
+                    </span>
+                  ) : p.autorizacaoImagem ? (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                      📸 ok
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+                      📸 não usar
+                    </span>
+                  )}
                 </div>
                 <span className="shrink-0 text-xs text-slate-400">entrou {p.entrada.slice(0, 5)}</span>
               </div>
