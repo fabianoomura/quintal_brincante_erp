@@ -12,6 +12,7 @@ export type NotificacaoNova = {
   template: string
   variaveis: string[]
   conteudo: string
+  enquete?: { opcoes: string[] } // envia como enquete (só Evolution; ver adapter)
   ocorrencia_id?: string | null
   presenca_id?: string | null
 }
@@ -48,6 +49,7 @@ export async function enviarNotificacao(
     template: n.template,
     variaveis: n.variaveis,
     conteudo: n.conteudo,
+    enquete: n.enquete,
   })
 }
 

@@ -6,6 +6,9 @@ export type MensagemWhatsApp = {
   template: string // nome do template aprovado na Meta
   variaveis: string[] // valores das {{n}}
   conteudo: string // texto renderizado (auditoria)
+  // Enquete nativa do WhatsApp (opções tocáveis). Só a Evolution suporta (sendPoll);
+  // os demais providers enviam o conteudo como texto normal.
+  enquete?: { opcoes: string[] }
 }
 
 export type ResultadoEnvio =
@@ -101,17 +104,23 @@ export class EvolutionSender implements EnviarWhatsApp {
   async enviar(msg: MensagemWhatsApp): Promise<ResultadoEnvio> {
     if (!msg.para) return { ok: false, erro: 'Sem telefone do responsável.' }
 
+    const number = msg.para.replace(/\D/g, '') // só dígitos (E.164 sem o +)
+    // Enquete (sendPoll): o conteudo vira a pergunta e as opções viram botões de voto.
+    const [rota, body] = msg.enquete
+      ? [
+          'sendPoll',
+          { number, name: msg.conteudo, selectableCount: 1, values: msg.enquete.opcoes },
+        ]
+      : ['sendText', { number, text: msg.conteudo }]
+
     let resp: Response
     try {
       resp = await fetch(
-        `${this.baseUrl.replace(/\/$/, '')}/message/sendText/${this.instance}`,
+        `${this.baseUrl.replace(/\/$/, '')}/message/${rota}/${this.instance}`,
         {
           method: 'POST',
           headers: { apikey: this.apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            number: msg.para.replace(/\D/g, ''), // só dígitos (E.164 sem o +)
-            text: msg.conteudo,
-          }),
+          body: JSON.stringify(body),
         },
       )
     } catch (e) {

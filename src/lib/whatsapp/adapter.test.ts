@@ -110,6 +110,31 @@ test('EvolutionSender manda texto renderizado pro endpoint da instância', async
   }
 })
 
+test('EvolutionSender com enquete usa sendPoll com as opções', async () => {
+  const { fn, calls } = mockFetch({ status: 201, json: { key: { id: 'BAE9POLL' } } })
+  const orig = globalThis.fetch
+  globalThis.fetch = fn
+  try {
+    const s = new EvolutionSender('https://evo.exemplo.com', 'CHAVE', 'quintal')
+    const r = await s.enviar({
+      para: '+5543999999999',
+      template: 'autorizacao_imagem',
+      variaveis: ['Ana', 'Beto'],
+      conteudo: 'Você autoriza o uso da imagem de Beto?',
+      enquete: { opcoes: ['SIM', 'NÃO'] },
+    })
+    assert.deepEqual(r, { ok: true, providerMsgId: 'BAE9POLL' })
+    assert.equal(calls[0].url, 'https://evo.exemplo.com/message/sendPoll/quintal')
+    const body = JSON.parse(calls[0].init.body as string)
+    assert.equal(body.number, '5543999999999')
+    assert.equal(body.name, 'Você autoriza o uso da imagem de Beto?')
+    assert.equal(body.selectableCount, 1)
+    assert.deepEqual(body.values, ['SIM', 'NÃO'])
+  } finally {
+    globalThis.fetch = orig
+  }
+})
+
 test('EvolutionSender devolve erro quando a API recusa', async () => {
   const { fn } = mockFetch({ status: 400, json: { response: { message: ['number not on whatsapp'] } } })
   const orig = globalThis.fetch
