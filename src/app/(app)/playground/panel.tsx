@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
+import { abrirConversaDoResponsavel } from '../conversas/actions'
 import { duracaoMinutos, minutosCobraveis, precoProporcional } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
@@ -19,6 +20,7 @@ type Presente = {
   foto: string | null
   tarifaHora: number | null // valor/hora do período travado no check-in
   autorizacaoImagem: boolean | null // null = pendente · true = ok · false = não usar
+  naoLidas: number // mensagens não lidas na conversa do responsável (badge 💬)
 }
 
 function agoraHHMM() {
@@ -96,6 +98,25 @@ export default function PlaygroundPanel({
   const [saida, setSaida] = useState<string | null>(null)
   // recebimento: aberto após um check-out cobrado
   const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string } | null>(null)
+
+  // Abre a conversa WhatsApp do responsável, carimbando criança+presença nas
+  // mensagens enviadas de lá (histórico da permanência).
+  async function conversar(p: Presente) {
+    setOcupado(`conversa-${p.id}`)
+    try {
+      const res = await abrirConversaDoResponsavel(p.criancaId)
+      if (!res.ok) {
+        setSaida(`❌ ${res.erro}`)
+        setTimeout(() => setSaida(null), 6000)
+        return
+      }
+      router.push(`/conversas/${res.conversaId}?crianca=${p.criancaId}&presenca=${p.id}`)
+    } catch (err) {
+      setSaida(`❌ Não consegui abrir a conversa (${err instanceof Error ? err.message : 'erro'}).`)
+    } finally {
+      setOcupado(null)
+    }
+  }
 
   async function sair(p: Presente) {
     setOcupado(p.id)
@@ -264,6 +285,18 @@ export default function PlaygroundPanel({
                   Avisar responsável
                 </div>
                 <AvisosRapidos criancaId={p.criancaId} avisos={avisos} presencaId={p.id} compact />
+                <button
+                  onClick={() => conversar(p)}
+                  disabled={ocupado === `conversa-${p.id}`}
+                  className="pop mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200 disabled:opacity-60"
+                >
+                  💬 WhatsApp
+                  {p.naoLidas > 0 && (
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white">
+                      {p.naoLidas}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           )

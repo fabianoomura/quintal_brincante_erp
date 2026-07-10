@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import type { EnviarWhatsApp, MensagemWhatsApp } from './adapter'
+import { obterOuCriarConversa, registrarMensagem } from './conversas'
 
 type Tipo = Database['public']['Enums']['tipo_notificacao']
 
@@ -44,13 +45,19 @@ export async function enviarNotificacao(
     .single()
   if (error) return { ok: false, erro: error.message }
 
-  return dispararEAtualizar(sb, sender, data.id, {
-    para: n.para,
-    template: n.template,
-    variaveis: n.variaveis,
-    conteudo: n.conteudo,
-    enquete: n.enquete,
-  })
+  return dispararEAtualizar(
+    sb,
+    sender,
+    data.id,
+    {
+      para: n.para,
+      template: n.template,
+      variaveis: n.variaveis,
+      conteudo: n.conteudo,
+      enquete: n.enquete,
+    },
+    { crianca_id: n.crianca_id, presenca_id: n.presenca_id ?? null },
+  )
 }
 
 // Reenvio de uma notificação que FALHOU (usado pelo aviso de tempo): reclama a tentativa
@@ -82,6 +89,7 @@ async function dispararEAtualizar(
   sender: EnviarWhatsApp,
   id: string,
   msg: MensagemWhatsApp,
+  vinculo?: { crianca_id?: string | null; presenca_id?: string | null },
 ): Promise<ResultadoNotificacao> {
   const res = await sender.enviar(msg)
 
@@ -94,6 +102,23 @@ async function dispararEAtualizar(
         enviada_em: new Date().toISOString(),
       })
       .eq('id', id)
+
+    // Espelha na Central de Conversas: a mensagem do sistema aparece no histórico do
+    // chat (senão a equipe veria só a resposta do responsável, sem a pergunta).
+    // Best-effort: qualquer falha aqui NÃO afeta o envio já feito.
+    try {
+      const conversa = await obterOuCriarConversa(sb, msg.para)
+      await registrarMensagem(sb, conversa.id, {
+        direcao: 'saida',
+        conteudo: msg.conteudo,
+        status: 'enviada',
+        provider_msg_id: res.providerMsgId,
+        crianca_id: vinculo?.crianca_id ?? null,
+        presenca_id: vinculo?.presenca_id ?? null,
+      })
+    } catch {
+      // silencioso por design
+    }
     return { ok: true, id }
   }
 

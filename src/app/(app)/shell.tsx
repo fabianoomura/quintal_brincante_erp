@@ -15,6 +15,7 @@ const GRUPOS: Grupo[] = [
     itens: [
       { href: '/presenca', label: 'Quem está aqui', icon: '📋', cor: 'bg-amber-500' },
       { href: '/criancas', label: 'Crianças', icon: '👧', cor: 'bg-sky-500' },
+      { href: '/conversas', label: 'Conversas', icon: '💬', cor: 'bg-green-600' },
     ],
   },
   {

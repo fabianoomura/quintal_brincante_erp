@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO } from '@/lib/datas'
+import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 import PlaygroundPanel from './panel'
 import ConcluidasHoje from './concluidas-hoje'
 import PresencasAntigas from '../presenca/presencas-antigas'
+import RealtimeRefresh from '../conversas/realtime-refresh'
 
 export default async function PlaygroundPage() {
   const supabase = await createClient()
@@ -44,8 +46,14 @@ export default async function PlaygroundPage() {
     .filter((a) => a.tipo_ocorrencia)
     .map((a) => ({ id: a.id, label: a.nome, tipo: a.tipo_ocorrencia!, texto: a.texto }))
 
+  const naoLidas = await naoLidasPorCrianca(
+    supabase,
+    (presentes ?? []).map((p) => p.crianca?.id ?? '').filter(Boolean),
+  )
+
   return (
     <div className="space-y-4">
+      <RealtimeRefresh tabela="whatsapp_conversa" />
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold text-slate-700">🎠 Playground</h1>
         <Link
@@ -75,6 +83,7 @@ export default async function PlaygroundPage() {
           foto: p.crianca?.foto ?? null,
           tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
           autorizacaoImagem: p.crianca?.autorizacao_imagem ?? null,
+          naoLidas: naoLidas.get(p.crianca?.id ?? '') ?? 0,
         }))}
         criancas={criancas ?? []}
         avisos={avisosRapidos}

@@ -151,6 +151,32 @@ Rodada de correções vinda de auditoria do código (corridas e falhas silencios
 - Futuro (Central de Conversas): a resposta SIM/NÃO poderá ser capturada automaticamente
   pelo webhook e o registro manual vira só conferência.
 
+## Central de Conversas WhatsApp (2026-07-10)
+
+O ERP virou ponto central de atendimento: a equipe vê e responde mensagens dos responsáveis
+sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Supabase.
+
+- **Banco:** `whatsapp_conversa` (1 por telefone, dona = contato/responsável; `contato_id`
+  null = número não identificado — mensagem nunca se perde) e `whatsapp_mensagem` (vínculo
+  opcional com criança/presença). Última mensagem e não lidas atualizadas por **trigger**
+  (atômico). Dedupe por índice único de `provider_msg_id`. RLS Tier A. Realtime habilitado.
+- **Webhook** `POST /api/webhooks/evolution?secret=...` (`MESSAGES_UPSERT`): grava recebidas
+  E enviadas pelo chip (fromMe); fail-closed sem `EVOLUTION_WEBHOOK_SECRET`. Trata o **pulo
+  do nono dígito** (JID sem o 9 casa com o cadastro com 9 — `src/lib/whatsapp/jid.ts`, puro
+  e testado). Config da instância documentada no [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md).
+- **Dual-write:** toda notificação do sistema (boas-vindas, aviso de tempo, agradecimento,
+  autorização) também entra na conversa — a equipe vê a pergunta E a resposta.
+- **/conversas:** caixa de entrada geral (estilo WhatsApp Business) + chat com bolhas,
+  horário, separador de dia, envio pela equipe (auditado em `enviado_por`) e **tempo real**
+  (Supabase Realtime, sem polling). Não lidas zeram ao abrir.
+- **Playground/quiosque:** botão **💬 WhatsApp** no card (badge vermelho com não lidas ao
+  vivo) abre a conversa do responsável carimbando `?crianca=&presenca=` — mensagens de lá
+  ficam vinculadas à permanência.
+- Pendente de config p/ ligar em produção: env `EVOLUTION_WEBHOOK_SECRET` na Vercel +
+  webhook apontado na instância (runbook no WHATSAPP-EVOLUTION.md).
+- Futuro: captura automática do voto da enquete de autorização, status de entrega/leitura
+  (`MESSAGES_UPDATE`), mídia.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

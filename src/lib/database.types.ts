@@ -855,6 +855,127 @@ export type Database = {
           },
         ]
       }
+      whatsapp_conversa: {
+        Row: {
+          ativo: boolean
+          contato_id: string | null
+          created_at: string
+          id: string
+          nao_lidas: number
+          telefone: string
+          ultima_mensagem: string | null
+          ultima_mensagem_em: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          contato_id?: string | null
+          created_at?: string
+          id?: string
+          nao_lidas?: number
+          telefone: string
+          ultima_mensagem?: string | null
+          ultima_mensagem_em?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          contato_id?: string | null
+          created_at?: string
+          id?: string
+          nao_lidas?: number
+          telefone?: string
+          ultima_mensagem?: string | null
+          ultima_mensagem_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversa_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contato"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_mensagem: {
+        Row: {
+          conteudo: string | null
+          conversa_id: string
+          created_at: string
+          crianca_id: string | null
+          data_mensagem: string
+          direcao: Database["public"]["Enums"]["direcao_mensagem"]
+          enviado_por: string | null
+          id: string
+          presenca_id: string | null
+          provider_msg_id: string | null
+          raw_payload: Json | null
+          resposta_de_msg_id: string | null
+          status: Database["public"]["Enums"]["status_notificacao"]
+          tipo: Database["public"]["Enums"]["tipo_mensagem_whatsapp"]
+        }
+        Insert: {
+          conteudo?: string | null
+          conversa_id: string
+          created_at?: string
+          crianca_id?: string | null
+          data_mensagem?: string
+          direcao: Database["public"]["Enums"]["direcao_mensagem"]
+          enviado_por?: string | null
+          id?: string
+          presenca_id?: string | null
+          provider_msg_id?: string | null
+          raw_payload?: Json | null
+          resposta_de_msg_id?: string | null
+          status?: Database["public"]["Enums"]["status_notificacao"]
+          tipo?: Database["public"]["Enums"]["tipo_mensagem_whatsapp"]
+        }
+        Update: {
+          conteudo?: string | null
+          conversa_id?: string
+          created_at?: string
+          crianca_id?: string | null
+          data_mensagem?: string
+          direcao?: Database["public"]["Enums"]["direcao_mensagem"]
+          enviado_por?: string | null
+          id?: string
+          presenca_id?: string | null
+          provider_msg_id?: string | null
+          raw_payload?: Json | null
+          resposta_de_msg_id?: string | null
+          status?: Database["public"]["Enums"]["status_notificacao"]
+          tipo?: Database["public"]["Enums"]["tipo_mensagem_whatsapp"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_mensagem_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagem_crianca_id_fkey"
+            columns: ["crianca_id"]
+            isOneToOne: false
+            referencedRelation: "crianca"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagem_enviado_por_fkey"
+            columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_mensagem_presenca_id_fkey"
+            columns: ["presenca_id"]
+            isOneToOne: false
+            referencedRelation: "presenca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -864,6 +985,7 @@ export type Database = {
       is_colaborador: { Args: never; Returns: boolean }
     }
     Enums: {
+      direcao_mensagem: "entrada" | "saida"
       origem_presenca: "mensalista" | "diaria" | "espaco_kids" | "colonia"
       papel_acesso: "admin" | "operador"
       papel_contato: "responsavel" | "autorizado" | "emergencia"
@@ -876,6 +998,7 @@ export type Database = {
         | "boas_vindas"
         | "agradecimento_checkout"
         | "autorizacao_imagem"
+      tipo_mensagem_whatsapp: "texto" | "outro"
       tipo_ocorrencia:
         | "banheiro"
         | "nao_adaptou"
@@ -1012,6 +1135,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      direcao_mensagem: ["entrada", "saida"],
       origem_presenca: ["mensalista", "diaria", "espaco_kids", "colonia"],
       papel_acesso: ["admin", "operador"],
       papel_contato: ["responsavel", "autorizado", "emergencia"],
@@ -1025,6 +1149,7 @@ export const Constants = {
         "agradecimento_checkout",
         "autorizacao_imagem",
       ],
+      tipo_mensagem_whatsapp: ["texto", "outro"],
       tipo_ocorrencia: [
         "banheiro",
         "nao_adaptou",

@@ -85,6 +85,7 @@ WHATSAPP_PROVIDER=evolution
 EVOLUTION_URL=https://evo.seudominio.com
 EVOLUTION_API_KEY=A_CHAVE_QUE_VOCE_ESCOLHEU
 EVOLUTION_INSTANCE=quintal
+EVOLUTION_WEBHOOK_SECRET=UM_SEGREDO_LONGO_SO_PARA_O_WEBHOOK
 ```
 
 Depois de alterar env na Vercel, faça redeploy.
@@ -100,6 +101,35 @@ curl -X POST "https://evo.seudominio.com/message/sendText/quintal" \
 
 No Windows, prefira Node/fetch ou um cliente HTTP que preserve UTF-8 se o texto tiver acentos
 ou emojis.
+
+---
+
+## Webhook → Central de Conversas
+
+A Central de Conversas (`/conversas` no sistema) grava TODO o histórico no banco do ERP.
+Para as mensagens **recebidas** chegarem lá, a instância precisa apontar o webhook para o
+app (evento `MESSAGES_UPSERT`). Configuração (uma vez, via REST da Evolution):
+
+```bash
+curl -X POST "https://evo.seudominio.com/webhook/set/quintal" \
+  -H "apikey: SUA_CHAVE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webhook": {
+      "enabled": true,
+      "url": "https://quintal-brincante-erp.vercel.app/api/webhooks/evolution?secret=UM_SEGREDO_LONGO_SO_PARA_O_WEBHOOK",
+      "webhook_by_events": false,
+      "events": ["MESSAGES_UPSERT"]
+    }
+  }'
+```
+
+- O `secret` da URL tem que ser o MESMO da env `EVOLUTION_WEBHOOK_SECRET` na Vercel.
+- Sem a env configurada, o endpoint responde 503 e não processa nada (fail-closed).
+- Conferir a config: `GET https://evo.seudominio.com/webhook/find/quintal` (header `apikey`).
+- Grupos, status e broadcast são ignorados; mensagem sem texto (mídia/figurinha) entra
+  como "[conteúdo não suportado]" com o payload cru guardado em `raw_payload`.
+- Reentrega não duplica (índice único por `provider_msg_id` na conversa).
 
 ---
 

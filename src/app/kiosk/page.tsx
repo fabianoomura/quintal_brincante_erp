@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getColaboradorAtual } from '@/lib/colaborador'
 import { hojeISO } from '@/lib/datas'
+import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 import PlaygroundPanel from '@/app/(app)/playground/panel'
 import ConcluidasHoje from '@/app/(app)/playground/concluidas-hoje'
+import RealtimeRefresh from '@/app/(app)/conversas/realtime-refresh'
 
 // Modo quiosque do PLAY: tela cheia, sem sidebar — para um tablet fixo na entrada.
 // Autenticado (o proxy protege) + exige colaborador ativo.
@@ -47,8 +49,14 @@ export default async function KioskPage() {
       supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
     ])
 
+  const naoLidas = await naoLidasPorCrianca(
+    supabase,
+    (presentes ?? []).map((p) => p.crianca?.id ?? '').filter(Boolean),
+  )
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 to-white">
+      <RealtimeRefresh tabela="whatsapp_conversa" />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-fuchsia-100 bg-white/95 px-5 py-3 backdrop-blur">
         <div className="font-display text-2xl font-bold text-fuchsia-700">🎠 Playground</div>
         <div className="flex items-center gap-3">
@@ -75,6 +83,7 @@ export default async function KioskPage() {
             foto: p.crianca?.foto ?? null,
             tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
             autorizacaoImagem: p.crianca?.autorizacao_imagem ?? null,
+            naoLidas: naoLidas.get(p.crianca?.id ?? '') ?? 0,
           }))}
           criancas={criancas ?? []}
           avisos={(avisos ?? [])

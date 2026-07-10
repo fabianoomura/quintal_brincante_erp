@@ -30,6 +30,17 @@ export const AJUDA: Record<string, Ajuda> = {
       'O selo "⚠️ LGPD pendente" lembra de registrar o consentimento.',
     ],
   },
+  '/conversas': {
+    titulo: 'Conversas',
+    texto:
+      'Central de atendimento WhatsApp: veja e responda as mensagens dos responsáveis sem sair do sistema. Todo o histórico fica guardado aqui.',
+    dicas: [
+      'A bolinha verde mostra quantas mensagens não lidas há em cada conversa.',
+      'Os avisos automáticos do sistema também aparecem no histórico (marcados como "sistema").',
+      '"Não identificado" = número que não bate com nenhum contato do cadastro.',
+      'No playground, o botão 💬 do card abre direto a conversa do responsável.',
+    ],
+  },
   '/playground': {
     titulo: 'Playground',
     texto:
