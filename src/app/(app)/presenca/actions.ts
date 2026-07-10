@@ -82,8 +82,8 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       .single()
     if (error) return { ok: false, erro: error.message }
 
-    // Boas-vindas ("combinados") na PRIMEIRA entrada do play da criança e, se o
-    // cadastro ainda não tem resposta, a pergunta de autorização de imagem.
+    // Boas-vindas ("combinados") em TODA entrada no play e, se o cadastro ainda
+    // não tem resposta, a pergunta de autorização de imagem também em toda entrada.
     // Best-effort: falha de envio NÃO quebra o check-in (fica na auditoria como falha).
     if (input.origem === 'espaco_kids') {
       try {
@@ -111,24 +111,12 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 }
 
 // Envia a mensagem de boas-vindas com os combinados (template editável em /mensagens,
-// chave 'boas_vindas') em TODA entrada no play — no máx. 1× por dia por criança
-// (entra/sai no mesmo dia não repete). {{1}}=responsável, {{2}}=criança.
+// chave 'boas_vindas') em TODA entrada no play. {{1}}=responsável, {{2}}=criança.
 async function enviarBoasVindas(
   supabase: Awaited<ReturnType<typeof createClient>>,
   criancaId: string,
   presencaId: string,
 ) {
-  // já enviou hoje? BRT fixo -03:00 (Brasil sem horário de verão). Envio que FALHOU
-  // não conta — não queima o dia; o próximo check-in tenta de novo.
-  const { count } = await supabase
-    .from('notificacao')
-    .select('id', { count: 'exact', head: true })
-    .eq('crianca_id', criancaId)
-    .eq('tipo', 'boas_vindas')
-    .neq('status', 'falha')
-    .gte('created_at', `${hojeISO()}T00:00:00-03:00`)
-  if ((count ?? 0) > 0) return
-
   const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
     supabase
       .from('mensagem_template')
@@ -168,10 +156,9 @@ async function enviarBoasVindas(
   })
 }
 
-// Pergunta de AUTORIZAÇÃO DE IMAGEM (template 'autorizacao_imagem'): enviada no
-// check-in do play enquanto o cadastro não tem resposta — no máximo 1 envio bem-
-// sucedido no TOTAL (falha tenta de novo no próximo check-in). A resposta (SIM/NÃO)
-// chega no WhatsApp do chip e a equipe registra na ficha da criança.
+// Pergunta de AUTORIZAÇÃO DE IMAGEM (template 'autorizacao_imagem'): enviada em
+// TODO check-in do play enquanto o cadastro não tem resposta. Assim que a equipe
+// registra SIM ou NÃO na ficha, os próximos check-ins deixam de enviar.
 async function enviarAutorizacaoImagem(
   supabase: Awaited<ReturnType<typeof createClient>>,
   criancaId: string,
@@ -183,14 +170,6 @@ async function enviarAutorizacaoImagem(
     .eq('id', criancaId)
     .single()
   if (!crianca || crianca.autorizacao_imagem !== null) return
-
-  const { count } = await supabase
-    .from('notificacao')
-    .select('id', { count: 'exact', head: true })
-    .eq('crianca_id', criancaId)
-    .eq('tipo', 'autorizacao_imagem')
-    .neq('status', 'falha')
-  if ((count ?? 0) > 0) return
 
   const [{ data: tpl }, { data: vinculo }] = await Promise.all([
     supabase

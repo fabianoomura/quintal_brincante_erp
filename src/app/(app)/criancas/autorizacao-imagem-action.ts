@@ -28,8 +28,8 @@ export async function registrarAutorizacaoImagem(
   return { ok: true }
 }
 
-// Volta para "pendente" (ex.: registrou errado). A pergunta automática NÃO é reenviada
-// (já foi feita 1×) — a equipe confirma pessoalmente e registra de novo.
+// Volta para "pendente" (ex.: registrou errado). A pergunta automática volta a ser
+// enviada no próximo check-in do play.
 export async function limparAutorizacaoImagem(criancaId: string): Promise<Resultado> {
   const supabase = await createClient()
   const { data, error } = await supabase
