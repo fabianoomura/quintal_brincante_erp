@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getColaboradorAtual } from '@/lib/colaborador'
-import { hojeISO } from '@/lib/datas'
+import { hojeISO, agoraHora, horaParaMinutos } from '@/lib/datas'
+import { menorRestanteMin } from '@/lib/lotacao'
 import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 import PlaygroundPanel from '@/app/(app)/playground/panel'
+import LotacaoChip from '@/app/(app)/playground/lotacao-chip'
 import ConcluidasHoje from '@/app/(app)/playground/concluidas-hoje'
 import RealtimeRefresh from '@/app/(app)/conversas/realtime-refresh'
 
@@ -71,9 +73,18 @@ export default async function KioskPage() {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-fuchsia-100 bg-white/95 px-5 py-3 backdrop-blur">
         <div className="font-display text-2xl font-bold text-fuchsia-700">🎠 Playground</div>
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-fuchsia-100 px-3 py-1.5 text-sm font-bold text-fuchsia-700">
-            {presentes?.length ?? 0} no play
-          </span>
+          <LotacaoChip
+            presentes={presentes?.length ?? 0}
+            capacidade={cfg?.capacidade_play ?? null}
+            aCaminho={(fila ?? []).filter((f) => f.status === 'chamada').length}
+            proximaVagaMin={menorRestanteMin(
+              (presentes ?? []).map((p) => ({
+                entradaMin: horaParaMinutos(p.entrada),
+                tempoContratadoMin: p.tempo_contratado_min,
+              })),
+              horaParaMinutos(agoraHora()),
+            )}
+          />
           <Link
             href="/"
             className="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white"

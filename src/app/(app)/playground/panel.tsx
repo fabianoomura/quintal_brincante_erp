@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
 import { abrirConversaDoResponsavel } from '../conversas/actions'
+import { entrarNaFila } from './fila-actions'
 import { duracaoMinutos, minutosCobraveis, precoProporcional } from '@/lib/tarifador'
-import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
@@ -34,13 +34,6 @@ function fmtDuracao(min: number) {
   const h = Math.floor(min / 60)
   const m = min % 60
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
-}
-
-const LOTACAO_CLS: Record<NivelLotacao, string> = {
-  sem_limite: 'bg-sky-100 text-sky-700',
-  ok: 'bg-emerald-100 text-emerald-700',
-  quase: 'bg-amber-100 text-amber-700',
-  lotado: 'bg-rose-100 text-rose-700',
 }
 
 export default function PlaygroundPanel({
@@ -113,6 +106,8 @@ export default function PlaygroundPanel({
   const [saida, setSaida] = useState<string | null>(null)
   // recebimento: aberto após um check-out cobrado
   const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string } | null>(null)
+  // card com o leque de avisos rápidos aberto (botão ⚡)
+  const [avisosAbertos, setAvisosAbertos] = useState<string | null>(null)
 
   // Abre a conversa WhatsApp do responsável, carimbando criança+presença nas
   // mensagens enviadas de lá (histórico da permanência).
@@ -158,18 +153,34 @@ export default function PlaygroundPanel({
     }
   }
 
+  // Coloca a criança selecionada na fila (botão aparece só quando lotado).
+  async function paraFila() {
+    if (!criancaId) return
+    setErro(null)
+    setOcupado('fila')
+    try {
+      const res = await entrarNaFila(criancaId)
+      if (!res.ok) {
+        setErro(res.erro)
+        return
+      }
+      setCriancaId('')
+      setTempo('')
+      router.refresh()
+    } catch (err) {
+      setErro(`Não consegui adicionar à fila (${err instanceof Error ? err.message : 'erro'}).`)
+    } finally {
+      setOcupado(null)
+    }
+  }
+
   // Lotação do play: quem foi CHAMADO da fila tem vaga reservada, então conta.
   const chamadasACaminho = fila.filter((f) => f.status === 'chamada').length
-  const lotacao = calcularLotacao(presentes.length + chamadasACaminho, capacidadePlay)
-  // Previsão de vaga: menor tempo restante entre os contratados (<=0 = já estourou).
-  const restantes = presentes
-    .filter((p) => p.tempoContratadoMin != null)
-    .map((p) => p.tempoContratadoMin! - Math.ceil(duracaoMinutos(p.entrada, agora)))
-    .sort((a, b) => a - b)
-  const proximaVaga = restantes.length > 0 ? restantes[0] : null
+  const lotado =
+    capacidadePlay != null && presentes.length + chamadasACaminho >= capacidadePlay
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* toast de check-out (melhor que alert em tablet) */}
       {saida && (
         <div className="rounded-2xl bg-slate-800 px-4 py-3 font-semibold text-white shadow-md">
@@ -177,30 +188,7 @@ export default function PlaygroundPanel({
         </div>
       )}
 
-      {/* Lotação do play + previsão de vaga */}
-      {capacidadePlay != null && (
-        <div
-          className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-5 py-3 font-display shadow-sm ${LOTACAO_CLS[lotacao.nivel]}`}
-        >
-          <span className="text-lg font-bold">
-            🧒 {presentes.length}/{capacidadePlay} no play
-            {chamadasACaminho > 0 && (
-              <span className="opacity-70"> + {chamadasACaminho} a caminho</span>
-            )}
-          </span>
-          <span className="text-sm font-semibold">
-            {lotacao.vagas! > 0
-              ? `${lotacao.vagas} vaga(s)`
-              : proximaVaga == null
-                ? '🚨 LOTADO · sem previsão de vaga (tempo livre)'
-                : proximaVaga > 0
-                  ? `🚨 LOTADO · próxima vaga em ~${fmtDuracao(proximaVaga)}`
-                  : '🚨 LOTADO · vaga a qualquer momento (tempo estourado)'}
-          </span>
-        </div>
-      )}
-
-      {/* Check-in rápido */}
+      {/* Entrada única: busca + Entrar; lotou, aparece o + Fila do lado */}
       <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex items-center justify-between gap-2">
           <div className="font-display text-base font-bold text-slate-600">🚀 Entrada rápida</div>
@@ -220,23 +208,30 @@ export default function PlaygroundPanel({
             placeholder="Tempo (min) — opcional"
             value={tempo}
             onChange={(e) => setTempo(e.target.value)}
-            className="flex-1 rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-4 py-3 text-base"
+            className="min-w-0 flex-1 rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-4 py-3 text-base"
           />
           <button
             onClick={entrar}
-            disabled={!criancaId || ocupado === 'checkin'}
+            disabled={!criancaId || !!ocupado}
             className="pop rounded-full bg-fuchsia-600 px-6 py-3 font-display text-lg font-bold text-white shadow-sm disabled:opacity-50"
           >
-            Entrar
+            {ocupado === 'checkin' ? '…' : 'Entrar'}
           </button>
+          {lotado && (
+            <button
+              onClick={paraFila}
+              disabled={!criancaId || !!ocupado}
+              className="pop rounded-full bg-amber-500 px-5 py-3 font-display text-lg font-bold text-white shadow-sm disabled:opacity-50"
+            >
+              {ocupado === 'fila' ? '…' : '+ Fila'}
+            </button>
+          )}
         </div>
         {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
       </div>
 
-      {/* Fila de espera: aparece quando há limite configurado ou alguém aguardando */}
-      {(capacidadePlay != null || fila.length > 0) && (
-        <FilaEspera fila={fila} toleranciaMin={filaToleranciaMin} criancas={criancas} />
-      )}
+      {/* Fila em pills — some quando vazia */}
+      <FilaEspera fila={fila} toleranciaMin={filaToleranciaMin} />
 
       {presentes.length === 0 && (
         <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500">
@@ -263,48 +258,48 @@ export default function PlaygroundPanel({
           return (
             <div
               key={p.id}
-              className={`space-y-2 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 ${
+              className={`space-y-1.5 rounded-2xl p-3 shadow-sm ring-1 ring-black/5 ${
                 estourou ? 'bg-rose-50' : acabando ? 'bg-amber-50' : 'bg-white'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
                     {p.foto ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.foto} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-lg">🧒</span>
+                      <span className="text-base">🧒</span>
                     )}
                   </span>
-                  <span className="truncate font-display text-lg font-bold">{p.nome}</span>
+                  <span className="truncate font-display text-base font-bold">{p.nome}</span>
                   {p.autorizacaoImagem === null ? (
-                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
-                      📸 pendente
+                    <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700" title="Autorização de imagem pendente">
+                      📸?
                     </span>
                   ) : p.autorizacaoImagem ? (
-                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                      📸 ok
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700" title="Imagem autorizada">
+                      📸✓
                     </span>
                   ) : (
-                    <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-                      📸 não usar
+                    <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] font-bold text-rose-700" title="NÃO usar imagem">
+                      📸✕
                     </span>
                   )}
                 </div>
-                <span className="shrink-0 text-xs text-slate-400">entrou {p.entrada.slice(0, 5)}</span>
+                <span className="shrink-0 text-xs text-slate-400">{p.entrada.slice(0, 5)}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="font-display text-2xl font-bold text-slate-700">
+              <div className="flex items-baseline justify-between">
+                <span className="font-display text-xl font-bold text-slate-700">
                   {fmtDuracao(decorrido)}
                 </span>
-                <span className="font-display text-xl font-bold text-emerald-700">
+                <span className="font-display text-lg font-bold text-emerald-700">
                   {valor != null ? formatBRL(valor) : '—'}
                 </span>
               </div>
               {restante != null && p.tempoContratadoMin != null && (
-                <div className="space-y-1">
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="space-y-0.5">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
                       className={`h-full rounded-full transition-all ${
                         estourou ? 'bg-rose-500' : acabando ? 'bg-amber-500' : 'bg-emerald-500'
@@ -315,7 +310,7 @@ export default function PlaygroundPanel({
                     />
                   </div>
                   <div
-                    className={`text-xs font-semibold ${
+                    className={`text-[11px] font-semibold ${
                       estourou ? 'text-rose-600' : acabando ? 'text-amber-600' : 'text-slate-500'
                     }`}
                   >
@@ -325,32 +320,44 @@ export default function PlaygroundPanel({
                   </div>
                 </div>
               )}
-              <button
-                onClick={() => sair(p)}
-                disabled={ocupado === p.id}
-                className="pop w-full rounded-xl bg-slate-800 py-2.5 font-bold text-white disabled:opacity-60"
-              >
-                {ocupado === p.id ? '…' : valor != null ? `Check-out · ${formatBRL(valor)}` : 'Check-out'}
-              </button>
-
-              <div className="border-t border-slate-100 pt-2">
-                <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                  Avisar responsável
-                </div>
-                <AvisosRapidos criancaId={p.criancaId} avisos={avisos} presencaId={p.id} compact />
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => sair(p)}
+                  disabled={ocupado === p.id}
+                  className="pop min-w-0 flex-1 truncate rounded-xl bg-slate-800 py-2 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {ocupado === p.id ? '…' : valor != null ? `Check-out · ${formatBRL(valor)}` : 'Check-out'}
+                </button>
                 <button
                   onClick={() => conversar(p)}
                   disabled={ocupado === `conversa-${p.id}`}
-                  className="pop mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200 disabled:opacity-60"
+                  aria-label={`WhatsApp do responsável de ${p.nome}`}
+                  className="pop relative grid w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-base ring-1 ring-emerald-200 disabled:opacity-60"
                 >
-                  💬 WhatsApp
+                  💬
                   {p.naoLidas > 0 && (
-                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white">
+                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-0.5 text-[10px] font-bold text-white">
                       {p.naoLidas}
                     </span>
                   )}
                 </button>
+                <button
+                  onClick={() => setAvisosAbertos(avisosAbertos === p.id ? null : p.id)}
+                  aria-label={`Avisos rápidos para ${p.nome}`}
+                  className={`pop grid w-10 shrink-0 place-items-center rounded-xl text-base ring-1 disabled:opacity-60 ${
+                    avisosAbertos === p.id
+                      ? 'bg-amber-100 ring-amber-300'
+                      : 'bg-amber-50 ring-amber-200'
+                  }`}
+                >
+                  ⚡
+                </button>
               </div>
+              {avisosAbertos === p.id && (
+                <div className="border-t border-slate-100 pt-1.5">
+                  <AvisosRapidos criancaId={p.criancaId} avisos={avisos} presencaId={p.id} compact />
+                </div>
+              )}
             </div>
           )
         })}

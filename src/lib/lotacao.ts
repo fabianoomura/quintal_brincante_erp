@@ -24,3 +24,16 @@ export function calcularLotacao(
   else nivel = 'ok'
   return { nivel, presentes, capacidade, vagas }
 }
+
+// Previsão da próxima vaga do play: menor tempo restante entre os contratados
+// (<=0 = alguém já estourou). null = ninguém com tempo contratado (sem previsão).
+export function menorRestanteMin(
+  presencas: { entradaMin: number; tempoContratadoMin: number | null }[],
+  agoraMin: number,
+): number | null {
+  const restantes = presencas
+    .filter((p) => p.tempoContratadoMin != null)
+    .map((p) => p.entradaMin + p.tempoContratadoMin! - agoraMin)
+  if (restantes.length === 0) return null
+  return Math.min(...restantes)
+}

@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { hojeISO } from '@/lib/datas'
+import { hojeISO, agoraHora, horaParaMinutos } from '@/lib/datas'
+import { menorRestanteMin } from '@/lib/lotacao'
 import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 import PlaygroundPanel from './panel'
+import LotacaoChip from './lotacao-chip'
 import ConcluidasHoje from './concluidas-hoje'
 import PresencasAntigas from '../presenca/presencas-antigas'
 import RealtimeRefresh from '../conversas/realtime-refresh'
@@ -62,15 +64,32 @@ export default async function PlaygroundPage() {
     (presentes ?? []).map((p) => p.crianca?.id ?? '').filter(Boolean),
   )
 
+  const chamadas = (fila ?? []).filter((f) => f.status === 'chamada').length
+  const proximaVagaMin = menorRestanteMin(
+    (presentes ?? []).map((p) => ({
+      entradaMin: horaParaMinutos(p.entrada),
+      tempoContratadoMin: p.tempo_contratado_min,
+    })),
+    horaParaMinutos(agoraHora()),
+  )
+
   return (
     <div className="space-y-4">
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <RealtimeRefresh tabela="fila_espera" />
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-slate-700">🎠 Playground</h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-2xl font-bold text-slate-700">🎠 Playground</h1>
+          <LotacaoChip
+            presentes={presentes?.length ?? 0}
+            capacidade={cfg?.capacidade_play ?? null}
+            aCaminho={chamadas}
+            proximaVagaMin={proximaVagaMin}
+          />
+        </div>
         <Link
           href="/kiosk"
-          className="pop rounded-full bg-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
+          className="pop shrink-0 rounded-full bg-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
         >
           ⛶ Modo quiosque
         </Link>

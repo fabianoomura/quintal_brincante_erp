@@ -1,22 +1,15 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, hhmm } from '@/lib/datas'
-import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
 import NovaEntradaButton from './nova-entrada-button'
 import CheckoutButton from './checkout-button'
 import PresencasAntigas from './presencas-antigas'
 import ConversaButton from './conversa-button'
+import LotacaoChip from '../playground/lotacao-chip'
 import RealtimeRefresh from '../conversas/realtime-refresh'
 import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 
 import { card } from '@/lib/ui'
-
-const LOTACAO_ESTILO: Record<NivelLotacao, { cls: string; emoji: string; txt: string }> = {
-  sem_limite: { cls: 'bg-sky-100 text-sky-700', emoji: '🧒', txt: 'no espaço agora' },
-  ok: { cls: 'bg-emerald-100 text-emerald-700', emoji: '✅', txt: 'tranquilo' },
-  quase: { cls: 'bg-amber-100 text-amber-700', emoji: '⚠️', txt: 'quase lotado' },
-  lotado: { cls: 'bg-rose-100 text-rose-700', emoji: '🚨', txt: 'LOTADO' },
-}
 
 const ORIGEM_LABEL: Record<string, string> = {
   mensalista: '🎟️ Mensalista',
@@ -64,8 +57,6 @@ export default async function PresencaPage() {
         .order('data', { ascending: true }),
     ])
 
-  const lotacao = calcularLotacao(presentes?.length ?? 0, cfg?.capacidade_dia ?? null)
-  const estilo = LOTACAO_ESTILO[lotacao.nivel]
   const naoLidas = await naoLidasPorCrianca(
     supabase,
     (presentes ?? []).map((p) => p.crianca?.id ?? '').filter(Boolean),
@@ -83,10 +74,14 @@ export default async function PresencaPage() {
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href="/" className="text-sm font-semibold text-slate-500">
+          <Link href="/" className="shrink-0 text-sm font-semibold text-slate-500">
             ← Início
           </Link>
           <h1 className="truncate text-2xl font-bold text-slate-700">📋 Quem está aqui hoje</h1>
+          <LotacaoChip
+            presentes={presentes?.length ?? 0}
+            capacidade={cfg?.capacidade_dia ?? null}
+          />
         </div>
         <NovaEntradaButton criancas={criancas ?? []} ambientes={ambientes ?? []} />
       </div>
@@ -99,25 +94,6 @@ export default async function PresencaPage() {
           entrada: p.entrada,
         }))}
       />
-
-      <div
-        className={`flex items-center justify-between rounded-2xl px-5 py-4 font-display shadow-sm ${estilo.cls}`}
-      >
-        <span className="text-lg font-bold">
-          {estilo.emoji} {lotacao.presentes}
-          {lotacao.capacidade != null && (
-            <span className="opacity-70"> / {lotacao.capacidade}</span>
-          )}{' '}
-          {lotacao.capacidade == null ? 'crianças' : ''}
-        </span>
-        <span className="text-sm font-semibold">
-          {lotacao.nivel === 'sem_limite'
-            ? estilo.txt
-            : lotacao.vagas! > 0
-              ? `${estilo.txt} · ${lotacao.vagas} vaga(s)`
-              : estilo.txt}
-        </span>
-      </div>
 
       {porAmbiente.length > 0 && (
         <div className="flex flex-wrap gap-2">
