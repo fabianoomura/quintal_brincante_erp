@@ -50,7 +50,7 @@ export default async function KioskPage() {
         .limit(6),
       supabase
         .from('config_sistema')
-        .select('tolerancia_min, capacidade_play, fila_tolerancia_min')
+        .select('tolerancia_min, capacidade_play, fila_tolerancia_min, desconto_ativo')
         .eq('id', 1)
         .maybeSingle(),
       supabase
@@ -114,6 +114,7 @@ export default async function KioskPage() {
           toleranciaMin={cfg?.tolerancia_min ?? 0}
           capacidadePlay={cfg?.capacidade_play ?? null}
           filaToleranciaMin={cfg?.fila_tolerancia_min ?? 10}
+          descontoAtivo={cfg?.desconto_ativo ?? false}
           fila={(fila ?? []).map((f) => ({
             id: f.id,
             nome: f.crianca?.nome ?? '—',

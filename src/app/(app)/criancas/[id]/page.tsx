@@ -154,7 +154,18 @@ export default async function FichaPage({
             inativa
           </span>
         )}
+        {crianca.saude && (
+          <span
+            className="max-w-full truncate rounded-full bg-rose-50 px-3 py-1 text-sm font-bold text-rose-700 ring-1 ring-rose-200"
+            title={crianca.saude}
+          >
+            🩺 {crianca.saude}
+          </span>
+        )}
       </div>
+
+      {/* Contatos primeiro: o telefone do responsável é o que a equipe mais consulta */}
+      <ContatosManager criancaId={crianca.id} contatos={contatos} />
 
       <ConsentimentoSection
         criancaId={crianca.id}
@@ -169,7 +180,15 @@ export default async function FichaPage({
         autorizacaoEm={crianca.autorizacao_imagem_em}
       />
 
-      <EditForm crianca={crianca} />
+      {/* Edição é rara perto da consulta — fica colapsada p/ não empurrar o resto */}
+      <details className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <summary className="cursor-pointer font-display text-base font-bold text-slate-600">
+          ✏️ Editar dados da criança (nome, nascimento, endereço, saúde, foto)
+        </summary>
+        <div className="pt-3">
+          <EditForm crianca={crianca} />
+        </div>
+      </details>
       <MatriculaSection
         criancaId={crianca.id}
         matricula={
@@ -240,7 +259,6 @@ export default async function FichaPage({
         )}
       </section>
 
-      <ContatosManager criancaId={crianca.id} contatos={contatos} />
       <OcorrenciaForm criancaId={crianca.id} />
     </div>
   )

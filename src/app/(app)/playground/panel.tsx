@@ -44,6 +44,7 @@ export default function PlaygroundPanel({
   capacidadePlay = null,
   fila = [],
   filaToleranciaMin = 10,
+  descontoAtivo = false,
 }: {
   presentes: Presente[]
   criancas: { id: string; nome: string }[]
@@ -52,6 +53,7 @@ export default function PlaygroundPanel({
   capacidadePlay?: number | null
   fila?: FilaItem[]
   filaToleranciaMin?: number
+  descontoAtivo?: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -369,6 +371,7 @@ export default function PlaygroundPanel({
         lancamentoId={receb?.lancamentoId ?? null}
         valor={receb?.valor ?? 0}
         nome={receb?.nome ?? ''}
+        descontoAtivo={descontoAtivo}
         onFechar={() => {
           setReceb(null)
           router.refresh()

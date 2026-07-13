@@ -6,24 +6,36 @@ import { calcularLotacao } from '@/lib/lotacao'
 import { formatBRL } from '@/lib/dinheiro'
 import GerarMensalidades from './gerar-mensalidades'
 
+// KPI clicável: tocar no número abre a tela que explica o número.
 function Card({
   titulo,
   valor,
   sub,
   cls,
+  href,
 }: {
   titulo: string
   valor: string
   sub?: string
   cls: string
+  href?: string
 }) {
-  return (
-    <div className={`rounded-2xl p-5 shadow-sm ring-1 ring-black/5 ${cls}`}>
+  const conteudo = (
+    <>
       <div className="text-sm font-semibold opacity-80">{titulo}</div>
       <div className="font-display text-3xl font-bold">{valor}</div>
       {sub && <div className="text-xs opacity-70">{sub}</div>}
-    </div>
+    </>
   )
+  const estilo = `block rounded-2xl p-5 shadow-sm ring-1 ring-black/5 ${cls}`
+  if (href) {
+    return (
+      <Link href={href} className={`pop ${estilo} hover:shadow-md`}>
+        {conteudo}
+      </Link>
+    )
+  }
+  return <div className={estilo}>{conteudo}</div>
 }
 
 export default async function GerencialPage() {
@@ -86,6 +98,7 @@ export default async function GerencialPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card
           titulo="No espaço agora"
+          href="/presenca"
           valor={
             lotacao.capacidade != null
               ? `${lotacao.presentes}/${lotacao.capacidade}`
@@ -110,18 +123,21 @@ export default async function GerencialPage() {
         />
         <Card
           titulo="Presenças hoje"
+          href="/presenca"
           valor={String(presencasHoje.data?.length ?? 0)}
           sub="entradas registradas"
           cls="bg-sky-100 text-sky-800"
         />
         <Card
           titulo="A receber"
+          href="/financeiro?status=pendente"
           valor={formatBRL(totalPend)}
           sub={`${todos.filter((l) => l.status === 'pendente').length} pendente(s)`}
           cls="bg-orange-100 text-orange-800"
         />
         <Card
           titulo="Recebido"
+          href="/financeiro?status=pago"
           valor={formatBRL(totalPago)}
           sub={`${todos.filter((l) => l.status === 'pago').length} pago(s)`}
           cls="bg-violet-100 text-violet-800"
@@ -132,18 +148,21 @@ export default async function GerencialPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card
           titulo="Mensalistas ativos"
+          href="/mensalistas"
           valor={String(mensalistasAtivos)}
           sub="matrículas vigentes"
           cls="bg-emerald-100 text-emerald-800"
         />
         <Card
           titulo="Inscritos na colônia"
+          href="/colonias"
           valor={String(inscritosColonia)}
           sub="colônias ativas"
           cls="bg-amber-100 text-amber-800"
         />
         <Card
           titulo="Crianças ativas"
+          href="/criancas"
           valor={String(criancasAtivas.data?.length ?? 0)}
           sub="no cadastro"
           cls="bg-pink-100 text-pink-800"
@@ -204,20 +223,6 @@ export default async function GerencialPage() {
       </div>
 
       <GerarMensalidades />
-
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Link href="/financeiro" className="text-sm font-semibold text-emerald-700">
-          → Financeiro
-        </Link>
-        <span className="text-slate-300">·</span>
-        <Link href="/presenca" className="text-sm font-semibold text-sky-700">
-          → Presença
-        </Link>
-        <span className="text-slate-300">·</span>
-        <Link href="/planos" className="text-sm font-semibold text-pink-700">
-          → Planos
-        </Link>
-      </div>
     </div>
   )
 }

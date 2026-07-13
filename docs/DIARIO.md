@@ -219,6 +219,13 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   Financeiro: busca instantânea por criança acima dos lançamentos. Fila de espera virou
   "filinha": avatares em pé na linha pontilhada, posição no ombro, 🔔+prazo p/ chamada.
   Cards do play: 4 colunas em telas largas; botão vira só "Check-out" (valor já está no card).
+- **3ª passada de UX (2026-07-13):** recebimento UNIFICADO — o Financeiro abre o mesmo modal
+  do play (valor editável + desconto quando a flag está ligada + maquininha); `BaixaButton`
+  removido; o play também ganhou desconto no modal. Ficha da criança: contatos sobem pro topo
+  (telefone do responsável é o mais consultado), edição colapsada em `<details>`, saúde vira
+  selo vermelho nos badges. Conversas: avatar com foto da criança, "🧒 nome(s)" na linha e
+  não lidas com fundo destacado. Gerencial: KPIs viram links (A receber → financeiro
+  filtrado, etc.); atalhos redundantes do rodapé removidos.
 
 ## Fila de próximos passos
 

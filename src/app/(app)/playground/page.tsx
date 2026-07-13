@@ -38,7 +38,7 @@ export default async function PlaygroundPage() {
         .limit(6),
       supabase
         .from('config_sistema')
-        .select('tolerancia_min, capacidade_play, fila_tolerancia_min')
+        .select('tolerancia_min, capacidade_play, fila_tolerancia_min, desconto_ativo')
         .eq('id', 1)
         .maybeSingle(),
       // Check-outs esquecidos: abertas de dias ANTERIORES (invisíveis na lista de hoje).
@@ -121,6 +121,7 @@ export default async function PlaygroundPage() {
         toleranciaMin={cfg?.tolerancia_min ?? 0}
         capacidadePlay={cfg?.capacidade_play ?? null}
         filaToleranciaMin={cfg?.fila_tolerancia_min ?? 10}
+        descontoAtivo={cfg?.desconto_ativo ?? false}
         fila={(fila ?? []).map((f) => ({
           id: f.id,
           nome: f.crianca?.nome ?? '—',

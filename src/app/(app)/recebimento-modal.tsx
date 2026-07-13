@@ -12,22 +12,26 @@ const OPCOES: { k: Modalidade; label: string; cls: string }[] = [
   { k: 'pix', label: '📱 Pix', cls: 'bg-sky-600' },
   { k: 'debito', label: '💳 Débito', cls: 'bg-violet-600' },
   { k: 'credito', label: '💳 Crédito', cls: 'bg-fuchsia-600' },
+  { k: 'maquininha', label: '🏧 Maquininha', cls: 'bg-slate-700' },
 ]
 
-// Pop-up de recebimento: abre após o check-out cobrado. Escolher a forma dá baixa
-// imediata (vai pro Financeiro como pago). "Deixar pendente" mantém em aberto.
+// Pop-up de recebimento — o MESMO fluxo no play (pós check-out) e no Financeiro.
+// Valor editável, desconto opcional (quando a flag está ligada) e baixa imediata
+// na forma escolhida. "Deixar pendente" mantém em aberto.
 export default function RecebimentoModal({
   aberto,
   lancamentoId,
   valor,
   nome,
   onFechar,
+  descontoAtivo = false,
 }: {
   aberto: boolean
   lancamentoId: string | null
   valor: number
   nome: string
   onFechar: () => void
+  descontoAtivo?: boolean
 }) {
   if (!aberto) return null
 
@@ -38,6 +42,7 @@ export default function RecebimentoModal({
       valor={valor}
       nome={nome}
       onFechar={onFechar}
+      descontoAtivo={descontoAtivo}
     />
   )
 }
@@ -47,19 +52,31 @@ function RecebimentoConteudo({
   valor,
   nome,
   onFechar,
+  descontoAtivo,
 }: {
   lancamentoId: string | null
   valor: number
   nome: string
   onFechar: () => void
+  descontoAtivo: boolean
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [valorDigitado, setValorDigitado] = useState(valor.toFixed(2))
+  const [tipoDesc, setTipoDesc] = useState<'%' | 'R$'>('%')
+  const [desc, setDesc] = useState('')
 
   const valorEditado = Number(valorDigitado.replace(',', '.'))
   const valorValido = Number.isFinite(valorEditado) && valorEditado > 0
+
+  function descontoReais(): number {
+    const n = Number(desc.replace(',', '.'))
+    if (!(n > 0) || !valorValido) return 0
+    const bruto = tipoDesc === '%' ? (valorEditado * n) / 100 : n
+    return Math.round(bruto * 100) / 100
+  }
+  const descAplicado = descontoAtivo ? descontoReais() : 0
 
   async function receber(m: Modalidade) {
     if (!lancamentoId) return
@@ -70,7 +87,7 @@ function RecebimentoConteudo({
     setErro(null)
     setOcupado(m)
     try {
-      const res = await baixaManual(lancamentoId, m, 0, valorEditado)
+      const res = await baixaManual(lancamentoId, m, descAplicado, valorEditado)
       if (!res.ok) {
         setErro(res.erro)
         return
@@ -105,15 +122,43 @@ function RecebimentoConteudo({
             />
           </div>
         </label>
-        <div className="text-xs text-slate-400">Como o responsável vai pagar?</div>
+        {descontoAtivo && (
+          <div className="mx-auto mt-2 flex max-w-48 items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-500">🏷️ Desconto</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="0"
+              aria-label="Desconto"
+              className="w-16 rounded-xl border border-slate-300 px-2 py-1 text-right text-sm font-bold"
+            />
+            <button
+              type="button"
+              onClick={() => setTipoDesc(tipoDesc === '%' ? 'R$' : '%')}
+              className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600"
+            >
+              {tipoDesc}
+            </button>
+          </div>
+        )}
+        {descAplicado > 0 && valorValido && (
+          <div className="mt-1 text-xs font-semibold text-rose-500">
+            desconto {formatBRL(descAplicado)} → recebe {formatBRL(Math.max(0, valorEditado - descAplicado))}
+          </div>
+        )}
+        <div className="mt-2 text-xs text-slate-400">Como o responsável vai pagar?</div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {OPCOES.map((o) => (
+        {OPCOES.map((o, i) => (
           <button
             key={o.k}
             onClick={() => receber(o.k)}
             disabled={!!ocupado || !valorValido}
-            className={`pop rounded-2xl ${o.cls} py-5 font-display text-base font-bold text-white shadow-sm disabled:opacity-50`}
+            className={`pop rounded-2xl ${o.cls} py-5 font-display text-base font-bold text-white shadow-sm disabled:opacity-50 ${
+              i === OPCOES.length - 1 && OPCOES.length % 2 === 1 ? 'col-span-2' : ''
+            }`}
           >
             {ocupado === o.k ? '…' : o.label}
           </button>

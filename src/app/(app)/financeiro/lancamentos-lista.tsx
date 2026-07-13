@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
-import BaixaButton from './baixa-button'
+import RecebimentoModal from '../recebimento-modal'
 
 export type LancamentoUI = {
   id: string
@@ -34,7 +35,10 @@ export default function LancamentosLista({
   lancamentos: LancamentoUI[]
   descontoAtivo: boolean
 }) {
+  const router = useRouter()
   const [q, setQ] = useState('')
+  // recebimento: mesmo modal do play (valor editável + desconto + modalidade)
+  const [receb, setReceb] = useState<LancamentoUI | null>(null)
 
   const filtrados = useMemo(() => {
     const termo = norm(q.trim())
@@ -83,11 +87,28 @@ export default function LancamentosLista({
               </div>
             </div>
             {l.status === 'pendente' && (
-              <BaixaButton lancamentoId={l.id} valor={l.valor} descontoAtivo={descontoAtivo} />
+              <button
+                onClick={() => setReceb(l)}
+                className="pop shrink-0 rounded-full bg-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-sm"
+              >
+                💰 Receber
+              </button>
             )}
           </li>
         ))}
       </ul>
+
+      <RecebimentoModal
+        aberto={receb != null}
+        lancamentoId={receb?.id ?? null}
+        valor={receb?.valor ?? 0}
+        nome={receb ? `${receb.nome} — ${receb.descricao}` : ''}
+        descontoAtivo={descontoAtivo}
+        onFechar={() => {
+          setReceb(null)
+          router.refresh()
+        }}
+      />
     </div>
   )
 }
