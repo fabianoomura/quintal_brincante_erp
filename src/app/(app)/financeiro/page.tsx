@@ -86,14 +86,14 @@ export default async function FinanceiroPage({
 
       {/* Recebido por modalidade (no período) */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        <div className="rounded-2xl bg-slate-800 p-4 text-white shadow-sm">
+        <div className="rounded-2xl bg-slate-800 px-3.5 py-2.5 text-white shadow-sm">
           <div className="text-xs font-semibold opacity-80">Todos (recebido)</div>
-          <div className="font-display text-xl font-bold">{formatBRL(totalRecebido)}</div>
+          <div className="font-display text-lg font-bold">{formatBRL(totalRecebido)}</div>
         </div>
         {MODALIDADES.map((m) => (
-          <div key={m.k} className={`rounded-2xl p-4 shadow-sm ring-1 ring-black/5 ${m.cls}`}>
+          <div key={m.k} className={`rounded-2xl px-3.5 py-2.5 shadow-sm ring-1 ring-black/5 ${m.cls}`}>
             <div className="text-xs font-semibold opacity-80">{m.label}</div>
-            <div className="font-display text-xl font-bold">{formatBRL(porModalidade[m.k] ?? 0)}</div>
+            <div className="font-display text-lg font-bold">{formatBRL(porModalidade[m.k] ?? 0)}</div>
           </div>
         ))}
       </div>
@@ -103,7 +103,8 @@ export default async function FinanceiroPage({
         </p>
       )}
 
-      <form method="get" className={`space-y-3 ${card}`}>
+      {/* Filtros numa linha só */}
+      <form method="get" className={`flex flex-wrap items-end gap-2 ${card}`}>
         <div className="flex flex-wrap gap-2">
           {(['pendente', 'pago', 'todos'] as StatusFiltro[]).map((s) => (
             <label key={s} className="cursor-pointer">
@@ -120,39 +121,40 @@ export default async function FinanceiroPage({
             </label>
           ))}
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs font-semibold text-slate-500">
-            De
-            <input
-              type="date"
-              name="de"
-              defaultValue={de}
-              className="mt-1 block rounded-2xl border-2 border-amber-200 bg-amber-50/40 px-3 py-2 text-base"
-            />
-          </label>
-          <label className="text-xs font-semibold text-slate-500">
-            Até
-            <input
-              type="date"
-              name="ate"
-              defaultValue={ate}
-              className="mt-1 block rounded-2xl border-2 border-amber-200 bg-amber-50/40 px-3 py-2 text-base"
-            />
-          </label>
-          <button
-            type="submit"
-            className="pop rounded-full bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-sm"
-          >
-            Filtrar
-          </button>
-        </div>
+        <span className="mx-1 hidden h-6 w-px bg-slate-200 sm:block" />
+        <label className="text-xs font-semibold text-slate-500">
+          De
+          <input
+            type="date"
+            name="de"
+            defaultValue={de}
+            className="mt-1 block rounded-2xl border-2 border-amber-200 bg-amber-50/40 px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs font-semibold text-slate-500">
+          Até
+          <input
+            type="date"
+            name="ate"
+            defaultValue={ate}
+            className="mt-1 block rounded-2xl border-2 border-amber-200 bg-amber-50/40 px-3 py-1.5 text-sm"
+          />
+        </label>
+        <button
+          type="submit"
+          className="pop rounded-full bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-sm"
+        >
+          Filtrar
+        </button>
       </form>
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-sm text-slate-500">
+      {/* Resultado + ações na mesma linha */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="mr-auto text-sm text-slate-500">
           {lancamentos?.length ?? 0} lançamento(s) · total{' '}
           <strong>{formatBRL(total)}</strong>
         </span>
+        <AvulsoForm criancas={criancasAtivas ?? []} />
         <a
           href={`/financeiro/export?${qs.toString()}`}
           className="text-sm font-semibold text-emerald-700"
@@ -160,8 +162,6 @@ export default async function FinanceiroPage({
           ⬇️ Exportar CSV
         </a>
       </div>
-
-      <AvulsoForm criancas={criancasAtivas ?? []} />
 
       {error && (
         <p className="text-sm font-semibold text-rose-500">Erro: {error.message}</p>

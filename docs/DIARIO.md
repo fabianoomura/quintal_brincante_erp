@@ -205,6 +205,13 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Fix instalação PWA:** o middleware de auth redirecionava `/manifest.webmanifest`,
   `/sw.js` e `/offline` para `/login` (o navegador busca o manifest sem cookies), então o
   Chrome não oferecia "Instalar app". Corrigido excluindo esses caminhos do matcher.
+- **Passada de UX (2026-07-13, pedido do dono do projeto):** compactar e organizar mantendo
+  cores/ícones. Play: lotação vira chip no título, banner de esquecidos colapsa em 1 linha
+  (com valor manual), entrada única com `Entrar`/`+ Fila`, fila em pills, cards ~40% menores
+  (avisos rápidos atrás do ⚡). Início: tiles horizontais agrupados por seção. Configurações:
+  cards agrupados em seções (Espaço e play / Avisos WhatsApp / Financeiro). Crianças: linhas
+  densas de 1 linha. Financeiro: filtros numa linha; contagem + avulso + CSV na mesma barra.
+  Próxima leva sugerida: /mensagens (colapsar templates em linhas, editar ao expandir).
 
 ## Fila de próximos passos
 

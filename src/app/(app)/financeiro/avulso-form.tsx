@@ -42,7 +42,8 @@ export default function AvulsoForm({ criancas }: { criancas: { id: string; nome:
   }
 
   return (
-    <form onSubmit={salvar} className={`space-y-2 ${card}`}>
+    // w-full: quando aberto dentro da toolbar (flex-wrap), quebra pra linha própria
+    <form onSubmit={salvar} className={`w-full space-y-2 ${card}`}>
       <div className="font-display text-base font-bold text-slate-600">🧾 Lançamento avulso</div>
       <select value={criancaId} onChange={(e) => setCriancaId(e.target.value)} required className={input}>
         <option value="">Selecione a criança…</option>
