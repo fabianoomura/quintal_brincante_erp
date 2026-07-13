@@ -41,6 +41,8 @@ const TEXTO_AUTORIZACAO_IMAGEM = `📸 Só mais uma coisinha, {{responsavel_nome
 Responda *SIM* ou *NÃO* por aqui mesmo, por favor. 💚`
 const TEXTO_AGRADECIMENTO_CHECKOUT =
   'Obrigado pela visita, {{responsavel_nome}}! {{crianca_nome}} já saiu do play. Até a próxima! 💚'
+const TEXTO_FILA_SUA_VEZ =
+  '🎉 Boa notícia, {{responsavel_nome}}! Chegou a vez de {{crianca_nome}} no play. Vocês têm {{minutos_tolerancia}} min para chegar — depois disso a vaga passa para a próxima criança da fila. Até já! 💚'
 
 export function nomePessoaMensagem(
   nome: string | null | undefined,
@@ -149,6 +151,26 @@ export function tplAutorizacaoImagem(
   const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
   return {
     template: 'autorizacao_imagem',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+export function tplFilaSuaVez(
+  responsavel: string,
+  crianca: string,
+  minutosTolerancia: number,
+  textoTemplate = TEXTO_FILA_SUA_VEZ,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = {
+    ...nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca),
+    minutos_tolerancia: String(minutosTolerancia),
+  }
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome, ctx.minutos_tolerancia]
+  return {
+    template: 'fila_sua_vez',
     variaveis,
     conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }

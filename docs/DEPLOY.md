@@ -73,6 +73,16 @@ select cron.schedule(
        headers := '{"Authorization": "Bearer <CRON_SECRET>"}'::jsonb
      ) $$
 );
+
+-- Fila de espera do play: a cada 2 minutos (expira no-show e chama a próxima;
+-- o check-out já chama na hora — o cron cobre quem não apareceu no prazo)
+select cron.schedule(
+  'fila', '*/2 * * * *',
+  $$ select net.http_post(
+       url     := 'https://<APP>/api/worker/fila',
+       headers := '{"Authorization": "Bearer <CRON_SECRET>"}'::jsonb
+     ) $$
+);
 ```
 
 Conferir: `select * from cron.job;` — e depois `select * from cron.job_run_details order by start_time desc limit 5;`

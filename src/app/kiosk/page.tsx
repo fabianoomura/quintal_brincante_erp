@@ -29,7 +29,7 @@ export default async function KioskPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
 
-  const [{ data: presentes }, { data: criancas }, { data: avisos }, { data: cfg }] =
+  const [{ data: presentes }, { data: criancas }, { data: avisos }, { data: cfg }, { data: fila }] =
     await Promise.all([
       supabase
         .from('presenca')
@@ -46,7 +46,17 @@ export default async function KioskPage() {
         .eq('ativo', true)
         .order('ordem')
         .limit(6),
-      supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
+      supabase
+        .from('config_sistema')
+        .select('tolerancia_min, capacidade_play, fila_tolerancia_min')
+        .eq('id', 1)
+        .maybeSingle(),
+      supabase
+        .from('fila_espera')
+        .select('id, status, chamada_em, created_at, crianca:crianca_id (nome)')
+        .eq('data', hoje)
+        .in('status', ['aguardando', 'chamada'])
+        .order('created_at', { ascending: true }),
     ])
 
   const naoLidas = await naoLidasPorCrianca(
@@ -57,6 +67,7 @@ export default async function KioskPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 to-white">
       <RealtimeRefresh tabela="whatsapp_conversa" />
+      <RealtimeRefresh tabela="fila_espera" />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-fuchsia-100 bg-white/95 px-5 py-3 backdrop-blur">
         <div className="font-display text-2xl font-bold text-fuchsia-700">🎠 Playground</div>
         <div className="flex items-center gap-3">
@@ -90,6 +101,15 @@ export default async function KioskPage() {
             .filter((a) => a.tipo_ocorrencia)
             .map((a) => ({ id: a.id, label: a.nome, tipo: a.tipo_ocorrencia!, texto: a.texto }))}
           toleranciaMin={cfg?.tolerancia_min ?? 0}
+          capacidadePlay={cfg?.capacidade_play ?? null}
+          filaToleranciaMin={cfg?.fila_tolerancia_min ?? 10}
+          fila={(fila ?? []).map((f) => ({
+            id: f.id,
+            nome: f.crianca?.nome ?? '—',
+            status: f.status as 'aguardando' | 'chamada',
+            criadaEm: f.created_at,
+            chamadaEm: f.chamada_em,
+          }))}
         />
 
         <div className="mt-6">

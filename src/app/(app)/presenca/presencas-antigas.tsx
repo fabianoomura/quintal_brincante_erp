@@ -15,9 +15,12 @@ export type PresencaAntiga = {
 // Check-outs ESQUECIDOS: presença aberta de dia anterior. Sem este banner ela ficava
 // invisível (as telas só listam o dia atual) e a sessão nunca era cobrada. A equipe
 // informa a hora real da saída; o valor vai pro Financeiro como pendente.
+// O valor pode ser ajustado à mão: ficou aberto por horas e nem sempre é justo
+// cobrar o cálculo cheio pelo tempo decorrido.
 export default function PresencasAntigas({ presencas }: { presencas: PresencaAntiga[] }) {
   const router = useRouter()
   const [saidas, setSaidas] = useState<Record<string, string>>({})
+  const [valores, setValores] = useState<Record<string, string>>({})
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -29,10 +32,19 @@ export default function PresencasAntigas({ presencas }: { presencas: PresencaAnt
       setErro(`Informe o horário em que ${p.nome} saiu.`)
       return
     }
+    const valorTexto = (valores[p.id] ?? '').trim()
+    let valorManual: number | undefined
+    if (valorTexto !== '') {
+      valorManual = Number(valorTexto.replace(',', '.'))
+      if (!Number.isFinite(valorManual) || valorManual <= 0) {
+        setErro(`Valor inválido para ${p.nome}. Deixe em branco para usar o cálculo automático.`)
+        return
+      }
+    }
     setOcupado(p.id)
     setErro(null)
     try {
-      const res = await checkOut(p.id, saida)
+      const res = await checkOut(p.id, saida, valorManual)
       if (!res.ok) {
         setErro(res.erro)
         return
@@ -49,7 +61,8 @@ export default function PresencasAntigas({ presencas }: { presencas: PresencaAnt
     <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-bold text-amber-800">
         ⚠️ Check-out esquecido: {presencas.length} presença(s) de dias anteriores ainda
-        aberta(s). Informe a hora em que a criança saiu para encerrar e cobrar.
+        aberta(s). Informe a hora em que a criança saiu para encerrar e cobrar. Se preferir,
+        informe também o valor a cobrar (em branco = cálculo automático pelo tempo).
       </p>
       <ul className="space-y-2">
         {presencas.map((p) => (
@@ -70,6 +83,18 @@ export default function PresencasAntigas({ presencas }: { presencas: PresencaAnt
               className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
               aria-label={`Hora de saída de ${p.nome}`}
             />
+            <div className="flex items-center rounded-lg border border-slate-200 px-2">
+              <span className="text-xs font-bold text-slate-400">R$</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="auto"
+                value={valores[p.id] ?? ''}
+                onChange={(e) => setValores((v) => ({ ...v, [p.id]: e.target.value }))}
+                className="w-16 bg-transparent px-1 py-1.5 text-right text-sm outline-none"
+                aria-label={`Valor a cobrar de ${p.nome}`}
+              />
+            </div>
             <button
               onClick={() => encerrar(p)}
               disabled={ocupado === p.id}

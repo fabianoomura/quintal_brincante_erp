@@ -17,6 +17,7 @@ export default async function PlaygroundPage() {
     { data: avisos },
     { data: cfg },
     { data: antigas },
+    { data: fila },
   ] = await Promise.all([
       supabase
         .from('presenca')
@@ -33,7 +34,11 @@ export default async function PlaygroundPage() {
         .eq('ativo', true)
         .order('ordem')
         .limit(6),
-      supabase.from('config_sistema').select('tolerancia_min').eq('id', 1).maybeSingle(),
+      supabase
+        .from('config_sistema')
+        .select('tolerancia_min, capacidade_play, fila_tolerancia_min')
+        .eq('id', 1)
+        .maybeSingle(),
       // Check-outs esquecidos: abertas de dias ANTERIORES (invisíveis na lista de hoje).
       supabase
         .from('presenca')
@@ -41,6 +46,12 @@ export default async function PlaygroundPage() {
         .lt('data', hoje)
         .is('saida', null)
         .order('data', { ascending: true }),
+      supabase
+        .from('fila_espera')
+        .select('id, status, chamada_em, created_at, crianca:crianca_id (nome)')
+        .eq('data', hoje)
+        .in('status', ['aguardando', 'chamada'])
+        .order('created_at', { ascending: true }),
     ])
   const avisosRapidos = (avisos ?? [])
     .filter((a) => a.tipo_ocorrencia)
@@ -54,6 +65,7 @@ export default async function PlaygroundPage() {
   return (
     <div className="space-y-4">
       <RealtimeRefresh tabela="whatsapp_conversa" />
+      <RealtimeRefresh tabela="fila_espera" />
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold text-slate-700">🎠 Playground</h1>
         <Link
@@ -88,6 +100,15 @@ export default async function PlaygroundPage() {
         criancas={criancas ?? []}
         avisos={avisosRapidos}
         toleranciaMin={cfg?.tolerancia_min ?? 0}
+        capacidadePlay={cfg?.capacidade_play ?? null}
+        filaToleranciaMin={cfg?.fila_tolerancia_min ?? 10}
+        fila={(fila ?? []).map((f) => ({
+          id: f.id,
+          nome: f.crianca?.nome ?? '—',
+          status: f.status as 'aguardando' | 'chamada',
+          criadaEm: f.created_at,
+          chamadaEm: f.chamada_em,
+        }))}
       />
 
       <ConcluidasHoje />

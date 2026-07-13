@@ -192,6 +192,16 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   Assim, até 30 min excedentes = meia hora; de 31 a 60 min = hora adicional cheia.
 - **Recebimento com ajuste:** o valor pode ser editado no modal antes de escolher a forma
   de pagamento; o lançamento é atualizado com o valor efetivamente recebido antes da baixa.
+- **Limite do play + fila de espera (2026-07-13):** teto de crianças simultâneas no play em
+  `config_sistema.capacidade_play` (definido em 20 após o primeiro dia operacional; editável).
+  Lotou → check-in bloqueia e a criança entra na `fila_espera`; quando abre vaga o sistema
+  chama a próxima e avisa o responsável (template `fila_sua_vez`); não chegou em
+  `fila_tolerancia_min` (padrão 10) → expira e chama a seguinte. Chamado tem vaga reservada
+  (conta na lotação). Processa no check-out (na hora) e no worker `POST /api/worker/fila`
+  (pg_cron a cada 2 min — **job novo, agendar em produção**; runbook no DEPLOY.md). A tela do
+  play mostra lotação (X/20), previsão da próxima vaga (menor tempo contratado restante) e a
+  fila com prazos. Encerramento de check-out esquecido agora aceita valor manual (em branco =
+  cálculo automático).
 - **Fix instalação PWA:** o middleware de auth redirecionava `/manifest.webmanifest`,
   `/sw.js` e `/offline` para `/login` (o navegador busca o manifest sem cookies), então o
   Chrome não oferecia "Instalar app". Corrigido excluindo esses caminhos do matcher.

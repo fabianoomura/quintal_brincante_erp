@@ -4,9 +4,9 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-// Recarrega os dados da página quando a Central de Conversas muda (mensagem nova,
-// contador de não lidas). Sem polling: Supabase Realtime + router.refresh().
-export default function RealtimeRefresh({ tabela }: { tabela: 'whatsapp_conversa' | 'whatsapp_mensagem' }) {
+// Recarrega os dados da página quando a tabela observada muda (mensagem nova,
+// fila chamada pelo worker). Sem polling: Supabase Realtime + router.refresh().
+export default function RealtimeRefresh({ tabela }: { tabela: 'whatsapp_conversa' | 'whatsapp_mensagem' | 'fila_espera' }) {
   const router = useRouter()
 
   useEffect(() => {

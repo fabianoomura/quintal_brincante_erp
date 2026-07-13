@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
 import { calcularValorCheckout, validarSaidaManual } from '@/lib/playground'
+import { processarFila } from '@/lib/fila-processar'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import {
@@ -42,12 +43,47 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     // Play: trava a TARIFA/HORA pela planilha (dia+hora) — ou o valor do FERIADO da data.
     // O valor final (piso 1h + proporcional) é calculado no check-out.
     let tarifaHora: number | null = null
+    let filaAtiva: { id: string; status: string } | null = null
     if (input.origem === 'espaco_kids') {
       const horaMin = horaParaMinutos(input.entrada)
-      const [{ data: precos }, { data: fer }] = await Promise.all([
-        supabase.from('preco_hora').select('dia_semana, hora, valor'),
-        supabase.from('feriado').select('valor').eq('data', data).eq('ativo', true).maybeSingle(),
-      ])
+      const [{ data: precos }, { data: fer }, { data: cfgCap }, { count: noPlay }, { data: fila }] =
+        await Promise.all([
+          supabase.from('preco_hora').select('dia_semana, hora, valor'),
+          supabase.from('feriado').select('valor').eq('data', data).eq('ativo', true).maybeSingle(),
+          supabase.from('config_sistema').select('capacidade_play').eq('id', 1).maybeSingle(),
+          supabase
+            .from('presenca')
+            .select('id', { count: 'exact', head: true })
+            .eq('data', data)
+            .eq('origem', 'espaco_kids')
+            .is('saida', null),
+          supabase
+            .from('fila_espera')
+            .select('id, status')
+            .eq('crianca_id', input.criancaId)
+            .in('status', ['aguardando', 'chamada'])
+            .maybeSingle(),
+        ])
+      filaAtiva = fila ?? null
+
+      // Trava de capacidade do play: quem foi CHAMADO da fila tem vaga reservada e entra;
+      // os demais só entram se (presentes + chamadas a caminho) não estourarem o teto.
+      const capacidade = cfgCap?.capacidade_play ?? null
+      if (capacidade != null && filaAtiva?.status !== 'chamada') {
+        const { count: chamadas } = await supabase
+          .from('fila_espera')
+          .select('id', { count: 'exact', head: true })
+          .eq('data', data)
+          .eq('status', 'chamada')
+        if ((noPlay ?? 0) + (chamadas ?? 0) >= capacidade) {
+          return {
+            ok: false,
+            erro: `🚫 Play lotado (${noPlay ?? 0}/${capacidade}${
+              (chamadas ?? 0) > 0 ? ` + ${chamadas} chamada(s) a caminho` : ''
+            }). Adicione a criança à fila de espera.`,
+          }
+        }
+      }
       if (fer?.valor != null) {
         tarifaHora = Number(fer.valor) // feriado tem valor próprio
       } else {
@@ -81,6 +117,15 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       .select('id')
       .single()
     if (error) return { ok: false, erro: error.message }
+
+    // Criança que estava na fila entrou → baixa a entrada como atendida.
+    if (filaAtiva) {
+      await supabase
+        .from('fila_espera')
+        .update({ status: 'atendida', encerrada_em: new Date().toISOString() })
+        .eq('id', filaAtiva.id)
+        .in('status', ['aguardando', 'chamada'])
+    }
 
     // Boas-vindas ("combinados") em TODA entrada no play e, se o cadastro ainda
     // não tem resposta, a pergunta de autorização de imagem também em toda entrada.
@@ -321,13 +366,20 @@ export async function cobrarPresenca(
 // tarifa/hora travada no check-in. Gera o lançamento pendente.
 // saidaManual ('HH:MM'): encerra um check-out ESQUECIDO informando a hora real da saída
 // (no dia da presença) — sem ela, usa a hora de agora.
+// valorManual: substitui o valor calculado (ex.: esquecido aberto por horas — a equipe
+// decide quanto cobrar). Também permite cobrar sessão que ficaria sem valor.
 export async function checkOut(
   presencaId: string,
   saidaManual?: string,
+  valorManual?: number,
 ): Promise<ResultadoCheckout> {
   try {
     const supabase = await createClient()
     const saida = saidaManual ?? agoraHora()
+
+    if (valorManual != null && (!Number.isFinite(valorManual) || valorManual <= 0)) {
+      return { ok: false, erro: 'Informe um valor maior que zero.' }
+    }
 
     const { data: p, error: errP } = await supabase
       .from('presenca')
@@ -352,15 +404,18 @@ export async function checkOut(
       .select('tolerancia_min')
       .eq('id', 1)
       .maybeSingle()
-    const valor = calcularValorCheckout({
-      origem: p.origem,
-      entrada: p.entrada,
-      saida,
-      tarifaHora: p.tarifa_hora == null ? null : Number(p.tarifa_hora),
-      tempoContratadoMin: p.tempo_contratado_min,
-      toleranciaMin: cfg?.tolerancia_min ?? 0,
-      valorDiaria: p.valor == null ? null : Number(p.valor),
-    })
+    const valor =
+      valorManual != null
+        ? Math.round(valorManual * 100) / 100
+        : calcularValorCheckout({
+            origem: p.origem,
+            entrada: p.entrada,
+            saida,
+            tarifaHora: p.tarifa_hora == null ? null : Number(p.tarifa_hora),
+            tempoContratadoMin: p.tempo_contratado_min,
+            toleranciaMin: cfg?.tolerancia_min ?? 0,
+            valorDiaria: p.valor == null ? null : Number(p.valor),
+          })
 
     // Guard de corrida: o `.is('saida', null)` + select garante que só UM processo fecha
     // (dois aparelhos clicando juntos: o segundo não recebe linha e para aqui).
@@ -412,6 +467,12 @@ export async function checkOut(
         await enviarAgradecimentoCheckout(supabase, p.crianca_id, presencaId)
       } catch {
         // Falha de WhatsApp nao deve travar saida nem recebimento.
+      }
+      // Abriu vaga → chama a próxima da fila na hora (o cron cobre o no-show).
+      try {
+        await processarFila(supabase, getSender())
+      } catch {
+        // Falha aqui não trava o check-out; o worker reprocessa em minutos.
       }
     }
 

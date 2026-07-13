@@ -91,3 +91,40 @@ export async function setCapacidade(
   revalidatePath('/presenca')
   return { ok: true }
 }
+
+// Limite de crianças simultâneas no PLAY (aciona a fila de espera). null = sem limite.
+export async function setCapacidadePlay(
+  valor: number | null,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('config_sistema')
+    .update({ capacidade_play: valor })
+    .eq('id', 1)
+    .select('id')
+  if (error) return { ok: false, erro: error.message }
+  if (!data || data.length === 0) return { ok: false, erro: 'Sem permissão (apenas admin).' }
+  revalidatePath('/configuracoes')
+  revalidatePath('/playground')
+  revalidatePath('/kiosk')
+  return { ok: true }
+}
+
+// Minutos que a família chamada da fila tem para chegar antes de a vaga passar adiante.
+export async function setFilaTolerancia(
+  minutos: number,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  if (!(minutos >= 1)) return { ok: false, erro: 'Valor inválido.' }
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('config_sistema')
+    .update({ fila_tolerancia_min: Math.round(minutos) })
+    .eq('id', 1)
+    .select('id')
+  if (error) return { ok: false, erro: error.message }
+  if (!data || data.length === 0) return { ok: false, erro: 'Sem permissão (apenas admin).' }
+  revalidatePath('/configuracoes')
+  revalidatePath('/playground')
+  revalidatePath('/kiosk')
+  return { ok: true }
+}

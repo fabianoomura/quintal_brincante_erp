@@ -129,10 +129,12 @@ export type Database = {
           aviso_antecedencia_min: number
           aviso_tempo_ativo: boolean
           capacidade_dia: number | null
+          capacidade_play: number | null
           conciliacao_automatica: boolean
           created_at: string
           desconto_ativo: boolean
           desconto_irmao_percentual: number | null
+          fila_tolerancia_min: number
           id: number
           tolerancia_min: number
           valor_feriado: number | null
@@ -141,10 +143,12 @@ export type Database = {
           aviso_antecedencia_min?: number
           aviso_tempo_ativo?: boolean
           capacidade_dia?: number | null
+          capacidade_play?: number | null
           conciliacao_automatica?: boolean
           created_at?: string
           desconto_ativo?: boolean
           desconto_irmao_percentual?: number | null
+          fila_tolerancia_min?: number
           id?: number
           tolerancia_min?: number
           valor_feriado?: number | null
@@ -153,10 +157,12 @@ export type Database = {
           aviso_antecedencia_min?: number
           aviso_tempo_ativo?: boolean
           capacidade_dia?: number | null
+          capacidade_play?: number | null
           conciliacao_automatica?: boolean
           created_at?: string
           desconto_ativo?: boolean
           desconto_irmao_percentual?: number | null
+          fila_tolerancia_min?: number
           id?: number
           tolerancia_min?: number
           valor_feriado?: number | null
@@ -354,6 +360,44 @@ export type Database = {
           valor?: number | null
         }
         Relationships: []
+      }
+      fila_espera: {
+        Row: {
+          chamada_em: string | null
+          created_at: string
+          crianca_id: string
+          data: string
+          encerrada_em: string | null
+          id: string
+          status: Database["public"]["Enums"]["status_fila"]
+        }
+        Insert: {
+          chamada_em?: string | null
+          created_at?: string
+          crianca_id: string
+          data: string
+          encerrada_em?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["status_fila"]
+        }
+        Update: {
+          chamada_em?: string | null
+          created_at?: string
+          crianca_id?: string
+          data?: string
+          encerrada_em?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["status_fila"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fila_espera_crianca_id_fkey"
+            columns: ["crianca_id"]
+            isOneToOne: false
+            referencedRelation: "crianca"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inscricao_colonia: {
         Row: {
@@ -989,6 +1033,7 @@ export type Database = {
       origem_presenca: "mensalista" | "diaria" | "espaco_kids" | "colonia"
       papel_acesso: "admin" | "operador"
       papel_contato: "responsavel" | "autorizado" | "emergencia"
+      status_fila: "aguardando" | "chamada" | "atendida" | "desistiu" | "expirada"
       status_lancamento: "pendente" | "pago" | "cancelado"
       status_notificacao: "pendente" | "enviada" | "entregue" | "lida" | "falha"
       tipo_notificacao:
@@ -998,6 +1043,7 @@ export type Database = {
         | "boas_vindas"
         | "agradecimento_checkout"
         | "autorizacao_imagem"
+        | "fila_sua_vez"
       tipo_mensagem_whatsapp: "texto" | "outro"
       tipo_ocorrencia:
         | "banheiro"

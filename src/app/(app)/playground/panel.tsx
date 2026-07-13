@@ -6,10 +6,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
 import { abrirConversaDoResponsavel } from '../conversas/actions'
 import { duracaoMinutos, minutosCobraveis, precoProporcional } from '@/lib/tarifador'
+import { calcularLotacao, type NivelLotacao } from '@/lib/lotacao'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
 import RecebimentoModal from '../recebimento-modal'
+import FilaEspera, { type FilaItem } from './fila-espera'
 
 type Presente = {
   id: string
@@ -34,16 +36,29 @@ function fmtDuracao(min: number) {
   return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m}min`
 }
 
+const LOTACAO_CLS: Record<NivelLotacao, string> = {
+  sem_limite: 'bg-sky-100 text-sky-700',
+  ok: 'bg-emerald-100 text-emerald-700',
+  quase: 'bg-amber-100 text-amber-700',
+  lotado: 'bg-rose-100 text-rose-700',
+}
+
 export default function PlaygroundPanel({
   presentes,
   criancas,
   avisos,
   toleranciaMin = 0,
+  capacidadePlay = null,
+  fila = [],
+  filaToleranciaMin = 10,
 }: {
   presentes: Presente[]
   criancas: { id: string; nome: string }[]
   avisos: AvisoRapido[]
   toleranciaMin?: number
+  capacidadePlay?: number | null
+  fila?: FilaItem[]
+  filaToleranciaMin?: number
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -143,12 +158,45 @@ export default function PlaygroundPanel({
     }
   }
 
+  // Lotação do play: quem foi CHAMADO da fila tem vaga reservada, então conta.
+  const chamadasACaminho = fila.filter((f) => f.status === 'chamada').length
+  const lotacao = calcularLotacao(presentes.length + chamadasACaminho, capacidadePlay)
+  // Previsão de vaga: menor tempo restante entre os contratados (<=0 = já estourou).
+  const restantes = presentes
+    .filter((p) => p.tempoContratadoMin != null)
+    .map((p) => p.tempoContratadoMin! - Math.ceil(duracaoMinutos(p.entrada, agora)))
+    .sort((a, b) => a - b)
+  const proximaVaga = restantes.length > 0 ? restantes[0] : null
+
   return (
     <div className="space-y-4">
       {/* toast de check-out (melhor que alert em tablet) */}
       {saida && (
         <div className="rounded-2xl bg-slate-800 px-4 py-3 font-semibold text-white shadow-md">
           {saida}
+        </div>
+      )}
+
+      {/* Lotação do play + previsão de vaga */}
+      {capacidadePlay != null && (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-5 py-3 font-display shadow-sm ${LOTACAO_CLS[lotacao.nivel]}`}
+        >
+          <span className="text-lg font-bold">
+            🧒 {presentes.length}/{capacidadePlay} no play
+            {chamadasACaminho > 0 && (
+              <span className="opacity-70"> + {chamadasACaminho} a caminho</span>
+            )}
+          </span>
+          <span className="text-sm font-semibold">
+            {lotacao.vagas! > 0
+              ? `${lotacao.vagas} vaga(s)`
+              : proximaVaga == null
+                ? '🚨 LOTADO · sem previsão de vaga (tempo livre)'
+                : proximaVaga > 0
+                  ? `🚨 LOTADO · próxima vaga em ~${fmtDuracao(proximaVaga)}`
+                  : '🚨 LOTADO · vaga a qualquer momento (tempo estourado)'}
+          </span>
         </div>
       )}
 
@@ -184,6 +232,11 @@ export default function PlaygroundPanel({
         </div>
         {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
       </div>
+
+      {/* Fila de espera: aparece quando há limite configurado ou alguém aguardando */}
+      {(capacidadePlay != null || fila.length > 0) && (
+        <FilaEspera fila={fila} toleranciaMin={filaToleranciaMin} criancas={criancas} />
+      )}
 
       {presentes.length === 0 && (
         <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500">
