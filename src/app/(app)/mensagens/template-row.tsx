@@ -63,6 +63,8 @@ export default function TemplateRow({
   variaveis: VariavelMensagemUI[]
 }) {
   const router = useRouter()
+  // Colapsado por padrão: a lista mostra só nome + preview + status; expande p/ editar.
+  const [aberto, setAberto] = useState(false)
   const [f, setF] = useState({ nome, texto, categoria, status, ativo, ordem })
   const [msg, setMsg] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -101,6 +103,27 @@ export default function TemplateRow({
     ? variaveis.filter((v) => recomendadas.includes(v.chave))
     : variaveis
 
+  if (!aberto) {
+    return (
+      <button
+        onClick={() => setAberto(true)}
+        className="flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-left shadow-sm ring-1 ring-slate-200 hover:shadow-md"
+      >
+        <span className="shrink-0 font-display font-semibold text-slate-800">{f.nome}</span>
+        {!f.ativo && (
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-400">
+            inativo
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-xs text-slate-400">{f.texto}</span>
+        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${stCls}`}>
+          {STATUS.find((s) => s.v === f.status)?.label}
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-slate-400">editar ▾</span>
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -112,6 +135,12 @@ export default function TemplateRow({
         <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${stCls}`}>
           {STATUS.find((s) => s.v === f.status)?.label}
         </span>
+        <button
+          onClick={() => setAberto(false)}
+          className="shrink-0 text-xs font-semibold text-slate-400"
+        >
+          fechar ▴
+        </button>
       </div>
 
       <textarea

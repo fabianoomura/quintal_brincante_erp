@@ -50,7 +50,7 @@ export default async function PlaygroundPage() {
         .order('data', { ascending: true }),
       supabase
         .from('fila_espera')
-        .select('id, status, chamada_em, created_at, crianca:crianca_id (nome)')
+        .select('id, status, chamada_em, created_at, crianca:crianca_id (nome, foto)')
         .eq('data', hoje)
         .in('status', ['aguardando', 'chamada'])
         .order('created_at', { ascending: true }),
@@ -124,6 +124,7 @@ export default async function PlaygroundPage() {
         fila={(fila ?? []).map((f) => ({
           id: f.id,
           nome: f.crianca?.nome ?? '—',
+          foto: f.crianca?.foto ?? null,
           status: f.status as 'aguardando' | 'chamada',
           criadaEm: f.created_at,
           chamadaEm: f.chamada_em,

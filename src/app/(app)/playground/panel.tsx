@@ -239,8 +239,8 @@ export default function PlaygroundPanel({
         </p>
       )}
 
-      {/* Cards com cronômetro ao vivo */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Cards com cronômetro ao vivo, em ordem de chegada */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {presentes.map((p) => {
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
           const valor =
@@ -321,12 +321,13 @@ export default function PlaygroundPanel({
                 </div>
               )}
               <div className="flex gap-1.5">
+                {/* o valor ao vivo já aparece no card; repetir no botão truncava */}
                 <button
                   onClick={() => sair(p)}
                   disabled={ocupado === p.id}
                   className="pop min-w-0 flex-1 truncate rounded-xl bg-slate-800 py-2 text-sm font-bold text-white disabled:opacity-60"
                 >
-                  {ocupado === p.id ? '…' : valor != null ? `Check-out · ${formatBRL(valor)}` : 'Check-out'}
+                  {ocupado === p.id ? '…' : 'Check-out'}
                 </button>
                 <button
                   onClick={() => conversar(p)}

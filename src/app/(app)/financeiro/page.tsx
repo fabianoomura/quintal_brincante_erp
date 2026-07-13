@@ -2,16 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
-import BaixaButton from './baixa-button'
 import AvulsoForm from './avulso-form'
+import LancamentosLista from './lancamentos-lista'
 
 type StatusFiltro = 'pendente' | 'pago' | 'todos'
-
-const STATUS_CHIP: Record<string, string> = {
-  pendente: 'bg-amber-100 text-amber-700',
-  pago: 'bg-emerald-100 text-emerald-700',
-  cancelado: 'bg-slate-200 text-slate-500',
-}
 
 export default async function FinanceiroPage({
   searchParams,
@@ -167,44 +161,18 @@ export default async function FinanceiroPage({
         <p className="text-sm font-semibold text-rose-500">Erro: {error.message}</p>
       )}
 
-      {lancamentos && lancamentos.length === 0 && (
-        <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500">
-          Nenhum lançamento neste filtro. 🧾
-        </p>
-      )}
-
-      <ul className="grid gap-2 lg:grid-cols-2">
-        {lancamentos?.map((l) => (
-          <li key={l.id} className={`flex items-center justify-between ${card}`}>
-            <div className="min-w-0">
-              <div className="truncate font-semibold">
-                {l.crianca?.nome ?? '—'}
-              </div>
-              <div className="text-xs text-slate-500">
-                {l.descricao} · vence {l.vencimento}
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="font-display text-lg font-bold text-slate-700">
-                  {formatBRL(Number(l.valor) - Number(l.desconto))}
-                </span>
-                {Number(l.desconto) > 0 && (
-                  <span className="text-xs text-rose-500 line-through">{formatBRL(l.valor)}</span>
-                )}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    STATUS_CHIP[l.status] ?? ''
-                  }`}
-                >
-                  {l.status}
-                </span>
-              </div>
-            </div>
-            {l.status === 'pendente' && (
-              <BaixaButton lancamentoId={l.id} valor={Number(l.valor)} descontoAtivo={descontoAtivo} />
-            )}
-          </li>
-        ))}
-      </ul>
+      <LancamentosLista
+        descontoAtivo={descontoAtivo}
+        lancamentos={(lancamentos ?? []).map((l) => ({
+          id: l.id,
+          descricao: l.descricao,
+          valor: Number(l.valor),
+          desconto: Number(l.desconto),
+          vencimento: l.vencimento,
+          status: l.status,
+          nome: l.crianca?.nome ?? '—',
+        }))}
+      />
     </div>
   )
 }

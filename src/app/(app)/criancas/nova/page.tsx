@@ -119,7 +119,6 @@ export default function NovaCriancaPage() {
             className={input}
           />
         </label>
-        <EnderecoFields value={endereco} onChange={setEndereco} />
         <label className={label}>
           <span className={labelText}>Saúde</span>
           <textarea
@@ -134,6 +133,15 @@ export default function NovaCriancaPage() {
           <span className={labelText}>Foto</span>
           <FotoInput value={foto} onChange={setFoto} />
         </div>
+        {/* Endereço é BI opcional — colapsado p/ o cadastro na porta ser rápido */}
+        <details className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-500">
+            📍 Endereço da criança (opcional)
+          </summary>
+          <div className="pt-3">
+            <EnderecoFields value={endereco} onChange={setEndereco} />
+          </div>
+        </details>
       </section>
 
       <section className="space-y-3">
@@ -199,34 +207,42 @@ export default function NovaCriancaPage() {
               onChange={(e) => atualizarContato(i, { telefone: formatarTelefoneBR(e.target.value) })}
               className={input}
             />
-            <input
-              type="email"
-              placeholder="E-mail (opcional)"
-              value={c.email}
-              onChange={(e) => atualizarContato(i, { email: e.target.value })}
-              className={input}
-            />
-            <EnderecoFields
-              titulo="Endereço do contato"
-              value={c}
-              onChange={(enderecoAtualizado) => atualizarContato(i, enderecoAtualizado)}
-            />
-            <div className="flex gap-2">
-              <input
-                inputMode="numeric"
-                maxLength={14}
-                placeholder="CPF (preferencial)"
-                value={c.cpf}
-                onChange={(e) => atualizarContato(i, { cpf: formatarCPF(e.target.value) })}
-                className={input}
-              />
-              <input
-                placeholder="RG (opcional)"
-                value={c.rg}
-                onChange={(e) => atualizarContato(i, { rg: e.target.value })}
-                className={input}
-              />
-            </div>
+            {/* Nome + WhatsApp bastam na porta; o resto fica colapsado p/ depois */}
+            <details className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-500">
+                ➕ Mais dados (e-mail, endereço, documentos) — opcional
+              </summary>
+              <div className="space-y-2 pt-3">
+                <input
+                  type="email"
+                  placeholder="E-mail (opcional)"
+                  value={c.email}
+                  onChange={(e) => atualizarContato(i, { email: e.target.value })}
+                  className={input}
+                />
+                <EnderecoFields
+                  titulo="Endereço do contato"
+                  value={c}
+                  onChange={(enderecoAtualizado) => atualizarContato(i, enderecoAtualizado)}
+                />
+                <div className="flex gap-2">
+                  <input
+                    inputMode="numeric"
+                    maxLength={14}
+                    placeholder="CPF (preferencial)"
+                    value={c.cpf}
+                    onChange={(e) => atualizarContato(i, { cpf: formatarCPF(e.target.value) })}
+                    className={input}
+                  />
+                  <input
+                    placeholder="RG (opcional)"
+                    value={c.rg}
+                    onChange={(e) => atualizarContato(i, { rg: e.target.value })}
+                    className={input}
+                  />
+                </div>
+              </div>
+            </details>
           </div>
         ))}
       </section>

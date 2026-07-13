@@ -212,6 +212,13 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   cards agrupados em seções (Espaço e play / Avisos WhatsApp / Financeiro). Crianças: linhas
   densas de 1 linha. Financeiro: filtros numa linha; contagem + avulso + CSV na mesma barra.
   Próxima leva sugerida: /mensagens (colapsar templates em linhas, editar ao expandir).
+- **2ª passada de UX (2026-07-13, com jornada simulada de operador via Playwright):**
+  /mensagens: templates viram linhas colapsadas (nome + preview + status; expande p/ editar).
+  Ficha nova criança: essenciais visíveis (nome, nascimento, saúde, foto, responsável+WhatsApp);
+  endereços/documentos em `<details>` colapsados — 25→8 campos visíveis, salvar sem rolagem.
+  Financeiro: busca instantânea por criança acima dos lançamentos. Fila de espera virou
+  "filinha": avatares em pé na linha pontilhada, posição no ombro, 🔔+prazo p/ chamada.
+  Cards do play: 4 colunas em telas largas; botão vira só "Check-out" (valor já está no card).
 
 ## Fila de próximos passos
 
