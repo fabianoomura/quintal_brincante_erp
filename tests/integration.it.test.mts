@@ -5,7 +5,7 @@ import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { precoProporcional } from '@/lib/tarifador'
+import { precoHoraCheia } from '@/lib/tarifador'
 import { gerarMensalidades } from '@/lib/mensalidades'
 import { POST as webhookPOST } from '@/app/api/webhook/infinitepay/route'
 import { POST as avisoTempoPOST } from '@/app/api/worker/aviso-tempo/route'
@@ -121,7 +121,7 @@ test('Cadastro: criança + contato + vínculo e busca por nome', async () => {
 })
 
 // ───────────────────────── Presença + tarifador + lançamento ─────────────────────────
-test('Presença: check-in play → valor proporcional → lançamento pendente', async () => {
+test('Presença: check-in play → hora iniciada cheia → lançamento pendente', async () => {
   const cid = await novaCrianca()
   // check-in trava a tarifa/hora (como a action faz pela planilha); aqui fixamos 20/h
   const { data: pre } = await asOperador
@@ -130,9 +130,9 @@ test('Presença: check-in play → valor proporcional → lançamento pendente',
     .select('id')
     .single()
 
-  // check-out (replica a action): piso 1h + proporcional → 1h10 a 20/h = 23.33
-  const valor = precoProporcional(70, 20)
-  assert.equal(valor, 23.33)
+  // check-out (replica a action): hora iniciada conta cheia → 1h10 a 20/h = 2h = 40
+  const valor = precoHoraCheia(70, 20)
+  assert.equal(valor, 40)
   await asOperador.from('presenca').update({ saida: '15:10', valor }).eq('id', pre!.id)
   await asOperador.from('lancamento').insert({
     crianca_id: cid, descricao: 'Play IT', valor, vencimento: hoje(), origem_tipo: 'presenca', origem_id: pre!.id,

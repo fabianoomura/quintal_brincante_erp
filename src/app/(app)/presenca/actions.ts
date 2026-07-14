@@ -41,7 +41,7 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     const data = hojeISO()
 
     // Play: trava a TARIFA/HORA pela planilha (dia+hora) — ou o valor do FERIADO da data.
-    // O valor final (piso 1h + proporcional) é calculado no check-out.
+    // O valor final (hora iniciada = hora cheia) é calculado no check-out.
     let tarifaHora: number | null = null
     let filaAtiva: { id: string; status: string } | null = null
     if (input.origem === 'espaco_kids') {
@@ -362,8 +362,8 @@ export async function cobrarPresenca(
   }
 }
 
-// Check-out: marca a saída e calcula o valor do play (piso 1h + proporcional) pela
-// tarifa/hora travada no check-in. Gera o lançamento pendente.
+// Check-out: marca a saída e calcula o valor do play (hora iniciada = hora cheia)
+// pela tarifa/hora travada no check-in. Gera o lançamento pendente.
 // saidaManual ('HH:MM'): encerra um check-out ESQUECIDO informando a hora real da saída
 // (no dia da presença) — sem ela, usa a hora de agora.
 // valorManual: substitui o valor calculado (ex.: esquecido aberto por horas — a equipe
@@ -395,9 +395,8 @@ export async function checkOut(
       if (!v.ok) return { ok: false, erro: v.erro }
     }
 
-    // Play: calcula pelo tempo (tarifa/hora travada no check-in), respeitando a
-    // TOLERÂNCIA após o contratado (config): passou até X min → cobra só o contratado;
-    // depois, cada bloco iniciado de 30 min acrescenta meia hora da tarifa.
+    // Play: hora INICIADA conta cheia (tarifa/hora travada no check-in), com a
+    // tolerância da config perdoando até X min após cada hora fechada.
     // Diária: usa o valor definido no check-in (null = experimental, não cobra).
     const { data: cfg } = await supabase
       .from('config_sistema')
@@ -412,7 +411,6 @@ export async function checkOut(
             entrada: p.entrada,
             saida,
             tarifaHora: p.tarifa_hora == null ? null : Number(p.tarifa_hora),
-            tempoContratadoMin: p.tempo_contratado_min,
             toleranciaMin: cfg?.tolerancia_min ?? 0,
             valorDiaria: p.valor == null ? null : Number(p.valor),
           })

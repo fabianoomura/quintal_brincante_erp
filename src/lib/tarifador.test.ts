@@ -1,112 +1,47 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularValorPlay, duracaoMinutos, minutosCobraveis, precoProporcional, type TarifaCalculo } from './tarifador'
-
-// Tolerância após o contratado: até X min além, cobra só o contratado
-test('minutosCobraveis: dentro do contratado cobra o real', () => {
-  assert.equal(minutosCobraveis(50, 60, 10), 50)
-})
-test('minutosCobraveis: passou 8min com tolerância 10 → cobra o contratado', () => {
-  assert.equal(minutosCobraveis(68, 60, 10), 60)
-})
-test('minutosCobraveis: passou exatamente a tolerância → cobra o contratado', () => {
-  assert.equal(minutosCobraveis(70, 60, 10), 60)
-})
-test('minutosCobraveis: excedente até 30min → acrescenta meia hora', () => {
-  assert.equal(minutosCobraveis(75, 60, 10), 90)
-})
-test('minutosCobraveis: tolerância 0 → primeiro minuto acrescenta meia hora', () => {
-  assert.equal(minutosCobraveis(61, 60, 0), 90)
-})
-test('minutosCobraveis: excedente entre 31 e 60min → acrescenta hora cheia', () => {
-  assert.equal(minutosCobraveis(91, 60, 0), 120)
-  assert.equal(minutosCobraveis(120, 60, 0), 120)
-})
-test('minutosCobraveis: blocos continuam depois da primeira hora excedente', () => {
-  assert.equal(minutosCobraveis(121, 60, 0), 150)
-})
-test('minutosCobraveis: sem contratado → cobra o real', () => {
-  assert.equal(minutosCobraveis(90, null, 10), 90)
-})
-
-// FIXTURE — valores fictícios só para o teste (NÃO são a tarifa real; essa vem da tabela
-// `tarifa` e ainda está pendente de confirmação do dono). Aqui: X=valor_hora, Y=valor_fracao.
-const X = 20 // valor_hora fixture
-const Y = 10 // valor_fracao fixture
-const tarifa: TarifaCalculo = {
-  minimo_minutos: 60,
-  valor_hora: X,
-  tamanho_fracao_min: 30,
-  valor_fracao: Y,
-}
-
-const valor = (entrada: string, saida: string) =>
-  calcularValorPlay(entrada, saida, tarifa).valor
+import { duracaoMinutos, horasCobraveis, precoHoraCheia } from './tarifador'
 
 test('duracaoMinutos: diferença simples', () => {
   assert.equal(duracaoMinutos('14:00', '15:10'), 70)
 })
 
-// Preço proporcional (piso 1h + proporcional), valor/hora = 20 — exemplos do dono
-test('precoProporcional: 40min → piso 1h = 20', () => {
-  assert.equal(precoProporcional(40, 20), 20)
-})
-test('precoProporcional: 1h = 20', () => {
-  assert.equal(precoProporcional(60, 20), 20)
-})
-test('precoProporcional: 1h15 = 25', () => {
-  assert.equal(precoProporcional(75, 20), 25)
-})
-test('precoProporcional: 2h = 40', () => {
-  assert.equal(precoProporcional(120, 20), 40)
-})
-test('precoProporcional: rate diferente (8/h), 1h30 = 12', () => {
-  assert.equal(precoProporcional(90, 8), 12)
+// Hora INICIADA conta cheia (decisão do dono 2026-07-14): 1h01 já é a 2ª hora.
+test('horasCobraveis: piso de 1 hora', () => {
+  assert.equal(horasCobraveis(5), 1)
+  assert.equal(horasCobraveis(30), 1)
+  assert.equal(horasCobraveis(60), 1)
 })
 
-// Tabela da spec §6 / §11
-test('0h20 → piso de 1h = X', () => {
-  assert.equal(valor('14:00', '14:20'), X)
+test('horasCobraveis: passou 1 minuto da hora → hora seguinte cheia', () => {
+  assert.equal(horasCobraveis(61), 2)
+  assert.equal(horasCobraveis(120), 2)
+  assert.equal(horasCobraveis(121), 3)
+  assert.equal(horasCobraveis(125), 3)
 })
 
-test('1h10 → 1h + 1 fração = X + Y', () => {
-  assert.equal(valor('14:00', '15:10'), X + Y)
+test('horasCobraveis: tolerância perdoa até X min após a hora fechada', () => {
+  assert.equal(horasCobraveis(68, 10), 1) // 1h08 com tol 10 → 1h
+  assert.equal(horasCobraveis(70, 10), 1) // exatamente na tolerância
+  assert.equal(horasCobraveis(71, 10), 2) // passou → 2h
+  assert.equal(horasCobraveis(130, 10), 2) // 2h10 com tol 10 → 2h
+  assert.equal(horasCobraveis(131, 10), 3)
 })
 
-test('2h00 → 2h = 2X', () => {
-  assert.equal(valor('14:00', '16:00'), 2 * X)
+// Exemplo do dono: primeira hora R$ 10; passou 1 minuto → 2ª hora cheia.
+test('precoHoraCheia: exemplo do dono (10/h)', () => {
+  assert.equal(precoHoraCheia(40, 10), 10)
+  assert.equal(precoHoraCheia(60, 10), 10)
+  assert.equal(precoHoraCheia(61, 10), 20)
+  assert.equal(precoHoraCheia(125, 10), 30)
 })
 
-test('2h05 → 2h + 1 fração = 2X + Y', () => {
-  assert.equal(valor('14:00', '16:05'), 2 * X + Y)
+test('precoHoraCheia: tarifa quebrada não estoura float (12.5/h → 2h = 25)', () => {
+  assert.equal(precoHoraCheia(61, 12.5), 25)
+  assert.equal(precoHoraCheia(61, 3.33), 6.66)
 })
 
-// Arredondamento da fração pra cima
-test('1h31 → 1h + 2 frações (31min → ceil(31/30)=2) = X + 2Y', () => {
-  assert.equal(valor('14:00', '15:31'), X + 2 * Y)
-})
-
-test('hora exata (1h00) não cobra fração = X', () => {
-  assert.equal(valor('14:00', '15:00'), X)
-})
-
-test('abaixo do piso (5 min) cobra o mínimo de 1h = X', () => {
-  assert.equal(valor('14:00', '14:05'), X)
-})
-
-// minutosCobrados respeita o piso
-test('minutosCobrados aplica o piso', () => {
-  assert.equal(calcularValorPlay('14:00', '14:05', tarifa).minutosCobrados, 60)
-})
-
-// Sem float: 0.10 + 0.20 típico não estoura (usando centavos)
-test('sem erro de float com valores quebrados', () => {
-  const t: TarifaCalculo = {
-    minimo_minutos: 60,
-    valor_hora: 12.5,
-    tamanho_fracao_min: 15,
-    valor_fracao: 3.33,
-  }
-  // 1h + 1 fração de 15min → 12.50 + 3.33 = 15.83 exato
-  assert.equal(calcularValorPlay('10:00', '11:10', t).valor, 15.83)
+test('precoHoraCheia: respeita tolerância', () => {
+  assert.equal(precoHoraCheia(68, 20, 10), 20)
+  assert.equal(precoHoraCheia(71, 20, 10), 40)
 })

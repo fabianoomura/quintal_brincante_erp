@@ -4,7 +4,7 @@ import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { precoProporcional } from '@/lib/tarifador'
+import { precoHoraCheia } from '@/lib/tarifador'
 import { gerarMensalidades } from '@/lib/mensalidades'
 import { FakeSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
@@ -79,8 +79,8 @@ test('Jornada OPERADOR: recebe, avisa no WhatsApp, cobra e baixa', async () => {
     const { data: notif } = await asAdmin.from('notificacao').select('status').eq('ocorrencia_id', oc!.id).single()
     assert.equal(notif!.status, 'enviada')
 
-    // 4) Check-out → preço proporcional (tarifa/hora travada no check-in) → lançamento
-    const valor = precoProporcional(70, 20) // 1h10 a 20/h = 23.33
+    // 4) Check-out → hora iniciada cheia (tarifa/hora travada no check-in) → lançamento
+    const valor = precoHoraCheia(70, 20) // 1h10 a 20/h = 2h = 40
     await asOperador.from('presenca').update({ saida: '15:10', valor }).eq('id', pre!.id)
     await asOperador.from('lancamento').insert({ crianca_id: cid, descricao: 'Play', valor, vencimento: hoje(), origem_tipo: 'presenca', origem_id: pre!.id })
 

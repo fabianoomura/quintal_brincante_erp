@@ -3,7 +3,7 @@
 // Rodar: npm run seed:dev
 import { createClient } from '@supabase/supabase-js'
 import { valorHoraPlay, type PrecoHora } from '../src/lib/grade'
-import { precoProporcional } from '../src/lib/tarifador'
+import { precoHoraCheia } from '../src/lib/tarifador'
 import { diaDaSemana, horaParaMinutos } from '../src/lib/datas'
 import { FakeSender } from '../src/lib/whatsapp/adapter'
 import { enviarNotificacao } from '../src/lib/whatsapp/notificar'
@@ -250,7 +250,7 @@ for (let d = 14; d >= 0; d--) {
       const dur = int(20, 200)
       const totalMin = hEntrada * 60 + mEntrada + dur
       saida = hhmm(Math.min(23, Math.floor(totalMin / 60)), totalMin % 60)
-      if (tarifaHora != null) valor = precoProporcional(dur, tarifaHora)
+      if (tarifaHora != null) valor = precoHoraCheia(dur, tarifaHora)
     }
 
     const { data: pre } = await sb

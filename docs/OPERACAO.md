@@ -61,6 +61,7 @@ select 'notificacao' as tabela, count(*) from notificacao
 union all select 'ocorrencia', count(*) from ocorrencia
 union all select 'lancamento', count(*) from lancamento
 union all select 'presenca', count(*) from presenca
+union all select 'fila_espera', count(*) from fila_espera
 union all select 'reposicao', count(*) from reposicao
 union all select 'inscricao_colonia', count(*) from inscricao_colonia
 union all select 'mensalidade', count(*) from mensalidade;
@@ -75,6 +76,7 @@ delete from notificacao;
 delete from ocorrencia;
 delete from lancamento;
 delete from presenca;
+delete from fila_espera;
 delete from reposicao;
 delete from inscricao_colonia;
 delete from mensalidade;
@@ -83,6 +85,33 @@ commit;
 ```
 
 Se estiver apenas ensaiando, troque `commit;` por `rollback;`.
+
+### 2b. Limpeza FILTRADA: só os testes do play de um dia
+
+Para apagar apenas as presenças de play de uma data (ex.: dia de teste), preservando o
+resto da operação. Troque a data nas 5 queries.
+
+```sql
+-- VER o que será apagado
+select p.id, c.nome, p.entrada, p.saida, p.valor
+from presenca p join crianca c on c.id = p.crianca_id
+where p.data = '2026-07-14' and p.origem = 'espaco_kids';
+
+begin;
+
+delete from lancamento
+where origem_tipo = 'presenca'
+  and origem_id in (select id from presenca where data = '2026-07-14' and origem = 'espaco_kids');
+
+delete from notificacao
+where presenca_id in (select id from presenca where data = '2026-07-14' and origem = 'espaco_kids');
+
+delete from fila_espera where data = '2026-07-14';
+
+delete from presenca where data = '2026-07-14' and origem = 'espaco_kids';
+
+commit;
+```
 
 ### 3. Conferir depois
 

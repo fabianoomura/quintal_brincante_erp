@@ -190,6 +190,15 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
 - **Excedente do Play em blocos:** tolerância inicial `0` (continua configurável); após
   o tempo contratado, cada bloco iniciado de 30 min acrescenta 50% da tarifa/hora.
   Assim, até 30 min excedentes = meia hora; de 31 a 60 min = hora adicional cheia.
+  **SUPERSEDIDO em 2026-07-14** pela cobrança por hora iniciada (abaixo).
+- **Cobrança por HORA INICIADA (decisão do dono 2026-07-14):** substitui o proporcional e
+  os blocos de 30 min. Hora começada conta cheia: 10/h → 1h01 = R$20; 2h05 = R$30. Piso de
+  1h; `tolerancia_min` perdoa até X min após cada hora fechada (padrão 0). Tempo contratado
+  passou a ser só aviso/fila — não muda o valor. Removidos `precoProporcional`,
+  `minutosCobraveis` e `calcularValorPlay` (legado da tabela `tarifa`); novos
+  `horasCobraveis`/`precoHoraCheia` em `src/lib/tarifador.ts`. Recebimento sem a opção
+  "maquininha" (pix/débito/crédito já são na maquininha; o valor fica no legado como
+  'outros' no financeiro).
 - **Recebimento com ajuste:** o valor pode ser editado no modal antes de escolher a forma
   de pagamento; o lançamento é atualizado com o valor efetivamente recebido antes da baixa.
 - **Limite do play + fila de espera (2026-07-13):** teto de crianças simultâneas no play em

@@ -7,12 +7,13 @@ import { baixaManual } from './financeiro/actions'
 import type { Modalidade } from '@/lib/modalidades'
 import { formatBRL } from '@/lib/dinheiro'
 
+// Sem opção "maquininha": pix, débito e crédito JÁ acontecem na maquininha —
+// aqui registra-se a modalidade, não o aparelho.
 const OPCOES: { k: Modalidade; label: string; cls: string }[] = [
   { k: 'dinheiro', label: '💵 Dinheiro', cls: 'bg-emerald-600' },
   { k: 'pix', label: '📱 Pix', cls: 'bg-sky-600' },
   { k: 'debito', label: '💳 Débito', cls: 'bg-violet-600' },
   { k: 'credito', label: '💳 Crédito', cls: 'bg-fuchsia-600' },
-  { k: 'maquininha', label: '🏧 Maquininha', cls: 'bg-slate-700' },
 ]
 
 // Pop-up de recebimento — o MESMO fluxo no play (pós check-out) e no Financeiro.

@@ -22,7 +22,7 @@ export default async function GradePage() {
 
       <p className="text-sm text-slate-500">
         Digite o <strong>valor/hora</strong> em cada célula (dia × hora). A cobrança tem
-        <strong> piso de 1 hora</strong> e é proporcional depois (ex.: 20/h → 1h15 = R$25).
+        <strong> piso de 1 hora</strong> e cada hora iniciada conta cheia (ex.: 20/h → 1h15 = R$40).
         Feriados têm valor próprio no <Link href="/calendario" className="font-semibold text-orange-600">calendário</Link>.
       </p>
 

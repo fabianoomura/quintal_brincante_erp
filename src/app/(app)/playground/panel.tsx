@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { checkIn, checkOut } from '../presenca/actions'
 import { abrirConversaDoResponsavel } from '../conversas/actions'
 import { entrarNaFila } from './fila-actions'
-import { duracaoMinutos, minutosCobraveis, precoProporcional } from '@/lib/tarifador'
+import { duracaoMinutos, precoHoraCheia } from '@/lib/tarifador'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
@@ -247,10 +247,7 @@ export default function PlaygroundPanel({
           const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
           const valor =
             p.tarifaHora != null
-              ? precoProporcional(
-                  minutosCobraveis(decorrido, p.tempoContratadoMin, toleranciaMin),
-                  p.tarifaHora,
-                )
+              ? precoHoraCheia(decorrido, p.tarifaHora, toleranciaMin)
               : null
           const restante =
             p.tempoContratadoMin != null ? p.tempoContratadoMin - decorrido : null

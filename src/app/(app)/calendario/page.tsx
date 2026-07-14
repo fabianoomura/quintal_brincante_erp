@@ -106,7 +106,7 @@ export default async function CalendarioPage({
       </div>
 
       <p className="text-xs text-slate-400">
-        🎉 = feriado (valor/hora próprio). Dias normais usam a grade da planilha (piso 1h + proporcional).
+        🎉 = feriado (valor/hora próprio). Dias normais usam a grade da planilha (hora iniciada = hora cheia).
       </p>
 
       {ehAdmin && <FeriadosEditor feriados={feriados} sugestoes={sugestoes} />}

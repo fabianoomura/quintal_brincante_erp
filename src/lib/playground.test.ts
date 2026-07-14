@@ -2,56 +2,54 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { calcularValorCheckout, validarSaidaManual } from './playground'
 
-test('checkout play: dentro da tolerancia cobra apenas o contratado', () => {
-  assert.equal(
-    calcularValorCheckout({
-      origem: 'espaco_kids',
-      entrada: '14:00',
-      saida: '15:08',
-      tarifaHora: 20,
-      tempoContratadoMin: 60,
-      toleranciaMin: 10,
-    }),
-    20,
-  )
-})
+// Hora INICIADA conta cheia; o tempo contratado não muda o valor (só o aviso).
 
-test('checkout play: passou da tolerancia cobra bloco adicional de meia hora', () => {
-  assert.equal(
-    calcularValorCheckout({
-      origem: 'espaco_kids',
-      entrada: '14:00',
-      saida: '15:15',
-      tarifaHora: 20,
-      tempoContratadoMin: 60,
-      toleranciaMin: 10,
-    }),
-    30,
-  )
-})
-
-test('checkout play: entre 30min e 1h excedente cobra hora adicional cheia', () => {
-  assert.equal(
-    calcularValorCheckout({
-      origem: 'espaco_kids',
-      entrada: '14:00',
-      saida: '15:31',
-      tarifaHora: 20,
-      tempoContratadoMin: 60,
-      toleranciaMin: 0,
-    }),
-    40,
-  )
-})
-
-test('checkout play: sem tempo contratado cobra o tempo real com piso de 1h', () => {
+test('checkout play: até 1h cobra 1 hora (piso)', () => {
   assert.equal(
     calcularValorCheckout({
       origem: 'espaco_kids',
       entrada: '14:00',
       saida: '14:35',
       tarifaHora: 20,
-      tempoContratadoMin: null,
+      toleranciaMin: 0,
+    }),
+    20,
+  )
+})
+
+test('checkout play: passou 1 minuto da hora → 2ª hora cheia', () => {
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '15:01',
+      tarifaHora: 20,
+      toleranciaMin: 0,
+    }),
+    40,
+  )
+})
+
+test('checkout play: 2h05 → 3 horas cheias', () => {
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '16:05',
+      tarifaHora: 20,
+      toleranciaMin: 0,
+    }),
+    60,
+  )
+})
+
+test('checkout play: tolerância perdoa passadinha da hora', () => {
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '15:08',
+      tarifaHora: 20,
       toleranciaMin: 10,
     }),
     20,
@@ -65,7 +63,6 @@ test('checkout play: sem tarifa travada nao gera valor nem lancamento', () => {
       entrada: '14:00',
       saida: '16:00',
       tarifaHora: null,
-      tempoContratadoMin: 120,
       toleranciaMin: 10,
     }),
     null,
@@ -79,7 +76,6 @@ test('checkout diaria: usa valor definido no check-in', () => {
       entrada: '08:00',
       saida: '18:00',
       tarifaHora: null,
-      tempoContratadoMin: null,
       toleranciaMin: 0,
       valorDiaria: 90,
     }),
@@ -87,17 +83,16 @@ test('checkout diaria: usa valor definido no check-in', () => {
   )
 })
 
-test('checkout play: segundos contam como minuto cheio', () => {
+test('checkout play: segundos contam como minuto cheio (1h00m01s → 2h)', () => {
   assert.equal(
     calcularValorCheckout({
       origem: 'espaco_kids',
       entrada: '14:00:30',
       saida: '15:00:31',
       tarifaHora: 20,
-      tempoContratadoMin: null,
       toleranciaMin: 0,
     }),
-    20.33,
+    40,
   )
 })
 
