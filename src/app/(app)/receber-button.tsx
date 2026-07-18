@@ -9,10 +9,13 @@ export default function ReceberButton({
   lancamentoId,
   valor,
   nome,
+  presencaId = null,
 }: {
   lancamentoId: string
   valor: number
   nome: string
+  // Quando o lançamento vem de um check-out do play: habilita "reabrir por engano".
+  presencaId?: string | null
 }) {
   const [aberto, setAberto] = useState(false)
 
@@ -29,6 +32,7 @@ export default function ReceberButton({
         lancamentoId={lancamentoId}
         valor={valor}
         nome={nome}
+        presencaId={presencaId}
         onFechar={() => setAberto(false)}
       />
     </>

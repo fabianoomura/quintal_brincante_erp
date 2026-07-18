@@ -11,6 +11,7 @@ import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
 import RecebimentoModal from '../recebimento-modal'
+import Modal from '../modal'
 import FilaEspera, { type FilaItem } from './fila-espera'
 
 type Presente = {
@@ -106,8 +107,10 @@ export default function PlaygroundPanel({
   }
 
   const [saida, setSaida] = useState<string | null>(null)
-  // recebimento: aberto após um check-out cobrado
-  const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string } | null>(null)
+  // recebimento: aberto após um check-out cobrado (presencaId permite reabrir por engano)
+  const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string; presencaId: string } | null>(null)
+  // confirmação antes do check-out (evita saída sem querer)
+  const [confirmar, setConfirmar] = useState<{ p: Presente; decorrido: number; valor: number | null } | null>(null)
   // card com o leque de avisos rápidos aberto (botão ⚡)
   const [avisosAbertos, setAvisosAbertos] = useState<string | null>(null)
 
@@ -142,7 +145,7 @@ export default function PlaygroundPanel({
       if (res.valor != null && res.lancamentoId) {
         // abre o pop-up de recebimento; o refresh fica pra quando ele FECHAR
         // (refresh junto da abertura podia remontar a página e engolir o modal)
-        setReceb({ lancamentoId: res.lancamentoId, valor: res.valor, nome: res.nome || p.nome })
+        setReceb({ lancamentoId: res.lancamentoId, valor: res.valor, nome: res.nome || p.nome, presencaId: p.id })
       } else {
         setSaida(`✅ ${p.nome} saiu.`)
         setTimeout(() => setSaida(null), 6000)
@@ -153,6 +156,14 @@ export default function PlaygroundPanel({
     } finally {
       setOcupado(null)
     }
+  }
+
+  // Confirmação do check-out (pop-up): só encerra após o operador confirmar.
+  async function confirmarCheckout() {
+    if (!confirmar) return
+    const p = confirmar.p
+    setConfirmar(null)
+    await sair(p)
   }
 
   // Coloca a criança selecionada na fila (botão aparece só quando lotado).
@@ -322,7 +333,7 @@ export default function PlaygroundPanel({
               <div className="flex gap-1.5">
                 {/* o valor ao vivo já aparece no card; repetir no botão truncava */}
                 <button
-                  onClick={() => sair(p)}
+                  onClick={() => setConfirmar({ p, decorrido, valor })}
                   disabled={ocupado === p.id}
                   className="pop min-w-0 flex-1 truncate rounded-xl bg-slate-800 py-2 text-sm font-bold text-white disabled:opacity-60"
                 >
@@ -363,11 +374,45 @@ export default function PlaygroundPanel({
         })}
       </div>
 
+      {/* Confirmação antes do check-out — evita saída sem querer */}
+      {confirmar && (
+        <Modal open onClose={() => setConfirmar(null)} title="Confirmar check-out?">
+          <div className="space-y-3">
+            <p className="text-sm text-slate-500">
+              Encerrar a permanência de <strong className="text-slate-800">{confirmar.p.nome}</strong>?
+            </p>
+            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+              <span className="font-display text-xl font-bold text-slate-700">
+                {fmtDuracao(confirmar.decorrido)}
+              </span>
+              <span className="font-display text-xl font-bold text-emerald-700">
+                {confirmar.valor != null ? formatBRL(confirmar.valor) : '—'}
+              </span>
+            </div>
+            <button
+              onClick={confirmarCheckout}
+              disabled={ocupado === confirmar.p.id}
+              className="pop w-full rounded-2xl bg-slate-800 py-3.5 font-display text-lg font-bold text-white shadow-sm disabled:opacity-60"
+            >
+              {ocupado === confirmar.p.id ? '…' : '✅ Confirmar check-out'}
+            </button>
+            <button
+              onClick={() => setConfirmar(null)}
+              disabled={ocupado === confirmar.p.id}
+              className="w-full rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-500 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </Modal>
+      )}
+
       <RecebimentoModal
         aberto={receb != null}
         lancamentoId={receb?.lancamentoId ?? null}
         valor={receb?.valor ?? 0}
         nome={receb?.nome ?? ''}
+        presencaId={receb?.presencaId ?? null}
         descontoAtivo={descontoAtivo}
         onFechar={() => {
           setReceb(null)

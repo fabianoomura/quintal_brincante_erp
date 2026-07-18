@@ -41,6 +41,8 @@ const TEXTO_AUTORIZACAO_IMAGEM = `📸 Só mais uma coisinha, {{responsavel_nome
 Responda *SIM* ou *NÃO* por aqui mesmo, por favor. 💚`
 const TEXTO_AGRADECIMENTO_CHECKOUT =
   'Obrigado pela visita, {{responsavel_nome}}! {{crianca_nome}} já saiu do play. Até a próxima! 💚'
+const TEXTO_DESCULPA_ENGANO =
+  'Ops, {{responsavel_nome}}! Foi engano nosso: {{crianca_nome}} continua aqui no play. 🙈 Pode desconsiderar a mensagem de saída. Desculpe pelo susto! 💚'
 const TEXTO_FILA_SUA_VEZ =
   '🎉 Boa notícia, {{responsavel_nome}}! Chegou a vez de {{crianca_nome}} no play. Vocês têm {{minutos_tolerancia}} min para chegar — depois disso a vaga passa para a próxima criança da fila. Até já! 💚'
 
@@ -187,6 +189,23 @@ export function tplAgradecimentoCheckout(
   const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
   return {
     template: 'agradecimento_checkout',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+// Desculpa quando um check-out foi feito por engano e a presença é reaberta.
+export function tplDesculpaEngano(
+  responsavel: string,
+  crianca: string,
+  textoTemplate = TEXTO_DESCULPA_ENGANO,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
+  return {
+    template: 'desculpa_engano',
     variaveis,
     conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }

@@ -73,7 +73,12 @@ export default async function ConcluidasHoje() {
                 </span>
               </div>
               {lan && !pago && (
-                <ReceberButton lancamentoId={lan.id} valor={Number(p.valor ?? 0)} nome={p.crianca?.nome ?? ''} />
+                <ReceberButton
+                  lancamentoId={lan.id}
+                  valor={Number(p.valor ?? 0)}
+                  nome={p.crianca?.nome ?? ''}
+                  presencaId={p.id}
+                />
               )}
               {semCobranca && <CobrarButton presencaId={p.id} nome={p.crianca?.nome ?? ''} />}
             </li>

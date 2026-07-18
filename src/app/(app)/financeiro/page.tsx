@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatBRL } from '@/lib/dinheiro'
+import { hojeISO } from '@/lib/datas'
 import { card } from '@/lib/ui'
 import AvulsoForm from './avulso-form'
 import LancamentosLista from './lancamentos-lista'
@@ -14,8 +15,11 @@ export default async function FinanceiroPage({
 }) {
   const sp = await searchParams
   const status = (sp.status as StatusFiltro) ?? 'pendente'
-  const de = sp.de ?? ''
-  const ate = sp.ate ?? ''
+  // Padrão: mostra o DIA ATUAL (só na primeira abertura, sem params). Ao limpar os
+  // campos e filtrar, chegam como '' — aí volta a ver tudo.
+  const hoje = hojeISO()
+  const de = sp.de ?? hoje
+  const ate = sp.ate ?? hoje
 
   const supabase = await createClient()
   let query = supabase

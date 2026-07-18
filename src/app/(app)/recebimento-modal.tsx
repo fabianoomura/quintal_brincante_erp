@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Modal from './modal'
 import { baixaManual } from './financeiro/actions'
+import { reabrirCheckout } from './presenca/actions'
 import type { Modalidade } from '@/lib/modalidades'
 import { formatBRL } from '@/lib/dinheiro'
 
@@ -26,6 +27,7 @@ export default function RecebimentoModal({
   nome,
   onFechar,
   descontoAtivo = false,
+  presencaId = null,
 }: {
   aberto: boolean
   lancamentoId: string | null
@@ -33,6 +35,8 @@ export default function RecebimentoModal({
   nome: string
   onFechar: () => void
   descontoAtivo?: boolean
+  // Quando vem de um check-out do play: habilita "reabrir por engano" (antes de pagar).
+  presencaId?: string | null
 }) {
   if (!aberto) return null
 
@@ -44,6 +48,7 @@ export default function RecebimentoModal({
       nome={nome}
       onFechar={onFechar}
       descontoAtivo={descontoAtivo}
+      presencaId={presencaId}
     />
   )
 }
@@ -54,12 +59,14 @@ function RecebimentoConteudo({
   nome,
   onFechar,
   descontoAtivo,
+  presencaId,
 }: {
   lancamentoId: string | null
   valor: number
   nome: string
   onFechar: () => void
   descontoAtivo: boolean
+  presencaId: string | null
 }) {
   const router = useRouter()
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -97,6 +104,27 @@ function RecebimentoConteudo({
       router.refresh()
     } catch (e) {
       setErro(`Falha ao receber (${e instanceof Error ? e.message : 'erro'}). Tente de novo.`)
+    } finally {
+      setOcupado(null)
+    }
+  }
+
+  // Check-out por engano: reabre a presença (mantém a entrada), some com a cobrança
+  // pendente e manda uma desculpa ao responsável.
+  async function reabrir() {
+    if (!presencaId) return
+    setErro(null)
+    setOcupado('reabrir')
+    try {
+      const res = await reabrirCheckout(presencaId)
+      if (!res.ok) {
+        setErro(res.erro)
+        return
+      }
+      onFechar()
+      router.refresh()
+    } catch (e) {
+      setErro(`Falha ao reabrir (${e instanceof Error ? e.message : 'erro'}). Tente de novo.`)
     } finally {
       setOcupado(null)
     }
@@ -173,6 +201,15 @@ function RecebimentoConteudo({
       >
         Deixar pendente (recebo depois)
       </button>
+      {presencaId && (
+        <button
+          onClick={reabrir}
+          disabled={!!ocupado}
+          className="mt-2 w-full rounded-xl py-2 text-xs font-semibold text-amber-700 underline underline-offset-2 disabled:opacity-50"
+        >
+          {ocupado === 'reabrir' ? '…' : '↩️ Foi engano — reabrir check-out'}
+        </button>
+      )}
     </Modal>
   )
 }

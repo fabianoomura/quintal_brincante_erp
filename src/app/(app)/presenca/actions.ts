@@ -12,6 +12,7 @@ import {
   tplAgradecimentoCheckout,
   tplAutorizacaoImagem,
   tplBoasVindas,
+  tplDesculpaEngano,
 } from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
 
@@ -303,6 +304,131 @@ async function enviarAgradecimentoCheckout(
     conteudo: render.conteudo,
     presenca_id: presencaId,
   })
+}
+
+// Desculpa quando um check-out do play foi feito por engano e a presença é reaberta.
+// Retorna se conseguiu avisar o responsável (o WhatsApp não pode travar a reabertura).
+async function enviarDesculpaEngano(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  criancaId: string,
+  presencaId: string,
+): Promise<boolean> {
+  const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
+    supabase
+      .from('mensagem_template')
+      .select('texto')
+      .eq('chave', 'desculpa_engano')
+      .eq('ativo', true)
+      .maybeSingle(),
+    supabase.from('crianca').select('nome, primeiro_nome').eq('id', criancaId).single(),
+    supabase
+      .from('crianca_contato')
+      .select('contato:contato_id (id, nome, primeiro_nome, telefone)')
+      .eq('crianca_id', criancaId)
+      .eq('papel', 'responsavel')
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const responsavel = vinculo?.contato
+  if (!responsavel?.telefone || !crianca) return false
+
+  const render = tplDesculpaEngano(
+    responsavel.nome,
+    crianca.nome,
+    tpl?.texto,
+    responsavel.primeiro_nome,
+    crianca.primeiro_nome,
+  )
+
+  const res = await enviarNotificacao(supabase, getSender(), {
+    crianca_id: criancaId,
+    contato_id: responsavel.id,
+    para: responsavel.telefone,
+    tipo: 'desculpa_engano',
+    template: render.template,
+    variaveis: render.variaveis,
+    conteudo: render.conteudo,
+    presenca_id: presencaId,
+  })
+  return res.ok
+}
+
+// Reabre um check-out feito por ENGANO — só ANTES do pagamento. Mantém a ENTRADA
+// original (o cronômetro/valor continuam do início real), apaga a cobrança pendente
+// gerada pela saída e manda uma desculpa ao responsável (que recebeu o "já saiu").
+export async function reabrirCheckout(
+  presencaId: string,
+): Promise<{ ok: true; nome: string; avisou: boolean } | { ok: false; erro: string }> {
+  try {
+    const supabase = await createClient()
+    const { data: p, error: errP } = await supabase
+      .from('presenca')
+      .select('id, crianca_id, data, origem, saida, crianca:crianca_id (nome)')
+      .eq('id', presencaId)
+      .maybeSingle()
+    if (errP) return { ok: false, erro: errP.message }
+    if (!p) return { ok: false, erro: 'Presença não encontrada.' }
+    if (!p.saida) return { ok: false, erro: 'Essa presença já está aberta (não teve check-out).' }
+
+    // Só reabre antes do pagamento: se o lançamento desta presença já foi pago, barra.
+    const { data: lanc } = await supabase
+      .from('lancamento')
+      .select('id, status')
+      .eq('origem_tipo', 'presenca')
+      .eq('origem_id', presencaId)
+      .limit(1)
+      .maybeSingle()
+    if (lanc?.status === 'pago') {
+      return {
+        ok: false,
+        erro: 'Essa sessão já foi paga — não dá para reabrir por aqui. Se preciso, estorne no Financeiro.',
+      }
+    }
+
+    // Apaga a cobrança pendente do check-out (será recalculada na próxima saída).
+    if (lanc) {
+      const { error: errDel } = await supabase.from('lancamento').delete().eq('id', lanc.id)
+      if (errDel) return { ok: false, erro: errDel.message }
+    }
+
+    // Reabre mantendo a entrada; zera saída e valor. O guard `.not('saida', ...)`
+    // garante que só UMA reabertura vença se dois cliques chegarem juntos.
+    const { data: reaberta, error: errU } = await supabase
+      .from('presenca')
+      .update({ saida: null, valor: null })
+      .eq('id', presencaId)
+      .not('saida', 'is', null)
+      .select('id')
+      .maybeSingle()
+    if (errU) return { ok: false, erro: errU.message }
+    if (!reaberta) return { ok: false, erro: 'Essa presença já foi reaberta.' }
+
+    // Some o agradecimento "já saiu" enviado pela saída errada — assim o check-out
+    // REAL (a idempotência conta por presenca_id) volta a mandar a despedida na hora certa.
+    await supabase
+      .from('notificacao')
+      .delete()
+      .eq('presenca_id', presencaId)
+      .eq('tipo', 'agradecimento_checkout')
+
+    // Desculpa só faz sentido no play e no mesmo dia (reabrir um esquecido de ontem
+    // não deve mandar "continua aqui").
+    let avisou = false
+    if (p.origem === 'espaco_kids' && p.data === hojeISO()) {
+      try {
+        avisou = await enviarDesculpaEngano(supabase, p.crianca_id, presencaId)
+      } catch {
+        // Falha de WhatsApp não trava a reabertura.
+      }
+    }
+
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    revalidatePath('/financeiro')
+    return { ok: true, nome: p.crianca?.nome ?? '', avisou }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
 }
 
 // Cobrança retroativa: sessão concluída SEM valor (ex.: grade vazia no check-in).

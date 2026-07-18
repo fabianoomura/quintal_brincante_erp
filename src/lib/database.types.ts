@@ -1044,6 +1044,7 @@ export type Database = {
         | "agradecimento_checkout"
         | "autorizacao_imagem"
         | "fila_sua_vez"
+        | "desculpa_engano"
       tipo_mensagem_whatsapp: "texto" | "outro"
       tipo_ocorrencia:
         | "banheiro"
@@ -1194,6 +1195,8 @@ export const Constants = {
         "boas_vindas",
         "agradecimento_checkout",
         "autorizacao_imagem",
+        "fila_sua_vez",
+        "desculpa_engano",
       ],
       tipo_mensagem_whatsapp: ["texto", "outro"],
       tipo_ocorrencia: [

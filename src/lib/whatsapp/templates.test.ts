@@ -8,6 +8,7 @@ import {
   tplAutorizacaoImagem,
   tplAvisoTempo,
   tplBoasVindas,
+  tplDesculpaEngano,
   tplOcorrencia,
 } from './templates'
 
@@ -84,6 +85,14 @@ test('tplAgradecimentoCheckout renderiza agradecimento', () => {
   assert.equal(r.template, 'agradecimento_checkout')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
   assert.equal(r.conteudo, 'Obrigado pela visita, Ana! Beto já saiu do play. Até a próxima! 💚')
+})
+
+test('tplDesculpaEngano renderiza a desculpa por engano no check-out', () => {
+  const r = tplDesculpaEngano('Ana Silva', 'Beto Souza')
+  assert.equal(r.template, 'desculpa_engano')
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
+  assert.ok(r.conteudo.includes('Ana'))
+  assert.ok(r.conteudo.includes('Beto continua aqui no play'))
 })
 
 test('tplAutorizacaoImagem pergunta com resposta por texto (sem botões)', () => {

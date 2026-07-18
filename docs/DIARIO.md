@@ -236,6 +236,27 @@ sem abrir WhatsApp Web. A Evolution é só gateway; TODO o histórico vive no Su
   não lidas com fundo destacado. Gerencial: KPIs viram links (A receber → financeiro
   filtrado, etc.); atalhos redundantes do rodapé removidos.
 
+## Ajustes do play + financeiro (2026-07-18, pedido do dono do projeto)
+
+Levas pontuais após acompanhar a operação real:
+
+- **6 avisos rápidos** (antes 4): além de banheiro/trocar/chorando/vir buscar, entraram
+  **🩹 Machucou** (tipo `saude` — faltou um botão quando uma criança ralou o joelho) e
+  **💬 Outra** (tipo `outro`, coringa). São `mensagem_template` (`aviso_rapido`), editáveis
+  em `/mensagens`; a tela já mostrava até 6. Migration idempotente.
+- **Confirmação antes do check-out:** o botão do card abre um pop-up (nome + tempo + valor)
+  e só encerra ao confirmar — evita saída sem querer (aconteceu na operação).
+- **Reabrir check-out feito por engano (antes do pagamento):** ação `reabrirCheckout`
+  reabre a presença **mantendo a entrada original** (cronômetro/valor continuam do início
+  real), apaga a cobrança pendente e o agradecimento "já saiu", e dispara o template
+  editável **`desculpa_engano`** ao responsável. Barra se a sessão já foi paga (aí é estorno
+  no Financeiro). Aparece no pop-up de recebimento (logo após o check-out) e no botão
+  💰 Receber de "Concluídas hoje" (caso o pop-up tenha sido fechado). Novo tipo de
+  notificação `desculpa_engano` para auditoria.
+- **Financeiro: filtro de data com padrão = dia atual.** Primeira abertura já vem filtrada
+  em hoje (KPIs de recebido inclusos); limpar os campos e filtrar volta a ver tudo.
+- **Qualidade:** 112 testes (novo: `tplDesculpaEngano`), typecheck e build limpos.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar
