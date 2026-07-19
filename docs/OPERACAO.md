@@ -3,7 +3,7 @@
 Runbook curto para tarefas recorrentes, validações e comandos que mexem em dados. Em produção,
 leia duas vezes antes de executar SQL. O projeto lida com dados de crianças.
 
-Última atualização: **2026-07-09**.
+Última atualização: **2026-07-19**.
 
 ---
 
@@ -17,7 +17,7 @@ npm run lint
 npm run build
 ```
 
-Em 2026-07-09, a suíte unitária estava com **89 testes passando**. Ela cobre playground,
+Em 2026-07-19, a suíte unitária estava com **113 testes passando**. Ela cobre playground,
 checkout, recebimentos, mensagens/WhatsApp, aviso de tempo, endereço/ViaCEP, tarifador,
 grade, feriados, mensalidades e regras financeiras.
 
@@ -53,6 +53,19 @@ responsáveis, vínculos, configurações, templates, grade, feriados, ambientes
 Use este bloco apenas quando tiver certeza de que as tabelas abaixo contêm somente dados de
 teste ou dados que podem ser descartados. Se já houver operação real misturada, não rode este
 bloco geral: faça uma limpeza filtrada por período/IDs.
+
+### Exclusão pontual pela tela
+
+Para um teste isolado do Play, prefira o botão **🗑️ Excluir** em **Playground → Concluídas
+hoje**. O botão aparece apenas para administradores e pede confirmação. A ação remove, na mesma
+transação, a presença e o lançamento financeiro relacionado. O cadastro da criança e as
+conversas são preservados.
+
+### Cortesia
+
+No recebimento, **🎁 Cortesia** quita o lançamento e mantém o valor original para auditoria,
+mas não soma em Recebido, Faturamento, Painel Gerencial ou totais financeiros. No lançamento e
+no CSV, o método fica registrado como `cortesia`.
 
 ### 1. Conferir volume antes
 

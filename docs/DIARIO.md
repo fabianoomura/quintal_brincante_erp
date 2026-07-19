@@ -259,6 +259,16 @@ Levas pontuais após acompanhar a operação real:
   em hoje (KPIs de recebido inclusos); limpar os campos e filtrar volta a ver tudo.
 - **Qualidade:** 112 testes (novo: `tplDesculpaEngano`), typecheck e build limpos.
 
+## Cortesia e limpeza pontual do Play (2026-07-19)
+
+- **Cortesia no recebimento:** nova modalidade `cortesia`. O lançamento é quitado e mantém o
+  valor original para histórico, mas contribui com zero para os totais de recebido e
+  faturamento. A modalidade aparece no Financeiro, nas concluídas do Play e no CSV.
+- **Exclusão de operação de teste:** administradores podem usar **🗑️ Excluir** em “Concluídas
+  hoje”. A função `excluir_operacao_play` remove presença e lançamento na mesma transação,
+  preservando cadastro da criança e conversas.
+- **Qualidade:** 113 testes, lint, typecheck e build de produção limpos.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

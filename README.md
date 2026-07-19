@@ -21,11 +21,12 @@ playground, recebimentos, mensagens, endereço e regras financeiras.
   e dados opcionais para BI.
 - Endereço estruturado com CEP, logradouro, número, complemento, bairro, cidade e UF; o CEP
   usa ViaCEP para preencher automaticamente quando possível.
-- Playground com check-in/out, tempo contratado, aviso antecipado, agradecimento no check-out
-  e recebimento no checkout.
+- Playground com check-in/out, tempo contratado, aviso antecipado, agradecimento no check-out,
+  recebimento e exclusão administrativa de operações de teste concluídas.
 - Mensagens editáveis com variáveis padrão, como `{{responsavel_nome}}` e
   `{{crianca_nome}}`; avisos rápidos do play têm até 6 ativos por vez.
-- Financeiro com lançamentos, baixa manual, descontos e exportação CSV.
+- Financeiro com lançamentos, baixa manual, valor editável, descontos, cortesia sem movimento
+  de receita e exportação CSV.
 
 ## Stack
 
