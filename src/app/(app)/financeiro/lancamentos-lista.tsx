@@ -13,6 +13,7 @@ export type LancamentoUI = {
   desconto: number
   vencimento: string
   status: string
+  captureMethod: string | null
   nome: string // criança
 }
 
@@ -84,6 +85,11 @@ export default function LancamentosLista({
                 >
                   {l.status}
                 </span>
+                {l.captureMethod === 'cortesia' && (
+                  <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs font-semibold text-white">
+                    🎁 cortesia
+                  </span>
+                )}
               </div>
             </div>
             {l.status === 'pendente' && (

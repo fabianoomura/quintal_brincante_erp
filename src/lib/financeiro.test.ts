@@ -1,6 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularDescontoBaixa, valorLiquidoLancamento } from './financeiro'
+import {
+  calcularDescontoBaixa,
+  valorLiquidoLancamento,
+  valorMovimentadoLancamento,
+} from './financeiro'
 
 test('calcularDescontoBaixa ignora desconto manual quando flag esta desligada', () => {
   assert.equal(
@@ -53,4 +57,9 @@ test('calcularDescontoBaixa nao aceita desconto negativo', () => {
 test('valorLiquidoLancamento nunca fica negativo', () => {
   assert.equal(valorLiquidoLancamento(100, 12.345), 87.66)
   assert.equal(valorLiquidoLancamento(30, 50), 0)
+})
+
+test('cortesia mantém o valor registrado sem movimentar receita', () => {
+  assert.equal(valorMovimentadoLancamento(50, 0, 'cortesia'), 0)
+  assert.equal(valorMovimentadoLancamento(50, 5, 'pix'), 45)
 })

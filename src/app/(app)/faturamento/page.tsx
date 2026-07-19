@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/colaborador'
 import { hojeISO } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
+import { valorMovimentadoLancamento } from '@/lib/financeiro'
 
 const MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -33,7 +34,7 @@ export default async function FaturamentoPage({
   const supabase = await createClient()
   const { data: lancs } = await supabase
     .from('lancamento')
-    .select('valor, desconto, status, origem_tipo')
+    .select('valor, desconto, status, origem_tipo, capture_method')
     .gte('vencimento', primeiro)
     .lte('vencimento', ultimo)
 
@@ -45,8 +46,9 @@ export default async function FaturamentoPage({
     por[t] ??= { aReceber: 0, recebido: 0 }
     const v = Number(l.valor) - Number(l.desconto)
     if (l.status === 'pago') {
-      por[t].recebido += v
-      totRecebido += v
+      const movimentado = valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method)
+      por[t].recebido += movimentado
+      totRecebido += movimentado
     } else if (l.status === 'pendente') {
       por[t].aReceber += v
       totAReceber += v

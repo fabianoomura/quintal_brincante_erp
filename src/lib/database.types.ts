@@ -1026,6 +1026,7 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      excluir_operacao_play: { Args: { p_presenca_id: string }; Returns: boolean }
       is_colaborador: { Args: never; Returns: boolean }
     }
     Enums: {

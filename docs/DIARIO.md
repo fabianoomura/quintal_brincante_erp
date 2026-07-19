@@ -47,8 +47,10 @@ Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADM
   minutos e pode ser alterada em `config_sistema`
 - **Busca de criança** (filtra digitando, sem acento) + botão **“+ Cadastrar criança”**
   que abre a ficha completa, permite foto por webcam/arquivo e volta pro play
-- **Recebimento no check-out:** pop-up com Dinheiro / Pix / Débito / Crédito → baixa na
+- **Recebimento no check-out:** pop-up com Dinheiro / Pix / Débito / Crédito / Cortesia → baixa na
   hora, ou “deixar pendente” (caso “foi embora sem pagar” fica registrado no Financeiro)
+- **Limpeza de testes do Play:** administradores podem excluir uma operação concluída; presença
+  e lançamento são removidos juntos, preservando cadastro e conversas
 - **Agradecimento no check-out:** ao encerrar uma sessão do play, envia mensagem editável
   de agradecimento ao responsável, com auditoria em `notificacao`
 

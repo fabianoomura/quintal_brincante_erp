@@ -15,6 +15,7 @@ const OPCOES: { k: Modalidade; label: string; cls: string }[] = [
   { k: 'pix', label: '📱 Pix', cls: 'bg-sky-600' },
   { k: 'debito', label: '💳 Débito', cls: 'bg-violet-600' },
   { k: 'credito', label: '💳 Crédito', cls: 'bg-fuchsia-600' },
+  { k: 'cortesia', label: '🎁 Cortesia', cls: 'bg-slate-700' },
 ]
 
 // Pop-up de recebimento — o MESMO fluxo no play (pós check-out) e no Financeiro.

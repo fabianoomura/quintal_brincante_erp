@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatBRL } from '@/lib/dinheiro'
 import { hojeISO } from '@/lib/datas'
 import { card } from '@/lib/ui'
+import { valorMovimentadoLancamento } from '@/lib/financeiro'
 import AvulsoForm from './avulso-form'
 import LancamentosLista from './lancamentos-lista'
 
@@ -25,7 +26,7 @@ export default async function FinanceiroPage({
   let query = supabase
     .from('lancamento')
     .select(
-      'id, descricao, valor, desconto, vencimento, status, origem_tipo, pago_em, crianca:crianca_id (nome)',
+      'id, descricao, valor, desconto, vencimento, status, origem_tipo, pago_em, capture_method, crianca:crianca_id (nome)',
     )
     .order('vencimento', { ascending: false })
     .limit(200)
@@ -35,7 +36,10 @@ export default async function FinanceiroPage({
 
   const { data: lancamentos, error } = await query
 
-  const total = (lancamentos ?? []).reduce((s, l) => s + Number(l.valor) - Number(l.desconto), 0)
+  const total = (lancamentos ?? []).reduce(
+    (s, l) => s + valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method),
+    0,
+  )
 
   // Recebido por MODALIDADE (pagos no período), líquido do desconto.
   let pagosQ = supabase.from('lancamento').select('valor, desconto, capture_method').eq('status', 'pago')
@@ -59,7 +63,7 @@ export default async function FinanceiroPage({
   const porModalidade: Record<string, number> = {}
   let totalRecebido = 0
   for (const p of pagos ?? []) {
-    const v = Number(p.valor) - Number(p.desconto)
+    const v = valorMovimentadoLancamento(Number(p.valor), Number(p.desconto), p.capture_method)
     totalRecebido += v
     const b = bucket(p.capture_method)
     porModalidade[b] = (porModalidade[b] ?? 0) + v
@@ -174,6 +178,7 @@ export default async function FinanceiroPage({
           desconto: Number(l.desconto),
           vencimento: l.vencimento,
           status: l.status,
+          captureMethod: l.capture_method,
           nome: l.crianca?.nome ?? '—',
         }))}
       />

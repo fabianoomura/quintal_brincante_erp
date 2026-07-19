@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/colaborador'
 import { hojeISO } from '@/lib/datas'
 import { calcularLotacao } from '@/lib/lotacao'
 import { formatBRL } from '@/lib/dinheiro'
+import { valorMovimentadoLancamento } from '@/lib/financeiro'
 import GerarMensalidades from './gerar-mensalidades'
 
 // KPI clicável: tocar no número abre a tela que explica o número.
@@ -48,7 +49,7 @@ export default async function GerencialPage() {
       supabase.from('presenca').select('id').eq('data', hoje).is('saida', null),
       supabase.from('presenca').select('origem').eq('data', hoje),
       supabase.from('crianca').select('id').eq('ativo', true),
-      supabase.from('lancamento').select('valor, desconto, status, origem_tipo'),
+      supabase.from('lancamento').select('valor, desconto, status, origem_tipo, capture_method'),
       supabase.from('config_sistema').select('capacidade_dia').eq('id', 1).maybeSingle(),
       supabase.from('mensalidade').select('id').eq('ativo', true),
       supabase.from('inscricao_colonia').select('id, colonia:colonia_id (ativo)'),
@@ -59,8 +60,10 @@ export default async function GerencialPage() {
 
   const todos = lancamentos.data ?? []
   const liq = (l: { valor: number; desconto: number }) => Number(l.valor) - Number(l.desconto)
+  const recebido = (l: { valor: number; desconto: number; capture_method: string | null }) =>
+    valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method)
   const totalPend = todos.filter((l) => l.status === 'pendente').reduce((s, l) => s + liq(l), 0)
-  const totalPago = todos.filter((l) => l.status === 'pago').reduce((s, l) => s + liq(l), 0)
+  const totalPago = todos.filter((l) => l.status === 'pago').reduce((s, l) => s + recebido(l), 0)
 
   // Mix de presenças de hoje por tipo de negócio.
   const mix = (presencasHoje.data ?? []).reduce<Record<string, number>>((m, p) => {
@@ -79,7 +82,7 @@ export default async function GerencialPage() {
     return {
       label,
       aReceber: doTipo.filter((l) => l.status === 'pendente').reduce((s, l) => s + liq(l), 0),
-      recebido: doTipo.filter((l) => l.status === 'pago').reduce((s, l) => s + liq(l), 0),
+      recebido: doTipo.filter((l) => l.status === 'pago').reduce((s, l) => s + recebido(l), 0),
     }
   })
 

@@ -4,11 +4,15 @@ import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
 import ReceberButton from '../receber-button'
 import CobrarButton from '../cobrar-button'
+import { getColaboradorAtual } from '@/lib/colaborador'
+import ExcluirOperacaoButton from './excluir-operacao-button'
 
 // Visão geral do play: sessões que já saíram HOJE, com valor e pago/pendente.
 export default async function ConcluidasHoje() {
   const supabase = await createClient()
   const hoje = hojeISO()
+  const colaborador = await getColaboradorAtual()
+  const ehAdmin = colaborador?.papel_acesso === 'admin'
 
   const { data: sessoes } = await supabase
     .from('presenca')
@@ -19,14 +23,22 @@ export default async function ConcluidasHoje() {
     .order('saida', { ascending: false })
 
   const ids = (sessoes ?? []).map((s) => s.id)
-  const porPresenca = new Map<string, { id: string; status: string }>()
+  const porPresenca = new Map<string, { id: string; status: string; captureMethod: string | null }>()
   if (ids.length > 0) {
     const { data: lancs } = await supabase
       .from('lancamento')
-      .select('id, origem_id, status')
+      .select('id, origem_id, status, capture_method')
       .eq('origem_tipo', 'presenca')
       .in('origem_id', ids)
-    for (const l of lancs ?? []) if (l.origem_id) porPresenca.set(l.origem_id, { id: l.id, status: l.status })
+    for (const l of lancs ?? []) {
+      if (l.origem_id) {
+        porPresenca.set(l.origem_id, {
+          id: l.id,
+          status: l.status,
+          captureMethod: l.capture_method,
+        })
+      }
+    }
   }
 
   if (!sessoes || sessoes.length === 0) return null
@@ -50,6 +62,7 @@ export default async function ConcluidasHoje() {
         {sessoes.map((p) => {
           const lan = porPresenca.get(p.id)
           const pago = lan?.status === 'pago'
+          const cortesia = lan?.captureMethod === 'cortesia'
           // sem lançamento = terminou sem valor na grade → dá pra cobrar retroativo
           const semCobranca = !lan
           return (
@@ -69,18 +82,23 @@ export default async function ConcluidasHoje() {
                         : 'bg-amber-100 text-amber-700'
                   }`}
                 >
-                  {pago ? 'pago' : semCobranca ? 'sem cobrança' : 'pendente'}
+                  {cortesia ? '🎁 cortesia' : pago ? 'pago' : semCobranca ? 'sem cobrança' : 'pendente'}
                 </span>
               </div>
-              {lan && !pago && (
-                <ReceberButton
-                  lancamentoId={lan.id}
-                  valor={Number(p.valor ?? 0)}
-                  nome={p.crianca?.nome ?? ''}
-                  presencaId={p.id}
-                />
-              )}
-              {semCobranca && <CobrarButton presencaId={p.id} nome={p.crianca?.nome ?? ''} />}
+              <div className="ml-2 flex shrink-0 items-center gap-2">
+                {lan && !pago && (
+                  <ReceberButton
+                    lancamentoId={lan.id}
+                    valor={Number(p.valor ?? 0)}
+                    nome={p.crianca?.nome ?? ''}
+                    presencaId={p.id}
+                  />
+                )}
+                {semCobranca && <CobrarButton presencaId={p.id} nome={p.crianca?.nome ?? ''} />}
+                {ehAdmin && (
+                  <ExcluirOperacaoButton presencaId={p.id} nome={p.crianca?.nome ?? 'esta criança'} />
+                )}
+              </div>
             </li>
           )
         })}

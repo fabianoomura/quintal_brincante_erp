@@ -22,3 +22,12 @@ export function calcularDescontoBaixa(input: CalculoDescontoBaixaInput): number 
 export function valorLiquidoLancamento(valor: number, desconto: number): number {
   return dinheiro(Math.max(0, Number(valor) - Number(desconto)))
 }
+
+// Cortesia quita o lançamento para manter o histórico operacional, mas não é receita.
+export function valorMovimentadoLancamento(
+  valor: number,
+  desconto: number,
+  captureMethod: string | null,
+): number {
+  return captureMethod === 'cortesia' ? 0 : valorLiquidoLancamento(valor, desconto)
+}
