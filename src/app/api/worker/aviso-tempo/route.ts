@@ -9,6 +9,7 @@ import {
   type PresencaAberta,
   type SituacaoAviso,
 } from '@/lib/whatsapp/avisoTempo'
+import { pausaSegundos } from '@/lib/playground'
 import { hojeISO, agoraHora, horaParaMinutos } from '@/lib/datas'
 
 // Worker do aviso de tempo (spec §7). Chamado pelo pg_cron a cada poucos minutos.
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   const { data: presencas, error } = await sb
     .from('presenca')
     .select(
-      'id, entrada, tempo_contratado_min, crianca_id, crianca:crianca_id (nome, primeiro_nome), notificacao (id, tipo, status, tentativas)',
+      'id, entrada, tempo_contratado_min, pausada_em, pausa_total_seg, crianca_id, crianca:crianca_id (nome, primeiro_nome), notificacao (id, tipo, status, tentativas)',
     )
     .eq('data', data)
     .eq('origem', 'espaco_kids')
@@ -57,12 +58,19 @@ export async function POST(request: Request) {
   const situacoes = new Map<string, SituacaoAviso>(
     (presencas ?? []).map((p) => [p.id, situacaoAviso(p.notificacao ?? [])]),
   )
-  const abertas: PresencaAberta[] = (presencas ?? []).map((p) => ({
-    id: p.id,
-    entradaMin: horaParaMinutos(p.entrada),
-    tempoContratadoMin: p.tempo_contratado_min,
-    jaAvisado: situacoes.get(p.id)!.acao === 'resolvido',
-  }))
+  const abertas: PresencaAberta[] = (presencas ?? []).map((p) => {
+    // O tempo pausado empurra o limite para frente: soma a pausa (min) à entrada,
+    // assim uma criança pausada não é avisada antes da hora.
+    const pausaMin =
+      pausaSegundos(p.pausa_total_seg, p.pausada_em ? Date.parse(p.pausada_em) : null, Date.now()) /
+      60
+    return {
+      id: p.id,
+      entradaMin: horaParaMinutos(p.entrada) + pausaMin,
+      tempoContratadoMin: p.tempo_contratado_min,
+      jaAvisado: situacoes.get(p.id)!.acao === 'resolvido',
+    }
+  })
 
   const aAvisar = selecionarAvisos(abertas, agoraMin, antecedencia)
   const sender = getSender()

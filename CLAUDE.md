@@ -69,8 +69,10 @@ Mensagens operacionais são editáveis em `/mensagens`, com variáveis padroniza
    é travada no **check-in** pela hora de entrada; o check-out cobra **por hora INICIADA —
    hora começada conta cheia** (decisão 2026-07-14; ex.: 10/h → 1h01 = R$20), com piso de 1h
    e `config_sistema.tolerancia_min` perdoando até X min após cada hora fechada (padrão 0).
-   O tempo contratado só alimenta aviso e fila — não muda o valor. Ao encerrar check-out do
-   play, o sistema tenta enviar o template editável `agradecimento_checkout`.
+   O tempo contratado só alimenta aviso e fila — não muda o valor. A equipe pode **pausar**
+   o cronômetro de uma sessão (`presenca.pausada_em` / `pausa_total_seg`); o tempo pausado
+   **não é cobrado nem conta para o aviso** (desconto na função pura `pausaSegundos`). Ao
+   encerrar check-out do play, o sistema tenta enviar o template editável `agradecimento_checkout`.
 5. **Dinheiro:** `numeric`, nunca `float`. **Telefone:** E.164 (`+55DDDNUMERO`).
 6. **Segredos** (chaves Supabase, token WhatsApp, credencial InfinitePay) só em variáveis de
    ambiente. Nunca commitados.

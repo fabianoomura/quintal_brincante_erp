@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularValorCheckout, validarSaidaManual } from './playground'
+import { calcularValorCheckout, pausaSegundos, validarSaidaManual } from './playground'
 
 // Hora INICIADA conta cheia; o tempo contratado não muda o valor (só o aviso).
 
@@ -94,6 +94,64 @@ test('checkout play: segundos contam como minuto cheio (1h00m01s → 2h)', () =>
     }),
     40,
   )
+})
+
+// ── pausa (tempo pausado não é cobrado) ──────────────────────────────────────
+
+test('checkout play: pausa desconta do tempo e pode baixar de hora', () => {
+  // 61min de permanência, mas 5min pausado → 56min efetivos → 1 hora (não 2)
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '15:01',
+      tarifaHora: 20,
+      toleranciaMin: 0,
+      pausaMin: 5,
+    }),
+    20,
+  )
+})
+
+test('checkout play: pausa curta não muda a hora cobrada', () => {
+  // 2h05 com 3min pausado → 2h02 efetivos → ainda 3 horas iniciadas
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '16:05',
+      tarifaHora: 20,
+      toleranciaMin: 0,
+      pausaMin: 3,
+    }),
+    60,
+  )
+})
+
+test('checkout play: pausa maior que o tempo respeita o piso de 1h', () => {
+  assert.equal(
+    calcularValorCheckout({
+      origem: 'espaco_kids',
+      entrada: '14:00',
+      saida: '14:40',
+      tarifaHora: 20,
+      toleranciaMin: 0,
+      pausaMin: 90,
+    }),
+    20,
+  )
+})
+
+test('pausaSegundos: acumulado sem pausa em curso', () => {
+  assert.equal(pausaSegundos(120, null, 999999), 120)
+})
+
+test('pausaSegundos: soma a pausa em curso (acumulado + agora − início)', () => {
+  assert.equal(pausaSegundos(120, 1_000, 61_000), 180) // 120 + 60s em curso
+})
+
+test('pausaSegundos: pausa em curso nunca é negativa (relógio bobo)', () => {
+  assert.equal(pausaSegundos(0, 100_000, 0), 0)
 })
 
 // ── validarSaidaManual (check-out esquecido) ─────────────────────────────────

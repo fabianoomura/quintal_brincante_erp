@@ -814,6 +814,8 @@ export type Database = {
           id: string
           obs: string | null
           origem: Database["public"]["Enums"]["origem_presenca"]
+          pausa_total_seg: number
+          pausada_em: string | null
           saida: string | null
           tarifa_hora: number | null
           tempo_contratado_min: number | null
@@ -828,6 +830,8 @@ export type Database = {
           id?: string
           obs?: string | null
           origem: Database["public"]["Enums"]["origem_presenca"]
+          pausa_total_seg?: number
+          pausada_em?: string | null
           saida?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null
@@ -842,6 +846,8 @@ export type Database = {
           id?: string
           obs?: string | null
           origem?: Database["public"]["Enums"]["origem_presenca"]
+          pausa_total_seg?: number
+          pausada_em?: string | null
           saida?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null

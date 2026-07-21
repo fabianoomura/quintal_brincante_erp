@@ -3,7 +3,7 @@
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
 (plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra), o [OPERACAO.md](OPERACAO.md)
 (rotinas do dia a dia) e o [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-07-10**.
+Última atualização: **2026-07-20**.
 
 ---
 
@@ -268,6 +268,25 @@ Levas pontuais após acompanhar a operação real:
   hoje”. A função `excluir_operacao_play` remove presença e lançamento na mesma transação,
   preservando cadastro da criança e conversas.
 - **Qualidade:** 113 testes, lint, typecheck e build de produção limpos.
+
+## Pausa do cronômetro e editar ficha pelo Play (2026-07-20)
+
+- **Botão ⏸ Pausar / ▶ Retomar em cada card do Play.** Quando a criança precisa sair um
+  instante (banheiro, lanche, colo), a equipe pausa o cronômetro. O **tempo pausado não é
+  cobrado nem conta para o aviso de tempo**. Enquanto pausado, o card fica com contorno
+  índigo, o tempo e o valor congelam e aparece "⏸ Pausado — o tempo não está contando".
+- **Modelo:** duas colunas novas em `presenca` — `pausada_em timestamptz` (não-nulo = pausada
+  agora) e `pausa_total_seg` (acumulado das pausas retomadas). O desconto vive na função pura
+  `pausaSegundos` (testada) e entra no `calcularValorCheckout` via `pausaMin`; o check-out
+  fecha a pausa em curso, grava o acumulado e cobra sobre o tempo efetivo (piso de 1h mantido).
+- **Coerência em todo o Play:** o cálculo ao vivo do card, o valor do check-out, a previsão de
+  próxima vaga (`menorRestanteMin`) e o **worker de aviso de tempo** descontam a pausa — uma
+  criança pausada não recebe "acabou o tempo" antes da hora.
+- **Botão ✏️ Editar no card:** abre a ficha completa da criança (`/criancas/[id]`) direto do
+  Play, sem passar pela lista. A linha de ações do card virou duas: **⏸/▶ · Check-out** em cima
+  e **💬 · ⚡ · ✏️** embaixo.
+- **Qualidade:** 119 testes (novos: pausa no checkout + `pausaSegundos`), lint, typecheck e
+  build de produção limpos.
 
 ## Fila de próximos passos
 

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
-import { calcularValorCheckout, validarSaidaManual } from '@/lib/playground'
+import { calcularValorCheckout, pausaSegundos, validarSaidaManual } from '@/lib/playground'
 import { processarFila } from '@/lib/fila-processar'
 import { getSender } from '@/lib/whatsapp/adapter'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
@@ -509,7 +509,7 @@ export async function checkOut(
 
     const { data: p, error: errP } = await supabase
       .from('presenca')
-      .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, tempo_contratado_min, valor, crianca:crianca_id (nome)')
+      .select('id, crianca_id, data, origem, entrada, saida, tarifa_hora, tempo_contratado_min, valor, pausada_em, pausa_total_seg, crianca:crianca_id (nome)')
       .eq('id', presencaId)
       .maybeSingle()
     if (errP) return { ok: false, erro: errP.message }
@@ -520,6 +520,14 @@ export async function checkOut(
       const v = validarSaidaManual(p.entrada, saidaManual)
       if (!v.ok) return { ok: false, erro: v.erro }
     }
+
+    // Fecha qualquer pausa em curso: o tempo pausado (acumulado + a pausa aberta agora)
+    // é descontado do que se cobra e gravado, para o valor ficar reproduzível.
+    const pausaSeg = pausaSegundos(
+      p.pausa_total_seg,
+      p.pausada_em ? Date.parse(p.pausada_em) : null,
+      Date.now(),
+    )
 
     // Play: hora INICIADA conta cheia (tarifa/hora travada no check-in), com a
     // tolerância da config perdoando até X min após cada hora fechada.
@@ -539,13 +547,14 @@ export async function checkOut(
             tarifaHora: p.tarifa_hora == null ? null : Number(p.tarifa_hora),
             toleranciaMin: cfg?.tolerancia_min ?? 0,
             valorDiaria: p.valor == null ? null : Number(p.valor),
+            pausaMin: pausaSeg / 60,
           })
 
     // Guard de corrida: o `.is('saida', null)` + select garante que só UM processo fecha
     // (dois aparelhos clicando juntos: o segundo não recebe linha e para aqui).
     const { data: fechada, error: errU } = await supabase
       .from('presenca')
-      .update({ saida, valor })
+      .update({ saida, valor, pausada_em: null, pausa_total_seg: Math.round(pausaSeg) })
       .eq('id', presencaId)
       .is('saida', null)
       .select('id')
@@ -604,6 +613,68 @@ export async function checkOut(
     revalidatePath('/playground')
     revalidatePath('/financeiro')
     return { ok: true, id: presencaId, valor, lancamentoId, nome: p.crianca?.nome ?? '' }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
+// Pausa o cronômetro de uma presença de play aberta (criança foi ao banheiro etc.):
+// carimba `pausada_em = agora`. O tempo a partir daqui não é cobrado nem conta para o
+// aviso, até retomar. Guard: só pausa se estiver aberta e ainda não pausada.
+export async function pausarPresenca(
+  presencaId: string,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('presenca')
+      .update({ pausada_em: new Date().toISOString() })
+      .eq('id', presencaId)
+      .is('saida', null)
+      .is('pausada_em', null)
+      .select('id')
+      .maybeSingle()
+    if (error) return { ok: false, erro: error.message }
+    if (!data) return { ok: false, erro: 'A presença não está aberta ou já está pausada.' }
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
+// Retoma uma presença pausada: soma a pausa em curso ao acumulado e zera `pausada_em`.
+// O incremento é calculado no servidor (relógio do servidor) — a soma em SQL exigiria RPC
+// e a corrida aqui é irrelevante (um operador, um tablet). Guard `.not(pausada_em, null)`
+// garante que só UMA retomada vença se dois cliques chegarem juntos.
+export async function retomarPresenca(
+  presencaId: string,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const supabase = await createClient()
+    const { data: p, error: errP } = await supabase
+      .from('presenca')
+      .select('id, pausada_em, pausa_total_seg')
+      .eq('id', presencaId)
+      .maybeSingle()
+    if (errP) return { ok: false, erro: errP.message }
+    if (!p) return { ok: false, erro: 'Presença não encontrada.' }
+    if (!p.pausada_em) return { ok: false, erro: 'A presença não está pausada.' }
+
+    const total = pausaSegundos(p.pausa_total_seg, Date.parse(p.pausada_em), Date.now())
+    const { data, error } = await supabase
+      .from('presenca')
+      .update({ pausada_em: null, pausa_total_seg: Math.round(total) })
+      .eq('id', presencaId)
+      .not('pausada_em', 'is', null)
+      .select('id')
+      .maybeSingle()
+    if (error) return { ok: false, erro: error.message }
+    if (!data) return { ok: false, erro: 'A presença já foi retomada.' }
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    return { ok: true }
   } catch (e) {
     return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
   }

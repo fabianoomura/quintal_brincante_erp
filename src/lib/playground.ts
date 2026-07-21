@@ -7,6 +7,19 @@ export type CheckoutPlayInput = {
   tarifaHora: number | null
   toleranciaMin: number
   valorDiaria?: number | null
+  pausaMin?: number // minutos pausados no play — descontam do tempo cobrado
+}
+
+// Segundos totais em pausa de uma presença: o acumulado das pausas já retomadas
+// mais a pausa em curso (se `pausadaEmMs` não for nulo). Puro/testável — o "agora"
+// entra por parâmetro (cliente usa Date.now do navegador; servidor, o do servidor).
+export function pausaSegundos(
+  pausaTotalSeg: number | null,
+  pausadaEmMs: number | null,
+  agoraMs: number,
+): number {
+  const emCurso = pausadaEmMs != null ? Math.max(0, (agoraMs - pausadaEmMs) / 1000) : 0
+  return (pausaTotalSeg ?? 0) + emCurso
 }
 
 // Valida a saída informada à mão (check-out esquecido): formato HH:MM e depois da
@@ -29,7 +42,11 @@ export function calcularValorCheckout(input: CheckoutPlayInput): number | null {
     if (input.tarifaHora == null) return null
 
     // Hora iniciada conta cheia; o tempo contratado NÃO muda o valor (só o aviso).
-    const decorrido = Math.ceil(duracaoMinutos(input.entrada, input.saida))
+    // O tempo pausado é descontado antes de arredondar (piso de 1h continua valendo).
+    const decorrido = Math.max(
+      0,
+      Math.ceil(duracaoMinutos(input.entrada, input.saida) - (input.pausaMin ?? 0)),
+    )
     return precoHoraCheia(decorrido, Number(input.tarifaHora), input.toleranciaMin)
   }
 

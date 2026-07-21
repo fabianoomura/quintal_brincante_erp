@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getColaboradorAtual } from '@/lib/colaborador'
-import { hojeISO, agoraHora, horaParaMinutos } from '@/lib/datas'
+import { hojeISO, agoraHora, agoraMs, horaParaMinutos } from '@/lib/datas'
 import { menorRestanteMin } from '@/lib/lotacao'
+import { pausaSegundos } from '@/lib/playground'
 import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
 import PlaygroundPanel from '@/app/(app)/playground/panel'
 import LotacaoChip from '@/app/(app)/playground/lotacao-chip'
@@ -35,7 +36,7 @@ export default async function KioskPage() {
     await Promise.all([
       supabase
         .from('presenca')
-        .select('id, entrada, tempo_contratado_min, tarifa_hora, crianca:crianca_id (id, nome, foto, autorizacao_imagem)')
+        .select('id, entrada, tempo_contratado_min, tarifa_hora, pausada_em, pausa_total_seg, crianca:crianca_id (id, nome, foto, autorizacao_imagem)')
         .eq('data', hoje)
         .eq('origem', 'espaco_kids')
         .is('saida', null)
@@ -79,7 +80,14 @@ export default async function KioskPage() {
             aCaminho={(fila ?? []).filter((f) => f.status === 'chamada').length}
             proximaVagaMin={menorRestanteMin(
               (presentes ?? []).map((p) => ({
-                entradaMin: horaParaMinutos(p.entrada),
+                entradaMin:
+                  horaParaMinutos(p.entrada) +
+                  pausaSegundos(
+                    p.pausa_total_seg,
+                    p.pausada_em ? Date.parse(p.pausada_em) : null,
+                    agoraMs(),
+                  ) /
+                    60,
                 tempoContratadoMin: p.tempo_contratado_min,
               })),
               horaParaMinutos(agoraHora()),
@@ -106,6 +114,8 @@ export default async function KioskPage() {
             tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
             autorizacaoImagem: p.crianca?.autorizacao_imagem ?? null,
             naoLidas: naoLidas.get(p.crianca?.id ?? '') ?? 0,
+            pausadaEm: p.pausada_em,
+            pausaTotalSeg: p.pausa_total_seg,
           }))}
           criancas={criancas ?? []}
           avisos={(avisos ?? [])

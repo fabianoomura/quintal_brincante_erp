@@ -27,6 +27,13 @@ export function hhmm(hora: string): string {
   return hora.slice(0, 5)
 }
 
+// Instante atual em ms (epoch). Isolado aqui para não chamar Date.now() direto no
+// corpo de componentes (regra react-hooks/purity): em server component roda uma vez
+// por request; no client, use um estado que faça tick e passe o valor por parâmetro.
+export function agoraMs(): number {
+  return Date.now()
+}
+
 // 'HH:MM(:SS)' → minutos desde a meia-noite.
 export function horaParaMinutos(t: string): number {
   const [h, m] = t.split(':')

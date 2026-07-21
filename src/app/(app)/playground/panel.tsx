@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { checkIn, checkOut } from '../presenca/actions'
+import { checkIn, checkOut, pausarPresenca, retomarPresenca } from '../presenca/actions'
 import { abrirConversaDoResponsavel } from '../conversas/actions'
 import { entrarNaFila } from './fila-actions'
 import { duracaoMinutos, precoHoraCheia } from '@/lib/tarifador'
+import { pausaSegundos } from '@/lib/playground'
+import { agoraMs } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
 import AvisosRapidos, { type AvisoRapido } from '../avisos-rapidos'
 import BuscaCrianca from '../busca-crianca'
@@ -24,6 +26,8 @@ type Presente = {
   tarifaHora: number | null // valor/hora do período travado no check-in
   autorizacaoImagem: boolean | null // null = pendente · true = ok · false = não usar
   naoLidas: number // mensagens não lidas na conversa do responsável (badge 💬)
+  pausadaEm: string | null // ISO; não-nulo = pausada agora (cronômetro parado)
+  pausaTotalSeg: number // segundos já acumulados em pausas retomadas
 }
 
 function agoraHHMM() {
@@ -59,6 +63,7 @@ export default function PlaygroundPanel({
   const router = useRouter()
   const pathname = usePathname()
   const [agora, setAgora] = useState(agoraHHMM())
+  const [nowMs, setNowMs] = useState(agoraMs()) // tick p/ a pausa em curso (ms)
   const [criancaId, setCriancaId] = useState('')
   const [tempo, setTempo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -69,7 +74,10 @@ export default function PlaygroundPanel({
 
   // Relógio: re-renderiza a cada 20s p/ atualizar cronômetros e custos.
   useEffect(() => {
-    const t = setInterval(() => setAgora(agoraHHMM()), 20000)
+    const t = setInterval(() => {
+      setAgora(agoraHHMM())
+      setNowMs(agoraMs())
+    }, 20000)
     return () => clearInterval(t)
   }, [])
 
@@ -128,6 +136,25 @@ export default function PlaygroundPanel({
       router.push(`/conversas/${res.conversaId}?crianca=${p.criancaId}&presenca=${p.id}`)
     } catch (err) {
       setSaida(`❌ Não consegui abrir a conversa (${err instanceof Error ? err.message : 'erro'}).`)
+    } finally {
+      setOcupado(null)
+    }
+  }
+
+  // Pausa/retoma o cronômetro (criança precisou sair um instante). O tempo pausado
+  // não é cobrado nem conta pro aviso; o card congela até retomar.
+  async function alternarPausa(p: Presente) {
+    setOcupado(`pausa-${p.id}`)
+    try {
+      const res = p.pausadaEm ? await retomarPresenca(p.id) : await pausarPresenca(p.id)
+      if (!res.ok) {
+        setSaida(`❌ ${res.erro}`)
+        setTimeout(() => setSaida(null), 6000)
+        return
+      }
+      router.refresh()
+    } catch (err) {
+      setSaida(`❌ Não consegui ${p.pausadaEm ? 'retomar' : 'pausar'} (${err instanceof Error ? err.message : 'erro'}).`)
     } finally {
       setOcupado(null)
     }
@@ -255,21 +282,36 @@ export default function PlaygroundPanel({
       {/* Cards com cronômetro ao vivo, em ordem de chegada */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {presentes.map((p) => {
-          const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora)))
+          const pausada = p.pausadaEm != null
+          // Tempo pausado (acumulado + pausa em curso) descontado do decorrido: enquanto
+          // pausada o cronômetro e o valor congelam.
+          const pausaMin =
+            pausaSegundos(
+              p.pausaTotalSeg,
+              p.pausadaEm ? Date.parse(p.pausadaEm) : null,
+              nowMs,
+            ) / 60
+          const decorrido = Math.max(0, Math.ceil(duracaoMinutos(p.entrada, agora) - pausaMin))
           const valor =
             p.tarifaHora != null
               ? precoHoraCheia(decorrido, p.tarifaHora, toleranciaMin)
               : null
           const restante =
             p.tempoContratadoMin != null ? p.tempoContratadoMin - decorrido : null
-          const estourou = restante != null && restante <= 0
-          const acabando = restante != null && restante > 0 && restante <= 15
+          const estourou = !pausada && restante != null && restante <= 0
+          const acabando = !pausada && restante != null && restante > 0 && restante <= 15
 
           return (
             <div
               key={p.id}
-              className={`space-y-1.5 rounded-2xl p-3 shadow-sm ring-1 ring-black/5 ${
-                estourou ? 'bg-rose-50' : acabando ? 'bg-amber-50' : 'bg-white'
+              className={`space-y-1.5 rounded-2xl p-3 shadow-sm ${
+                pausada
+                  ? 'bg-indigo-50 ring-2 ring-indigo-300'
+                  : estourou
+                    ? 'bg-rose-50 ring-1 ring-black/5'
+                    : acabando
+                      ? 'bg-amber-50 ring-1 ring-black/5'
+                      : 'bg-white ring-1 ring-black/5'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -300,13 +342,23 @@ export default function PlaygroundPanel({
                 <span className="shrink-0 text-xs text-slate-400">{p.entrada.slice(0, 5)}</span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="font-display text-xl font-bold text-slate-700">
+                <span
+                  className={`font-display text-xl font-bold ${
+                    pausada ? 'text-indigo-600' : 'text-slate-700'
+                  }`}
+                >
+                  {pausada && '⏸ '}
                   {fmtDuracao(decorrido)}
                 </span>
                 <span className="font-display text-lg font-bold text-emerald-700">
                   {valor != null ? formatBRL(valor) : '—'}
                 </span>
               </div>
+              {pausada && (
+                <div className="text-[11px] font-semibold text-indigo-600">
+                  ⏸ Pausado — o tempo não está contando
+                </div>
+              )}
               {restante != null && p.tempoContratadoMin != null && (
                 <div className="space-y-0.5">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -330,8 +382,18 @@ export default function PlaygroundPanel({
                   </div>
                 </div>
               )}
+              {/* Linha 1: pausar/retomar + check-out (o valor ao vivo já aparece no card) */}
               <div className="flex gap-1.5">
-                {/* o valor ao vivo já aparece no card; repetir no botão truncava */}
+                <button
+                  onClick={() => alternarPausa(p)}
+                  disabled={ocupado === `pausa-${p.id}`}
+                  aria-label={pausada ? `Retomar tempo de ${p.nome}` : `Pausar tempo de ${p.nome}`}
+                  className={`pop min-w-0 flex-1 truncate rounded-xl py-2 text-sm font-bold text-white disabled:opacity-60 ${
+                    pausada ? 'bg-emerald-500' : 'bg-indigo-500'
+                  }`}
+                >
+                  {ocupado === `pausa-${p.id}` ? '…' : pausada ? '▶ Retomar' : '⏸ Pausar'}
+                </button>
                 <button
                   onClick={() => setConfirmar({ p, decorrido, valor })}
                   disabled={ocupado === p.id}
@@ -339,11 +401,14 @@ export default function PlaygroundPanel({
                 >
                   {ocupado === p.id ? '…' : 'Check-out'}
                 </button>
+              </div>
+              {/* Linha 2: conversa · avisos rápidos · editar ficha */}
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   onClick={() => conversar(p)}
                   disabled={ocupado === `conversa-${p.id}`}
                   aria-label={`WhatsApp do responsável de ${p.nome}`}
-                  className="pop relative grid w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-base ring-1 ring-emerald-200 disabled:opacity-60"
+                  className="pop relative grid place-items-center rounded-xl bg-emerald-50 py-2 text-base ring-1 ring-emerald-200 disabled:opacity-60"
                 >
                   💬
                   {p.naoLidas > 0 && (
@@ -355,7 +420,7 @@ export default function PlaygroundPanel({
                 <button
                   onClick={() => setAvisosAbertos(avisosAbertos === p.id ? null : p.id)}
                   aria-label={`Avisos rápidos para ${p.nome}`}
-                  className={`pop grid w-10 shrink-0 place-items-center rounded-xl text-base ring-1 disabled:opacity-60 ${
+                  className={`pop grid place-items-center rounded-xl py-2 text-base ring-1 disabled:opacity-60 ${
                     avisosAbertos === p.id
                       ? 'bg-amber-100 ring-amber-300'
                       : 'bg-amber-50 ring-amber-200'
@@ -363,6 +428,13 @@ export default function PlaygroundPanel({
                 >
                   ⚡
                 </button>
+                <Link
+                  href={`/criancas/${p.criancaId}`}
+                  aria-label={`Editar cadastro de ${p.nome}`}
+                  className="pop grid place-items-center rounded-xl bg-sky-50 py-2 text-base ring-1 ring-sky-200"
+                >
+                  ✏️
+                </Link>
               </div>
               {avisosAbertos === p.id && (
                 <div className="border-t border-slate-100 pt-1.5">
