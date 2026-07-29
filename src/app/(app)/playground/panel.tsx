@@ -229,45 +229,71 @@ export default function PlaygroundPanel({
       )}
 
       {/* Entrada única: busca + Entrar; lotou, aparece o + Fila do lado */}
-      <div className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="font-display text-base font-bold text-slate-600">🚀 Entrada rápida</div>
-          <Link
-            href={linkCadastro}
-            className="pop shrink-0 rounded-full bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
-          >
-            + Cadastrar criança
-          </Link>
+      <div
+        className={`grid gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:items-center ${
+          lotado
+            ? 'md:grid-cols-[minmax(0,1fr)_170px_auto_auto_auto] xl:grid-cols-[auto_minmax(260px,1fr)_170px_auto_auto_auto]'
+            : 'md:grid-cols-[minmax(0,1fr)_170px_auto_auto] xl:grid-cols-[auto_minmax(260px,1fr)_170px_auto_auto]'
+        }`}
+      >
+        <div
+          className={`flex items-center gap-2 font-display text-sm font-bold text-slate-600 md:col-span-full xl:col-span-1 ${
+            lotado ? 'xl:col-start-1' : ''
+          }`}
+        >
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-fuchsia-50 text-base">
+            🚀
+          </span>
+          <span className="whitespace-nowrap">Entrada rápida</span>
         </div>
-        <BuscaCrianca criancas={criancas} value={criancaId} onChange={setCriancaId} />
-        <div className="flex gap-2">
-          <input
-            type="number"
-            min={1}
-            inputMode="numeric"
-            placeholder="Tempo (min) — opcional"
-            value={tempo}
-            onChange={(e) => setTempo(e.target.value)}
-            className="min-w-0 flex-1 rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-4 py-3 text-base"
-          />
+
+        <BuscaCrianca
+          criancas={criancas}
+          value={criancaId}
+          onChange={setCriancaId}
+          compact
+        />
+
+        <input
+          type="number"
+          min={1}
+          inputMode="numeric"
+          placeholder="Tempo (min) — opcional"
+          value={tempo}
+          onChange={(e) => setTempo(e.target.value)}
+          className="h-[46px] min-w-0 rounded-xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-3.5 text-base outline-none focus:border-fuchsia-400"
+        />
+
+        <button
+          onClick={entrar}
+          disabled={!criancaId || !!ocupado}
+          className="pop h-[46px] rounded-full bg-fuchsia-600 px-6 font-display text-base font-bold text-white shadow-sm disabled:opacity-50"
+        >
+          {ocupado === 'checkin' ? '…' : 'Entrar'}
+        </button>
+
+        {lotado && (
           <button
-            onClick={entrar}
+            onClick={paraFila}
             disabled={!criancaId || !!ocupado}
-            className="pop rounded-full bg-fuchsia-600 px-6 py-3 font-display text-lg font-bold text-white shadow-sm disabled:opacity-50"
+            className="pop h-[46px] rounded-full bg-amber-500 px-5 font-display text-base font-bold text-white shadow-sm disabled:opacity-50"
           >
-            {ocupado === 'checkin' ? '…' : 'Entrar'}
+            {ocupado === 'fila' ? '…' : '+ Fila'}
           </button>
-          {lotado && (
-            <button
-              onClick={paraFila}
-              disabled={!criancaId || !!ocupado}
-              className="pop rounded-full bg-amber-500 px-5 py-3 font-display text-lg font-bold text-white shadow-sm disabled:opacity-50"
-            >
-              {ocupado === 'fila' ? '…' : '+ Fila'}
-            </button>
-          )}
-        </div>
-        {erro && <p className="text-sm font-semibold text-rose-500">{erro}</p>}
+        )}
+
+        <Link
+          href={linkCadastro}
+          className="pop inline-flex h-[46px] shrink-0 items-center justify-center rounded-full bg-sky-600 px-4 text-sm font-bold text-white shadow-sm"
+        >
+          + <span className="hidden 2xl:inline">Cadastrar&nbsp;</span> criança
+        </Link>
+
+        {erro && (
+          <p className="text-sm font-semibold text-rose-500 md:col-span-full xl:col-start-2">
+            {erro}
+          </p>
+        )}
       </div>
 
       {/* Fila em pills — some quando vazia */}

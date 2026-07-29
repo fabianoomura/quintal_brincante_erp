@@ -14,11 +14,13 @@ export default function BuscaCrianca({
   value,
   onChange,
   placeholder = '🔎 Buscar criança pelo nome…',
+  compact = false,
 }: {
   criancas: Crianca[]
   value: string // id da criança selecionada ('' = nenhuma)
   onChange: (id: string) => void
   placeholder?: string
+  compact?: boolean
 }) {
   const [q, setQ] = useState('')
   const selecionada = criancas.find((c) => c.id === value) ?? null
@@ -31,7 +33,11 @@ export default function BuscaCrianca({
 
   if (selecionada) {
     return (
-      <div className="flex items-center justify-between rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-4 py-3">
+      <div
+        className={`flex items-center justify-between border-2 border-emerald-300 bg-emerald-50 ${
+          compact ? 'h-[46px] rounded-xl px-3' : 'rounded-2xl px-4 py-3'
+        }`}
+      >
         <span className="truncate font-display font-bold text-emerald-800">
           🧒 {selecionada.nome}
         </span>
@@ -50,16 +56,22 @@ export default function BuscaCrianca({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className={compact ? 'relative min-w-0' : 'space-y-1.5'}>
       <input
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-4 py-3 text-base outline-none focus:border-fuchsia-400"
+        className={`w-full border-2 border-fuchsia-200 bg-fuchsia-50/40 text-base outline-none focus:border-fuchsia-400 ${
+          compact ? 'h-[46px] rounded-xl px-3.5' : 'rounded-2xl px-4 py-3'
+        }`}
       />
       {filtradas.length > 0 && (
-        <ul className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+        <ul
+          className={`z-40 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 ${
+            compact ? 'absolute left-0 right-0 top-[50px]' : ''
+          }`}
+        >
           {filtradas.map((c) => (
             <li key={c.id}>
               <button
@@ -74,7 +86,15 @@ export default function BuscaCrianca({
         </ul>
       )}
       {q.trim() !== '' && filtradas.length === 0 && (
-        <p className="px-1 text-sm text-slate-400">Nenhuma criança encontrada. 🙈</p>
+        <p
+          className={`px-2 text-sm text-slate-400 ${
+            compact
+              ? 'absolute left-0 right-0 top-[50px] z-40 rounded-xl bg-white py-2 shadow-lg ring-1 ring-slate-200'
+              : ''
+          }`}
+        >
+          Nenhuma criança encontrada. 🙈
+        </p>
       )}
     </div>
   )
