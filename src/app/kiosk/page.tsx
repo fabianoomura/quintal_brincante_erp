@@ -36,7 +36,7 @@ export default async function KioskPage() {
     await Promise.all([
       supabase
         .from('presenca')
-        .select('id, entrada, tempo_contratado_min, tarifa_hora, pausada_em, pausa_total_seg, crianca:crianca_id (id, nome, foto, autorizacao_imagem)')
+        .select('id, entrada, tempo_contratado_min, tarifa_hora, pausada_em, pausa_total_seg, crianca:crianca_id (id, nome, primeiro_nome, sobrenome, foto, autorizacao_imagem)')
         .eq('data', hoje)
         .eq('origem', 'espaco_kids')
         .is('saida', null)
@@ -110,6 +110,8 @@ export default async function KioskPage() {
             entrada: p.entrada,
             tempoContratadoMin: p.tempo_contratado_min,
             nome: p.crianca?.nome ?? '—',
+            primeiroNome: p.crianca?.primeiro_nome ?? null,
+            sobrenome: p.crianca?.sobrenome ?? null,
             foto: p.crianca?.foto ?? null,
             tarifaHora: p.tarifa_hora != null ? Number(p.tarifa_hora) : null,
             autorizacaoImagem: p.crianca?.autorizacao_imagem ?? null,

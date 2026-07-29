@@ -22,6 +22,8 @@ type Presente = {
   entrada: string // 'HH:MM:SS'
   tempoContratadoMin: number | null
   nome: string
+  primeiroNome: string | null
+  sobrenome: string | null
   foto: string | null
   tarifaHora: number | null // valor/hora do período travado no check-in
   autorizacaoImagem: boolean | null // null = pendente · true = ok · false = não usar
@@ -309,6 +311,9 @@ export default function PlaygroundPanel({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {presentes.map((p) => {
           const pausada = p.pausadaEm != null
+          const partesNome = p.nome.trim().split(/\s+/)
+          const primeiroNome = p.primeiroNome?.trim() || partesNome[0] || p.nome
+          const sobrenome = p.sobrenome?.trim() || partesNome.slice(1).join(' ')
           // Tempo pausado (acumulado + pausa em curso) descontado do decorrido: enquanto
           // pausada o cronômetro e o valor congelam.
           const pausaMin =
@@ -350,7 +355,14 @@ export default function PlaygroundPanel({
                       <span className="text-base">🧒</span>
                     )}
                   </span>
-                  <span className="truncate font-display text-base font-bold">{p.nome}</span>
+                  <span className="flex min-w-0 flex-col leading-tight">
+                    <strong className="truncate font-display text-base">{primeiroNome}</strong>
+                    {sobrenome && (
+                      <small className="truncate text-[11px] font-semibold text-slate-500">
+                        {sobrenome}
+                      </small>
+                    )}
+                  </span>
                   {p.autorizacaoImagem === null ? (
                     <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700" title="Autorização de imagem pendente">
                       📸?
