@@ -21,7 +21,7 @@ export default async function KioskPage() {
       <div className="grid min-h-screen place-items-center bg-fuchsia-50 p-6 text-center">
         <div className="space-y-2">
           <p className="font-display text-lg font-bold text-slate-700">Sessão não encontrada.</p>
-          <Link href="/" className="font-semibold text-fuchsia-700">
+        <Link href="/sistema" className="font-semibold text-fuchsia-700">
             Ir para o início →
           </Link>
         </div>
@@ -94,7 +94,7 @@ export default async function KioskPage() {
             )}
           />
           <Link
-            href="/"
+          href="/sistema"
             className="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
           >
             Sair do quiosque

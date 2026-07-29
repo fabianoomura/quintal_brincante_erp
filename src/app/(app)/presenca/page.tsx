@@ -74,7 +74,7 @@ export default async function PresencaPage() {
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href="/" className="shrink-0 text-sm font-semibold text-slate-500">
+          <Link href="/sistema" className="shrink-0 text-sm font-semibold text-slate-500">
             ← Início
           </Link>
           <h1 className="truncate text-2xl font-bold text-slate-700">📋 Quem está aqui hoje</h1>

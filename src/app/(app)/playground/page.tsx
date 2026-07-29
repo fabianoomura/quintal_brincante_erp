@@ -82,9 +82,13 @@ export default async function PlaygroundPage() {
     <div className="space-y-4">
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <RealtimeRefresh tabela="fila_espera" />
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-3 rounded-3xl border border-fuchsia-100 bg-white px-4 py-3 shadow-sm">
         <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-2xl font-bold text-slate-700">🎠 Playground</h1>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-fuchsia-100 text-lg">🎠</span>
+          <div className="min-w-0">
+            <span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-fuchsia-600">Operação em tempo real</span>
+            <h1 className="truncate font-display text-xl font-bold text-slate-700 sm:text-2xl">Play agora</h1>
+          </div>
           <LotacaoChip
             presentes={presentes?.length ?? 0}
             capacidade={cfg?.capacidade_play ?? null}

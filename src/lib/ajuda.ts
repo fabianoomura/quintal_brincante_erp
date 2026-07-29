@@ -5,7 +5,7 @@ export type Ajuda = { titulo: string; texto: string; dicas?: string[] }
 
 // Chave = prefixo da rota. Casa por prefixo mais longo (sub-rotas herdam a ajuda do pai).
 export const AJUDA: Record<string, Ajuda> = {
-  '/': {
+  '/sistema': {
     titulo: 'Início',
     texto:
       'Ponto de partida. Toque num atalho ou use o menu à esquerda (no celular, o ☰ no canto). Cada tela tem este botão de ajuda no topo.',
@@ -154,10 +154,9 @@ export const AJUDA: Record<string, Ajuda> = {
 
 // Acha a ajuda da rota: casa por prefixo mais longo (sub-rotas herdam do pai).
 export function ajudaDaRota(path: string): Ajuda | null {
-  if (path === '/') return AJUDA['/']
+  if (path === '/sistema') return AJUDA['/sistema']
   let melhor: string | null = null
   for (const key of Object.keys(AJUDA)) {
-    if (key === '/') continue
     if (path === key || path.startsWith(key + '/')) {
       if (!melhor || key.length > melhor.length) melhor = key
     }

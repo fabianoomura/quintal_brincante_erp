@@ -53,7 +53,7 @@ export default async function ConversasPage() {
     <div className="space-y-5">
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <div className="flex items-center gap-2">
-        <Link href="/" className="text-sm font-semibold text-slate-500">
+        <Link href="/sistema" className="text-sm font-semibold text-slate-500">
           ← Início
         </Link>
         <h1 className="text-2xl font-bold text-slate-700">💬 Conversas</h1>

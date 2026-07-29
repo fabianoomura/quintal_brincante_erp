@@ -17,7 +17,7 @@ const nunito = Nunito({
 
 export const metadata: Metadata = {
   title: "Quintal Brincante",
-  description: "Gestão do quintal brincante — uso interno da equipe.",
+  description: "ERP para a operação do Quintal Brincante: escolinha, colônia, Play e gestão.",
   applicationName: "Quintal Brincante",
   appleWebApp: { capable: true, title: "Quintal" },
   icons: {

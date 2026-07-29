@@ -6,18 +6,24 @@
 }
 
 :root {
-  --background: #f1f5f9; /* slate-100: base clara de ERP */
-  --foreground: #1e293b; /* slate-800 */
+  --background: #f5f8f6;
+  --foreground: #20322c;
+  --surface: #ffffff;
+  --surface-muted: #edf4f1;
+  --primary: #087d52;
+  --primary-strong: #075f41;
+  --border: #dce7e2;
+  --shadow-card: 0 8px 24px rgba(28, 57, 47, 0.07);
+  --radius-card: 1.25rem;
 }
 
 body {
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
   background-color: var(--background);
-  /* Tinta suave nos cantos — colorido sem competir com os cards. */
   background-image:
-    radial-gradient(at 100% 0%, rgba(125, 211, 252, 0.18) 0px, transparent 40%),
-    radial-gradient(at 0% 100%, rgba(196, 181, 253, 0.18) 0px, transparent 40%);
+    radial-gradient(at 100% 0%, rgba(125, 211, 252, 0.12) 0px, transparent 34%),
+    radial-gradient(at 0% 100%, rgba(182, 236, 86, 0.1) 0px, transparent 34%);
   background-attachment: fixed;
 }
 
@@ -37,10 +43,20 @@ textarea {
 @media (prefers-reduced-motion: no-preference) {
   .pop {
     transition:
-      transform 120ms ease,
-      box-shadow 120ms ease;
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease;
+  }
+  .pop:hover {
+    transform: translateY(-1px);
   }
   .pop:active {
     transform: scale(0.98);
   }
+}
+
+:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.42);
+  outline-offset: 2px;
 }

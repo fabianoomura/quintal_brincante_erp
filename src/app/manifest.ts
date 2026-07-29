@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Quintal Brincante',
     short_name: 'Quintal',
     description: 'Gestão interna do Quintal Brincante',
-    start_url: '/',
+    start_url: '/sistema',
     scope: '/',
     display: 'standalone',
     background_color: '#f1f5f9',

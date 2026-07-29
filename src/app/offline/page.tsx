@@ -10,7 +10,7 @@ export default function OfflinePage() {
           O Quintal está instalado, mas esta tela precisa de conexão. Assim que a internet voltar,
           tente novamente para carregar os dados mais recentes.
         </p>
-        <Link href="/" className="mt-5 inline-block rounded-full bg-emerald-600 px-5 py-2.5 font-bold text-white">
+      <Link href="/sistema" className="mt-5 inline-block rounded-full bg-emerald-600 px-5 py-2.5 font-bold text-white">
           Tentar novamente
         </Link>
       </div>

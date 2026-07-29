@@ -32,9 +32,9 @@ export function isAdmin(c: ColaboradorAtual | null): boolean {
   return c?.papel_acesso === 'admin'
 }
 
-// Guard p/ páginas só-admin: manda p/ a home quem não é admin.
+// Guard p/ páginas só-admin: manda p/ o início do ERP quem não é admin.
 export async function requireAdmin(): Promise<ColaboradorAtual> {
   const c = await getColaboradorAtual()
-  if (!c || c.papel_acesso !== 'admin') redirect('/')
+  if (!c || c.papel_acesso !== 'admin') redirect('/sistema')
   return c
 }

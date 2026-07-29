@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/lib/database.types'
 
-// Renova a sessão a cada request e protege as rotas: sem usuário → manda p/ /login.
+// Renova a sessão e protege o ERP. A home institucional e o login são públicos.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -34,13 +34,14 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isLogin = path.startsWith('/login')
+  const isPublic = path === '/' || isLogin || path === '/offline'
 
   // Rotas de API (ex.: worker do cron) têm a própria autenticação (secret) — não redireciona.
   if (path.startsWith('/api/')) {
     return supabaseResponse
   }
 
-  if (!user && !isLogin) {
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -48,7 +49,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && isLogin) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/sistema'
     return NextResponse.redirect(url)
   }
 

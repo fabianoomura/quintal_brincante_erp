@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from './logout-action'
@@ -15,51 +16,51 @@ const GRUPOS: Grupo[] = [
   {
     titulo: 'Operação',
     itens: [
-      { href: '/presenca', label: 'Quem está aqui', icon: '📋', cor: 'bg-amber-500' },
-      { href: '/criancas', label: 'Crianças', icon: '👧', cor: 'bg-sky-500' },
-      { href: '/conversas', label: 'Conversas', icon: '💬', cor: 'bg-green-600' },
+      { href: '/presenca', label: 'Quem está aqui', icon: '📋', cor: 'bg-amber-100 text-amber-700' },
+      { href: '/criancas', label: 'Crianças', icon: '👧', cor: 'bg-sky-100 text-sky-700' },
+      { href: '/conversas', label: 'Conversas', icon: '💬', cor: 'bg-emerald-100 text-emerald-700' },
     ],
   },
   {
     titulo: 'Play',
     itens: [
-      { href: '/playground', label: 'Playground', icon: '🎠', cor: 'bg-fuchsia-500' },
-      { href: '/grade', label: 'Grade (valores)', icon: '🗓️', cor: 'bg-fuchsia-600', adminOnly: true },
-      { href: '/calendario', label: 'Feriados', icon: '📅', cor: 'bg-orange-500', adminOnly: true },
-      { href: '/mensagens', label: 'Mensagens', icon: '💬', cor: 'bg-fuchsia-700', adminOnly: true },
+      { href: '/playground', label: 'Play agora', icon: '🎠', cor: 'bg-fuchsia-100 text-fuchsia-700' },
+      { href: '/grade', label: 'Preços e horários', icon: '🗓️', cor: 'bg-violet-100 text-violet-700', adminOnly: true },
+      { href: '/calendario', label: 'Feriados', icon: '📅', cor: 'bg-orange-100 text-orange-700', adminOnly: true },
+      { href: '/mensagens', label: 'Avisos do Play', icon: '💬', cor: 'bg-pink-100 text-pink-700', adminOnly: true },
     ],
   },
   {
     titulo: 'Mensalistas',
     itens: [
-      { href: '/mensalistas', label: 'Mensalistas', icon: '🎟️', cor: 'bg-pink-500' },
-      { href: '/planos', label: 'Planos', icon: '📦', cor: 'bg-pink-600', adminOnly: true },
+      { href: '/mensalistas', label: 'Mensalistas', icon: '🎟️', cor: 'bg-rose-100 text-rose-700' },
+      { href: '/planos', label: 'Planos', icon: '📦', cor: 'bg-rose-100 text-rose-700', adminOnly: true },
     ],
   },
   {
     titulo: 'Colônia',
-    itens: [{ href: '/colonias', label: 'Colônia de férias', icon: '🏕️', cor: 'bg-yellow-500' }],
+    itens: [{ href: '/colonias', label: 'Colônia de férias', icon: '🏕️', cor: 'bg-amber-100 text-amber-700' }],
   },
   {
     titulo: 'Financeiro',
     itens: [
-      { href: '/financeiro', label: 'Lançamentos', icon: '💰', cor: 'bg-emerald-500' },
-      { href: '/faturamento', label: 'Faturamento', icon: '📈', cor: 'bg-emerald-600', adminOnly: true },
+      { href: '/financeiro', label: 'Lançamentos', icon: '💰', cor: 'bg-emerald-100 text-emerald-700' },
+      { href: '/faturamento', label: 'Faturamento', icon: '📈', cor: 'bg-teal-100 text-teal-700', adminOnly: true },
     ],
   },
   {
     titulo: 'Gestão',
     itens: [
-      { href: '/gerencial', label: 'Gerencial', icon: '📊', cor: 'bg-indigo-500', adminOnly: true },
-      { href: '/ambientes', label: 'Ambientes', icon: '🏠', cor: 'bg-lime-500', adminOnly: true },
-      { href: '/colaboradores', label: 'Colaboradores', icon: '🧑‍🏫', cor: 'bg-teal-500', adminOnly: true },
-      { href: '/configuracoes', label: 'Configurações', icon: '⚙️', cor: 'bg-violet-500', adminOnly: true },
+      { href: '/gerencial', label: 'Gerencial', icon: '📊', cor: 'bg-indigo-100 text-indigo-700', adminOnly: true },
+      { href: '/ambientes', label: 'Ambientes', icon: '🏠', cor: 'bg-lime-100 text-lime-700', adminOnly: true },
+      { href: '/colaboradores', label: 'Colaboradores', icon: '🧑‍🏫', cor: 'bg-cyan-100 text-cyan-700', adminOnly: true },
+      { href: '/configuracoes', label: 'Configurações', icon: '⚙️', cor: 'bg-violet-100 text-violet-700', adminOnly: true },
     ],
   },
 ]
 
 function tituloDaRota(path: string): string {
-  if (path === '/') return 'Início'
+  if (path === '/sistema') return 'Início'
   for (const g of GRUPOS) for (const i of g.itens) if (path.startsWith(i.href)) return i.label
   return 'Quintal Brincante'
 }
@@ -103,15 +104,16 @@ export default function Shell({
   }, [])
 
   const NavConteudo = (
-    <nav className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
+    <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 pb-5 pt-2">
       <Link
-        href="/"
+        href="/sistema"
         onClick={() => setAberto(false)}
-        className={`flex items-center gap-2 rounded-xl px-3 py-2 font-semibold transition ${
-          pathname === '/' ? 'bg-white/20' : 'hover:bg-white/10'
+        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+          pathname === '/sistema' ? 'bg-white text-emerald-900 shadow-sm' : 'text-white/85 hover:bg-white/10 hover:text-white'
         }`}
       >
-        <span className="text-xl">🌳</span> Início
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-100 text-base">⌂</span>
+        Visão geral
       </Link>
 
       {GRUPOS.map((g) => {
@@ -119,7 +121,7 @@ export default function Shell({
         if (itens.length === 0) return null
         return (
           <div key={g.titulo} className="space-y-1">
-            <div className="px-3 text-xs font-bold uppercase tracking-wider text-white/50">
+            <div className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">
               {g.titulo}
             </div>
             {itens.map((i) => {
@@ -130,10 +132,10 @@ export default function Shell({
                   href={i.href}
                   onClick={() => setAberto(false)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                    ativo ? 'bg-white/20 shadow-sm' : 'text-white/85 hover:bg-white/10'
+                    ativo ? 'bg-white text-emerald-950 shadow-sm' : 'text-white/78 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <span className={`grid h-8 w-8 place-items-center rounded-lg ${i.cor} text-base shadow`}>
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg ${i.cor} text-sm`}>
                     {i.icon}
                   </span>
                   {i.label}
@@ -154,9 +156,13 @@ export default function Shell({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-gradient-to-b from-emerald-600 via-sky-700 to-violet-800 text-white shadow-xl md:flex">
-        <div className="flex items-center gap-2 px-5 py-4 font-display text-lg font-bold">
-          🌳 Quintal Brincante
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-gradient-to-b from-[#123b30] via-[#123b3d] to-[#27385d] text-white shadow-xl md:flex">
+        <div className="flex items-center gap-3 px-5 py-5">
+          <Image src="/icon-192.png" alt="" width={38} height={38} className="rounded-xl shadow-md" />
+          <div className="flex flex-col">
+            <strong className="font-display text-base leading-tight">Quintal Brincante</strong>
+            <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/48">ERP da operação</span>
+          </div>
         </div>
         {NavConteudo}
       </aside>
@@ -165,9 +171,12 @@ export default function Shell({
       {aberto && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAberto(false)} />
-          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col bg-gradient-to-b from-emerald-600 via-sky-700 to-violet-800 text-white shadow-xl">
+          <aside className="absolute left-0 top-0 flex h-full w-64 flex-col bg-gradient-to-b from-[#123b30] via-[#123b3d] to-[#27385d] text-white shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 font-display text-lg font-bold">
-              🌳 Quintal
+              <span className="flex items-center gap-2">
+                <Image src="/icon-192.png" alt="" width={34} height={34} className="rounded-lg" />
+                Quintal
+              </span>
               <button onClick={() => setAberto(false)} className="text-2xl leading-none">
                 ×
               </button>
@@ -179,16 +188,16 @@ export default function Shell({
 
       {/* Coluna de conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 backdrop-blur md:px-6">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-emerald-950/8 bg-white/90 px-4 py-3 shadow-[0_1px_10px_rgba(28,57,47,0.04)] backdrop-blur-xl md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
               onClick={() => setAberto(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg md:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-lg text-emerald-800 ring-1 ring-emerald-100 md:hidden"
               aria-label="Menu"
             >
               ☰
             </button>
-            <h1 className="truncate font-display text-lg font-bold text-slate-700 sm:text-xl">
+            <h1 className="truncate font-display text-lg font-bold text-[#20322c] sm:text-xl">
               {tituloDaRota(pathname)}
             </h1>
             <AjudaButton />
@@ -212,18 +221,18 @@ export default function Shell({
                 </span>
               )}
             </Link>
-            <span className="hidden rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 sm:inline">
+            <span className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-100 sm:inline">
               {nome.split(' ')[0]} · {ehAdmin ? 'admin' : 'operador'}
             </span>
             <form action={logout}>
-              <button className="rounded-full bg-slate-800 px-3 py-1.5 text-sm font-semibold text-white">
+              <button className="rounded-full bg-[#20322c] px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-[#0c6f4b]">
                 Sair
               </button>
             </form>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-6">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-7">{children}</main>
       </div>
     </div>
   )

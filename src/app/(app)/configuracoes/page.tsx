@@ -21,7 +21,7 @@ export default async function ConfiguracoesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Link href="/" className="text-sm font-semibold text-slate-500">
+        <Link href="/sistema" className="text-sm font-semibold text-slate-500">
           ← Início
         </Link>
         <h1 className="text-2xl font-bold text-slate-700">⚙️ Configurações</h1>

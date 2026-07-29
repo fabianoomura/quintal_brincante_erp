@@ -80,7 +80,7 @@ export default async function FinanceiroPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Link href="/" className="text-sm font-semibold text-slate-500">
+        <Link href="/sistema" className="text-sm font-semibold text-slate-500">
           ← Início
         </Link>
         <h1 className="text-2xl font-bold text-slate-700">💰 Financeiro</h1>
