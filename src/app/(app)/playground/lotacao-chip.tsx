@@ -23,7 +23,7 @@ export default function LotacaoChip({
 }) {
   if (capacidade == null) {
     return (
-      <span className={`shrink-0 rounded-full px-3 py-1.5 font-display text-sm font-bold ${CLS.sem_limite}`}>
+      <span className={`shrink-0 truncate rounded-full px-2.5 py-1 font-display text-xs font-bold sm:px-3 sm:py-1.5 sm:text-sm ${CLS.sem_limite}`}>
         🧒 {presentes}
       </span>
     )
@@ -38,7 +38,7 @@ export default function LotacaoChip({
 
   return (
     <span
-      className={`shrink-0 rounded-full px-3 py-1.5 font-display text-sm font-bold ${CLS[lotacao.nivel]}`}
+      className={`min-w-0 shrink truncate rounded-full px-2.5 py-1 font-display text-xs font-bold sm:shrink-0 sm:px-3 sm:py-1.5 sm:text-sm ${CLS[lotacao.nivel]}`}
       title={aCaminho > 0 ? `${aCaminho} chamada(s) da fila a caminho` : undefined}
     >
       🧒 {presentes}

@@ -79,26 +79,26 @@ export default async function PlaygroundPage() {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <RealtimeRefresh tabela="whatsapp_conversa" />
       <RealtimeRefresh tabela="fila_espera" />
-      <div className="flex items-center justify-between gap-3 rounded-3xl border border-fuchsia-100 bg-white px-4 py-3 shadow-sm">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-fuchsia-100 text-lg">🎠</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-fuchsia-100 bg-white p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:rounded-3xl sm:px-4">
+        <div className="col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fuchsia-100 text-base sm:h-10 sm:w-10 sm:rounded-2xl sm:text-lg">🎠</span>
           <div className="min-w-0">
-            <span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-fuchsia-600">Operação em tempo real</span>
-            <h1 className="truncate font-display text-xl font-bold text-slate-700 sm:text-2xl">Play agora</h1>
+            <span className="block truncate text-[9px] font-extrabold uppercase tracking-[0.12em] text-fuchsia-600 sm:text-[10px] sm:tracking-[0.14em]">Operação em tempo real</span>
+            <h1 className="truncate font-display text-lg font-bold text-slate-700 sm:text-2xl">Play agora</h1>
           </div>
-          <LotacaoChip
-            presentes={presentes?.length ?? 0}
-            capacidade={cfg?.capacidade_play ?? null}
-            aCaminho={chamadas}
-            proximaVagaMin={proximaVagaMin}
-          />
         </div>
+        <LotacaoChip
+          presentes={presentes?.length ?? 0}
+          capacidade={cfg?.capacidade_play ?? null}
+          aCaminho={chamadas}
+          proximaVagaMin={proximaVagaMin}
+        />
         <Link
           href="/kiosk"
-          className="pop shrink-0 rounded-full bg-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-sm"
+          className="pop shrink-0 rounded-full bg-fuchsia-600 px-3 py-2 text-xs font-bold text-white shadow-sm sm:px-4 sm:text-sm"
         >
           ⛶ Modo quiosque
         </Link>

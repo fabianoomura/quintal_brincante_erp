@@ -35,7 +35,7 @@ export default function BuscaCrianca({
     return (
       <div
         className={`flex items-center justify-between border-2 border-emerald-300 bg-emerald-50 ${
-          compact ? 'h-[46px] rounded-xl px-3' : 'rounded-2xl px-4 py-3'
+          compact ? 'h-[42px] rounded-xl px-3 sm:h-[46px]' : 'rounded-2xl px-4 py-3'
         }`}
       >
         <span className="truncate font-display font-bold text-emerald-800">
@@ -63,13 +63,13 @@ export default function BuscaCrianca({
         onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder}
         className={`w-full border-2 border-fuchsia-200 bg-fuchsia-50/40 text-base outline-none focus:border-fuchsia-400 ${
-          compact ? 'h-[46px] rounded-xl px-3.5' : 'rounded-2xl px-4 py-3'
+          compact ? 'h-[42px] rounded-xl px-3.5 sm:h-[46px]' : 'rounded-2xl px-4 py-3'
         }`}
       />
       {filtradas.length > 0 && (
         <ul
           className={`z-40 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 ${
-            compact ? 'absolute left-0 right-0 top-[50px]' : ''
+            compact ? 'absolute left-0 right-0 top-[46px] sm:top-[50px]' : ''
           }`}
         >
           {filtradas.map((c) => (
@@ -89,7 +89,7 @@ export default function BuscaCrianca({
         <p
           className={`px-2 text-sm text-slate-400 ${
             compact
-              ? 'absolute left-0 right-0 top-[50px] z-40 rounded-xl bg-white py-2 shadow-lg ring-1 ring-slate-200'
+              ? 'absolute left-0 right-0 top-[46px] z-40 rounded-xl bg-white py-2 shadow-lg ring-1 ring-slate-200 sm:top-[50px]'
               : ''
           }`}
         >

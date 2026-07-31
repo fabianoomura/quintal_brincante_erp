@@ -232,29 +232,31 @@ export default function PlaygroundPanel({
 
       {/* Entrada única: busca + Entrar; lotou, aparece o + Fila do lado */}
       <div
-        className={`grid gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:items-center ${
+        className={`grid grid-cols-2 gap-1.5 rounded-2xl bg-white p-2.5 shadow-sm ring-1 ring-black/5 sm:gap-2 sm:p-3 md:items-center ${
           lotado
             ? 'md:grid-cols-[minmax(0,1fr)_170px_auto_auto_auto] xl:grid-cols-[auto_minmax(260px,1fr)_170px_auto_auto_auto]'
             : 'md:grid-cols-[minmax(0,1fr)_170px_auto_auto] xl:grid-cols-[auto_minmax(260px,1fr)_170px_auto_auto]'
         }`}
       >
         <div
-          className={`flex items-center gap-2 font-display text-sm font-bold text-slate-600 md:col-span-full xl:col-span-1 ${
+          className={`col-span-full flex items-center gap-2 font-display text-sm font-bold text-slate-600 md:col-span-full xl:col-span-1 ${
             lotado ? 'xl:col-start-1' : ''
           }`}
         >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-fuchsia-50 text-base">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-fuchsia-50 text-sm sm:h-9 sm:w-9 sm:rounded-xl sm:text-base">
             🚀
           </span>
           <span className="whitespace-nowrap">Entrada rápida</span>
         </div>
 
-        <BuscaCrianca
-          criancas={criancas}
-          value={criancaId}
-          onChange={setCriancaId}
-          compact
-        />
+        <div className="col-span-full min-w-0 md:col-span-1">
+          <BuscaCrianca
+            criancas={criancas}
+            value={criancaId}
+            onChange={setCriancaId}
+            compact
+          />
+        </div>
 
         <input
           type="number"
@@ -263,13 +265,13 @@ export default function PlaygroundPanel({
           placeholder="Tempo (min) — opcional"
           value={tempo}
           onChange={(e) => setTempo(e.target.value)}
-          className="h-[46px] min-w-0 rounded-xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-3.5 text-base outline-none focus:border-fuchsia-400"
+          className="col-span-full h-[42px] min-w-0 rounded-xl border-2 border-fuchsia-200 bg-fuchsia-50/40 px-3.5 text-sm outline-none focus:border-fuchsia-400 sm:h-[46px] sm:text-base md:col-span-1"
         />
 
         <button
           onClick={entrar}
           disabled={!criancaId || !!ocupado}
-          className="pop h-[46px] rounded-full bg-fuchsia-600 px-6 font-display text-base font-bold text-white shadow-sm disabled:opacity-50"
+          className="pop h-[42px] rounded-full bg-fuchsia-600 px-4 font-display text-sm font-bold text-white shadow-sm disabled:opacity-50 sm:h-[46px] sm:px-6 sm:text-base"
         >
           {ocupado === 'checkin' ? '…' : 'Entrar'}
         </button>
@@ -278,7 +280,7 @@ export default function PlaygroundPanel({
           <button
             onClick={paraFila}
             disabled={!criancaId || !!ocupado}
-            className="pop h-[46px] rounded-full bg-amber-500 px-5 font-display text-base font-bold text-white shadow-sm disabled:opacity-50"
+            className="pop h-[42px] rounded-full bg-amber-500 px-4 font-display text-sm font-bold text-white shadow-sm disabled:opacity-50 sm:h-[46px] sm:px-5 sm:text-base"
           >
             {ocupado === 'fila' ? '…' : '+ Fila'}
           </button>
@@ -286,7 +288,7 @@ export default function PlaygroundPanel({
 
         <Link
           href={linkCadastro}
-          className="pop inline-flex h-[46px] shrink-0 items-center justify-center rounded-full bg-sky-600 px-4 text-sm font-bold text-white shadow-sm"
+          className="pop inline-flex h-[42px] shrink-0 items-center justify-center rounded-full bg-sky-600 px-3 text-xs font-bold text-white shadow-sm sm:h-[46px] sm:px-4 sm:text-sm"
         >
           + <span className="hidden 2xl:inline">Cadastrar&nbsp;</span> criança
         </Link>

@@ -188,25 +188,25 @@ export default function Shell({
 
       {/* Coluna de conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-emerald-950/8 bg-white/90 px-4 py-3 shadow-[0_1px_10px_rgba(28,57,47,0.04)] backdrop-blur-xl md:px-6">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-1.5 border-b border-emerald-950/8 bg-white/90 px-2.5 py-2 shadow-[0_1px_10px_rgba(28,57,47,0.04)] backdrop-blur-xl sm:gap-3 sm:px-4 sm:py-3 md:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               onClick={() => setAberto(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-lg text-emerald-800 ring-1 ring-emerald-100 md:hidden"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-base text-emerald-800 ring-1 ring-emerald-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg md:hidden"
               aria-label="Menu"
             >
               ☰
             </button>
-            <h1 className="truncate font-display text-lg font-bold text-[#20322c] sm:text-xl">
+            <h1 className="truncate font-display text-base font-bold text-[#20322c] sm:text-xl">
               {tituloDaRota(pathname)}
             </h1>
             <AjudaButton />
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <InstalarPwa />
             <Link
               href="/conversas"
-              className="relative grid h-9 w-9 place-items-center rounded-full bg-amber-50 text-lg ring-1 ring-amber-200 transition hover:bg-amber-100"
+              className="relative grid h-8 w-8 place-items-center rounded-full bg-amber-50 text-base ring-1 ring-amber-200 transition hover:bg-amber-100 sm:h-9 sm:w-9 sm:text-lg"
               aria-label={
                 totalNaoLidas > 0
                   ? `${totalNaoLidas} mensagem(ns) não lida(s)`
@@ -225,14 +225,14 @@ export default function Shell({
               {nome.split(' ')[0]} · {ehAdmin ? 'admin' : 'operador'}
             </span>
             <form action={logout}>
-              <button className="rounded-full bg-[#20322c] px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-[#0c6f4b]">
+              <button className="rounded-full bg-[#20322c] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0c6f4b] sm:px-3.5 sm:text-sm">
                 Sair
               </button>
             </form>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-7">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 p-3 sm:p-4 md:p-7">{children}</main>
       </div>
     </div>
   )
