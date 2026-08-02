@@ -3,8 +3,9 @@ import { valorMovimentadoLancamento } from '@/lib/financeiro'
 import { buscarLancamentosRelatorio } from './dados'
 
 const COLUNAS = [
-  'data', 'criança', 'descrição', 'origem', 'valor', 'desconto', 'valor_liquido',
-  'movimento_financeiro', 'vencimento', 'status', 'método', 'transaction_nsu', 'pago_em', 'recibo',
+  'criado_em', 'criança', 'descrição', 'origem', 'valor', 'desconto', 'valor_liquido',
+  'movimento_financeiro', 'vencimento', 'status', 'método', 'pago_em', 'recebido_por',
+  'conciliado_por', 'transaction_nsu', 'recibo',
 ]
 
 function celula(v: unknown): string {
@@ -33,10 +34,11 @@ export async function GET(request: Request) {
 
   const linhas = data.map((l) =>
     [
-      l.createdAt.slice(0, 10), l.crianca, l.descricao, l.origem, valorBR(l.valor),
+      l.createdAt, l.crianca, l.descricao, l.origem, valorBR(l.valor),
       valorBR(l.desconto), valorBR(l.valor - l.desconto),
       valorBR(l.status === 'pago' ? valorMovimentadoLancamento(l.valor, l.desconto, l.modalidade) : 0),
-      l.vencimento, l.status, l.modalidade ?? '', l.transactionNsu ?? '', l.pagoEm ?? '', l.recibo ?? '',
+      l.vencimento, l.status, l.modalidade ?? '', l.pagoEm ?? '', l.recebidoPor ?? '',
+      l.conciliadoPor ?? '', l.transactionNsu ?? '', l.recibo ?? '',
     ].map(celula).join(';'),
   )
 

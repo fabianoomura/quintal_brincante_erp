@@ -188,6 +188,10 @@ export default async function FinanceiroPage({
           vencimento: l.vencimento,
           status: l.status,
           captureMethod: l.modalidade,
+          createdAt: l.createdAt,
+          pagoEm: l.pagoEm,
+          conciliadoPor: l.conciliadoPor,
+          recebidoPor: l.recebidoPor,
           nome: l.crianca || '—',
         }))}
       />

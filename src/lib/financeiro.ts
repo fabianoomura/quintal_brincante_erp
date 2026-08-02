@@ -31,3 +31,13 @@ export function valorMovimentadoLancamento(
 ): number {
   return captureMethod === 'cortesia' ? 0 : valorLiquidoLancamento(valor, desconto)
 }
+
+export function rotuloResponsavelBaixa(
+  recebidoPor: string | null,
+  conciliadoPor: string | null,
+): string {
+  if (recebidoPor?.trim()) return recebidoPor.trim()
+  if (conciliadoPor === 'webhook') return 'Automático (InfinitePay)'
+  if (conciliadoPor === 'manual') return 'Usuário não registrado (registro antigo)'
+  return 'Automático'
+}

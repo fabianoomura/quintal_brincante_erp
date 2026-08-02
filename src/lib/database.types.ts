@@ -452,6 +452,7 @@ export type Database = {
           origem_tipo: string | null
           pago_em: string | null
           receipt_url: string | null
+          recebido_por: string | null
           status: Database["public"]["Enums"]["status_lancamento"]
           transaction_nsu: string | null
           valor: number
@@ -470,6 +471,7 @@ export type Database = {
           origem_tipo?: string | null
           pago_em?: string | null
           receipt_url?: string | null
+          recebido_por?: string | null
           status?: Database["public"]["Enums"]["status_lancamento"]
           transaction_nsu?: string | null
           valor: number
@@ -488,12 +490,20 @@ export type Database = {
           origem_tipo?: string | null
           pago_em?: string | null
           receipt_url?: string | null
+          recebido_por?: string | null
           status?: Database["public"]["Enums"]["status_lancamento"]
           transaction_nsu?: string | null
           valor?: number
           vencimento?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lancamento_recebido_por_fkey"
+            columns: ["recebido_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lancamento_crianca_id_fkey"
             columns: ["crianca_id"]
@@ -817,6 +827,9 @@ export type Database = {
           pausa_total_seg: number
           pausada_em: string | null
           saida: string | null
+          sem_cobranca_em: string | null
+          sem_cobranca_motivo: string | null
+          sem_cobranca_por: string | null
           tarifa_hora: number | null
           tempo_contratado_min: number | null
           valor: number | null
@@ -833,6 +846,9 @@ export type Database = {
           pausa_total_seg?: number
           pausada_em?: string | null
           saida?: string | null
+          sem_cobranca_em?: string | null
+          sem_cobranca_motivo?: string | null
+          sem_cobranca_por?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
@@ -849,11 +865,21 @@ export type Database = {
           pausa_total_seg?: number
           pausada_em?: string | null
           saida?: string | null
+          sem_cobranca_em?: string | null
+          sem_cobranca_motivo?: string | null
+          sem_cobranca_por?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "presenca_sem_cobranca_por_fkey"
+            columns: ["sem_cobranca_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "presenca_ambiente_id_fkey"
             columns: ["ambiente_id"]
@@ -1033,6 +1059,7 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       excluir_operacao_play: { Args: { p_presenca_id: string }; Returns: boolean }
+      excluir_presenca_esquecida: { Args: { p_presenca_id: string }; Returns: boolean }
       is_colaborador: { Args: never; Returns: boolean }
     }
     Enums: {

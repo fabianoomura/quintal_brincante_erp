@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { Modalidade } from '@/lib/modalidades'
 import { calcularDescontoBaixa } from '@/lib/financeiro'
+import { getColaboradorAtual } from '@/lib/colaborador'
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
 
@@ -45,6 +46,8 @@ export async function baixaManual(
   descontoReais = 0,
   valorAjustado?: number,
 ): Promise<Resultado> {
+  const colaborador = await getColaboradorAtual()
+  if (!colaborador) return { ok: false, erro: 'Usuário não vinculado a um colaborador ativo.' }
   const supabase = await createClient()
 
   const { data: lanc } = await supabase
@@ -84,6 +87,7 @@ export async function baixaManual(
       capture_method: modalidade,
       desconto: desc,
       pago_em: new Date().toISOString(),
+      recebido_por: colaborador.id,
     })
     .eq('id', lancamentoId)
     .eq('status', 'pendente')

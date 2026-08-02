@@ -303,6 +303,14 @@ Levas pontuais após acompanhar a operação real:
   antigo corte silencioso de 200 registros. Os mesmos filtros são reutilizados por CSV e Excel.
 - **Qualidade:** 124 testes e lint limpos; build local depende do acesso às fontes Google do
   `next/font` e deve ser validado com rede disponível.
+- **Auditoria de recebimento:** lançamentos exibem data/hora de criação e, quando pagos,
+  data/hora da baixa e colaborador responsável. Pagamentos automáticos e registros antigos são
+  identificados sem inventar usuário. CSV e Excel levam os mesmos campos. A coluna
+  `lancamento.recebido_por` guarda o vínculo com `colaborador`.
+- **Check-outs esquecidos:** além de encerrar e cobrar, agora podem ser finalizados sem
+  cobrança mediante motivo obrigatório (gravado em `presenca.obs` e nos campos estruturados
+  de auditoria). Administradores também podem excluir entradas de teste, com confirmação,
+  preservando cadastro da criança e conversas.
 
 ## Fila de próximos passos
 

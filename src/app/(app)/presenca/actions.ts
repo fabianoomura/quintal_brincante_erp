@@ -15,6 +15,7 @@ import {
   tplDesculpaEngano,
 } from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
+import { getColaboradorAtual } from '@/lib/colaborador'
 
 type Origem = Database['public']['Enums']['origem_presenca']
 
@@ -23,6 +24,79 @@ type Resultado = { ok: true; id: string; semTarifa?: boolean } | { ok: false; er
 type ResultadoCheckout =
   | { ok: true; id: string; valor: number | null; lancamentoId: string | null; nome: string }
   | { ok: false; erro: string }
+
+type ResultadoExcecao = { ok: true } | { ok: false; erro: string }
+
+export async function finalizarPresencaSemCobranca(
+  presencaId: string,
+  saida: string,
+  motivo: string,
+): Promise<ResultadoExcecao> {
+  const colaborador = await getColaboradorAtual()
+  if (!colaborador) return { ok: false, erro: 'Usuário não vinculado a um colaborador ativo.' }
+  const justificativa = motivo.trim()
+  if (justificativa.length < 5) return { ok: false, erro: 'Explique por que não houve pagamento.' }
+
+  const supabase = await createClient()
+  const { data: p, error: erroBusca } = await supabase
+    .from('presenca')
+    .select('id, entrada, saida, obs')
+    .eq('id', presencaId)
+    .maybeSingle()
+  if (erroBusca) return { ok: false, erro: erroBusca.message }
+  if (!p || p.saida) return { ok: false, erro: 'Presença não encontrada ou já finalizada.' }
+  const validacao = validarSaidaManual(p.entrada, saida)
+  if (!validacao.ok) return { ok: false, erro: validacao.erro }
+
+  const { data: lancamento } = await supabase
+    .from('lancamento')
+    .select('id')
+    .eq('origem_tipo', 'presenca')
+    .eq('origem_id', presencaId)
+    .limit(1)
+    .maybeSingle()
+  if (lancamento) return { ok: false, erro: 'Essa presença já possui lançamento financeiro.' }
+
+  const nota = `Finalizado sem cobrança: ${justificativa}`
+  const { data, error } = await supabase
+    .from('presenca')
+    .update({
+      saida,
+      valor: null,
+      obs: p.obs?.trim() ? `${p.obs.trim()}\n${nota}` : nota,
+      sem_cobranca_motivo: justificativa,
+      sem_cobranca_em: new Date().toISOString(),
+      sem_cobranca_por: colaborador.id,
+    })
+    .eq('id', presencaId)
+    .is('saida', null)
+    .select('id')
+    .maybeSingle()
+  if (error) return { ok: false, erro: error.message }
+  if (!data) return { ok: false, erro: 'Essa presença já foi finalizada.' }
+
+  revalidatePath('/presenca')
+  revalidatePath('/playground')
+  return { ok: true }
+}
+
+export async function excluirPresencaEsquecida(presencaId: string): Promise<ResultadoExcecao> {
+  const colaborador = await getColaboradorAtual()
+  if (colaborador?.papel_acesso !== 'admin') {
+    return { ok: false, erro: 'Apenas administradores podem excluir presenças.' }
+  }
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('excluir_presenca_esquecida', {
+    p_presenca_id: presencaId,
+  })
+  if (error) return { ok: false, erro: error.message }
+  if (!data) return { ok: false, erro: 'Presença esquecida não encontrada.' }
+
+  revalidatePath('/presenca')
+  revalidatePath('/playground')
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
 
 export type CheckInInput = {
   criancaId: string

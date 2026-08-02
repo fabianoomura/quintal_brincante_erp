@@ -8,6 +8,7 @@ import ConversaButton from './conversa-button'
 import LotacaoChip from '../playground/lotacao-chip'
 import RealtimeRefresh from '../conversas/realtime-refresh'
 import { naoLidasPorCrianca } from '@/lib/whatsapp/conversas'
+import { getColaboradorAtual } from '@/lib/colaborador'
 
 import { card } from '@/lib/ui'
 
@@ -21,6 +22,7 @@ const ORIGEM_LABEL: Record<string, string> = {
 export default async function PresencaPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
+  const colaborador = await getColaboradorAtual()
 
   const [
     { data: presentes },
@@ -87,6 +89,7 @@ export default async function PresencaPage() {
       </div>
 
       <PresencasAntigas
+        ehAdmin={colaborador?.papel_acesso === 'admin'}
         presencas={(antigas ?? []).map((p) => ({
           id: p.id,
           nome: p.crianca?.nome ?? '—',

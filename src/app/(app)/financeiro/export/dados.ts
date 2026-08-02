@@ -23,6 +23,8 @@ export type LancamentoRelatorio = {
   transactionNsu: string | null
   pagoEm: string | null
   recibo: string | null
+  conciliadoPor: string | null
+  recebidoPor: string | null
 }
 
 export async function buscarLancamentosRelatorio(
@@ -36,7 +38,7 @@ export async function buscarLancamentosRelatorio(
     let query = supabase
       .from('lancamento')
       .select(
-        'id, created_at, descricao, origem_tipo, valor, desconto, vencimento, status, capture_method, transaction_nsu, pago_em, receipt_url, crianca:crianca_id (nome)',
+        'id, created_at, descricao, origem_tipo, valor, desconto, vencimento, status, capture_method, conciliado_por, transaction_nsu, pago_em, receipt_url, crianca:crianca_id (nome), recebedor:recebido_por (nome)',
       )
       .order('vencimento', { ascending: true })
       .order('created_at', { ascending: true })
@@ -64,6 +66,8 @@ export async function buscarLancamentosRelatorio(
         transactionNsu: l.transaction_nsu,
         pagoEm: l.pago_em,
         recibo: l.receipt_url,
+        conciliadoPor: l.conciliado_por,
+        recebidoPor: l.recebedor?.nome ?? null,
       })
     }
     if (!data || data.length < lote) break

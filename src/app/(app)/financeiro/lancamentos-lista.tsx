@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { formatBRL } from '@/lib/dinheiro'
 import { card } from '@/lib/ui'
 import RecebimentoModal from '../recebimento-modal'
+import { rotuloResponsavelBaixa } from '@/lib/financeiro'
 
 export type LancamentoUI = {
   id: string
@@ -14,6 +15,10 @@ export type LancamentoUI = {
   vencimento: string
   status: string
   captureMethod: string | null
+  createdAt: string
+  pagoEm: string | null
+  conciliadoPor: string | null
+  recebidoPor: string | null
   nome: string // criança
 }
 
@@ -29,6 +34,21 @@ const MODALIDADE_LABEL: Record<string, string> = {
   debito: '💳 débito',
   credito: '💳 crédito',
   cortesia: '🎁 cortesia',
+}
+
+const DATA_HORA = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  day: '2-digit',
+  month: '2-digit',
+  year: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+function dataHora(iso: string | null): string {
+  if (!iso) return '—'
+  const data = new Date(iso)
+  return Number.isNaN(data.getTime()) ? '—' : DATA_HORA.format(data)
 }
 
 // tira acentos e caixa p/ a busca ser "esperta" (mesmo padrão das outras listas)
@@ -78,6 +98,17 @@ export default function LancamentosLista({
               <div className="truncate font-semibold">{l.nome}</div>
               <div className="text-xs text-slate-500">
                 {l.descricao} · vence {l.vencimento}
+              </div>
+              <div className="mt-1 space-y-0.5 text-xs text-slate-400">
+                <div>🕒 Lançado em {dataHora(l.createdAt)}</div>
+                {l.status === 'pago' && (
+                  <div>
+                    ✅ Recebido em {dataHora(l.pagoEm)} por{' '}
+                    <strong className="text-slate-600">
+                      {rotuloResponsavelBaixa(l.recebidoPor, l.conciliadoPor)}
+                    </strong>
+                  </div>
+                )}
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-display text-lg font-bold text-slate-700">

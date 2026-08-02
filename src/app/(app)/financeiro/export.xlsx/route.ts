@@ -47,14 +47,16 @@ export async function GET(request: Request) {
 
   const cabecalho = [
     'Criado em', 'Criança', 'Descrição', 'Origem', 'Valor bruto', 'Desconto', 'Valor líquido',
-    'Movimento financeiro', 'Vencimento', 'Status', 'Modalidade', 'Pago em', 'NSU', 'Recibo',
+    'Movimento financeiro', 'Vencimento', 'Status', 'Modalidade', 'Pago em', 'Recebido por',
+    'Conciliação', 'NSU', 'Recibo',
   ].map((v) => c(v, 'header'))
   const linhas = data.map((l) => [
     c(instanteExcel(l.createdAt), 'datetime'), c(l.crianca), c(l.descricao), c(l.origem),
     c(l.valor, 'currency'), c(l.desconto, 'currency'), c(Math.max(0, l.valor - l.desconto), 'currency'),
     c(l.status === 'pago' ? valorMovimentadoLancamento(l.valor, l.desconto, l.modalidade) : 0, 'currency'),
     c(dataExcel(l.vencimento), 'date'), c(l.status), c(l.modalidade ?? ''),
-    c(instanteExcel(l.pagoEm), 'datetime'), c(l.transactionNsu ?? ''), c(l.recibo ?? ''),
+    c(instanteExcel(l.pagoEm), 'datetime'), c(l.recebidoPor ?? ''), c(l.conciliadoPor ?? ''),
+    c(l.transactionNsu ?? ''), c(l.recibo ?? ''),
   ])
   const ultima = Math.max(2, linhas.length + 1)
   const statusRange = `'Lançamentos'!$J$2:$J$${ultima}`
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
 
   const arquivo = criarXlsx([
     { name: 'Resumo', rows: resumo, widths: [28, 18, 18, 3, 22, 18], freezeRows: 3, mergeTitleAcross: 6 },
-    { name: 'Lançamentos', rows: [cabecalho, ...linhas], widths: [18, 24, 38, 16, 16, 14, 16, 20, 14, 13, 16, 18, 18, 42], freezeRows: 1, autoFilterRow: 1 },
+    { name: 'Lançamentos', rows: [cabecalho, ...linhas], widths: [18, 24, 38, 16, 16, 14, 16, 20, 14, 13, 16, 18, 24, 16, 18, 42], freezeRows: 1, autoFilterRow: 1 },
   ])
   const hoje = new Date().toISOString().slice(0, 10)
   return new Response(arquivo as BodyInit, {

@@ -4,6 +4,7 @@ import {
   calcularDescontoBaixa,
   valorLiquidoLancamento,
   valorMovimentadoLancamento,
+  rotuloResponsavelBaixa,
 } from './financeiro'
 
 test('calcularDescontoBaixa ignora desconto manual quando flag esta desligada', () => {
@@ -62,4 +63,10 @@ test('valorLiquidoLancamento nunca fica negativo', () => {
 test('cortesia mantém o valor registrado sem movimentar receita', () => {
   assert.equal(valorMovimentadoLancamento(50, 0, 'cortesia'), 0)
   assert.equal(valorMovimentadoLancamento(50, 5, 'pix'), 45)
+})
+
+test('rotuloResponsavelBaixa distingue usuário, automação e registro antigo', () => {
+  assert.equal(rotuloResponsavelBaixa(' Fabiano ', 'manual'), 'Fabiano')
+  assert.equal(rotuloResponsavelBaixa(null, 'webhook'), 'Automático (InfinitePay)')
+  assert.equal(rotuloResponsavelBaixa(null, 'manual'), 'Usuário não registrado (registro antigo)')
 })

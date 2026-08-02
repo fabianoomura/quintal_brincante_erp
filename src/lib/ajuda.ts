@@ -107,6 +107,7 @@ export const AJUDA: Record<string, Ajuda> = {
       'Todos os lançamentos (play, mensalidade, colônia, diária). É onde se dá baixa quando o pagamento entra.',
     dicas: [
       'Na baixa você escolhe a forma de recebimento e pode aplicar desconto.',
+      'Cada lançamento mostra os horários e, na baixa manual, o colaborador que recebeu.',
       'Filtre por status, período de vencimento, origem e modalidade.',
       'Os cards separam o total recebido por modalidade; cortesia não entra na receita.',
       'A exportação Excel leva um resumo e todos os lançamentos do filtro; CSV continua disponível.',

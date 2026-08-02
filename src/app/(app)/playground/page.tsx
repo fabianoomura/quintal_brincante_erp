@@ -9,10 +9,12 @@ import LotacaoChip from './lotacao-chip'
 import ConcluidasHoje from './concluidas-hoje'
 import PresencasAntigas from '../presenca/presencas-antigas'
 import RealtimeRefresh from '../conversas/realtime-refresh'
+import { getColaboradorAtual } from '@/lib/colaborador'
 
 export default async function PlaygroundPage() {
   const supabase = await createClient()
   const hoje = hojeISO()
+  const colaborador = await getColaboradorAtual()
 
   const [
     { data: presentes },
@@ -105,6 +107,7 @@ export default async function PlaygroundPage() {
       </div>
 
       <PresencasAntigas
+        ehAdmin={colaborador?.papel_acesso === 'admin'}
         presencas={(antigas ?? []).map((p) => ({
           id: p.id,
           nome: p.crianca?.nome ?? '—',
