@@ -23,6 +23,14 @@ const STATUS_CHIP: Record<string, string> = {
   cancelado: 'bg-slate-200 text-slate-500',
 }
 
+const MODALIDADE_LABEL: Record<string, string> = {
+  dinheiro: '💵 dinheiro',
+  pix: '📱 pix',
+  debito: '💳 débito',
+  credito: '💳 crédito',
+  cortesia: '🎁 cortesia',
+}
+
 // tira acentos e caixa p/ a busca ser "esperta" (mesmo padrão das outras listas)
 const norm = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -44,7 +52,7 @@ export default function LancamentosLista({
   const filtrados = useMemo(() => {
     const termo = norm(q.trim())
     if (termo === '') return lancamentos
-    return lancamentos.filter((l) => norm(l.nome).includes(termo))
+    return lancamentos.filter((l) => norm(`${l.nome} ${l.descricao}`).includes(termo))
   }, [q, lancamentos])
 
   return (
@@ -53,7 +61,7 @@ export default function LancamentosLista({
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="🔎 Buscar por criança…"
+        placeholder="🔎 Buscar por criança ou descrição…"
         className="w-full rounded-2xl border-2 border-emerald-200 bg-white px-4 py-2.5 text-base outline-none focus:border-emerald-400"
       />
 
@@ -85,9 +93,9 @@ export default function LancamentosLista({
                 >
                   {l.status}
                 </span>
-                {l.captureMethod === 'cortesia' && (
-                  <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs font-semibold text-white">
-                    🎁 cortesia
+                {l.status === 'pago' && l.captureMethod && (
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${l.captureMethod === 'cortesia' ? 'bg-slate-700 text-white' : 'bg-sky-50 text-sky-700'}`}>
+                    {MODALIDADE_LABEL[l.captureMethod] ?? l.captureMethod}
                   </span>
                 )}
               </div>

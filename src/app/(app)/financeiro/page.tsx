@@ -6,47 +6,41 @@ import { card } from '@/lib/ui'
 import { valorMovimentadoLancamento } from '@/lib/financeiro'
 import AvulsoForm from './avulso-form'
 import LancamentosLista from './lancamentos-lista'
-
-type StatusFiltro = 'pendente' | 'pago' | 'todos'
+import { normalizarFiltrosFinanceiros, STATUS_FINANCEIRO } from '@/lib/financeiro-filtros'
+import { buscarLancamentosRelatorio } from './export/dados'
 
 export default async function FinanceiroPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; de?: string; ate?: string }>
+  searchParams: Promise<{ status?: string; de?: string; ate?: string; origem?: string; modalidade?: string }>
 }) {
   const sp = await searchParams
-  const status = (sp.status as StatusFiltro) ?? 'pendente'
   // Padrão: mostra o DIA ATUAL (só na primeira abertura, sem params). Ao limpar os
   // campos e filtrar, chegam como '' — aí volta a ver tudo.
   const hoje = hojeISO()
-  const de = sp.de ?? hoje
-  const ate = sp.ate ?? hoje
+  const filtros = normalizarFiltrosFinanceiros(sp, hoje)
+  const { status, origem, modalidade, de, ate } = filtros
 
   const supabase = await createClient()
-  let query = supabase
-    .from('lancamento')
-    .select(
-      'id, descricao, valor, desconto, vencimento, status, origem_tipo, pago_em, capture_method, crianca:crianca_id (nome)',
-    )
-    .order('vencimento', { ascending: false })
-    .limit(200)
-  if (status !== 'todos') query = query.eq('status', status)
-  if (de) query = query.gte('vencimento', de)
-  if (ate) query = query.lte('vencimento', ate)
+  const { data: lancamentosAsc, erro: erroLancamentos } = filtros.erro
+    ? { data: [], erro: null }
+    : await buscarLancamentosRelatorio(filtros)
+  const { data: pagos, erro: erroPagos } = filtros.erro
+    ? { data: [], erro: null }
+    : await buscarLancamentosRelatorio({ ...filtros, status: 'pago' })
+  const lancamentos = lancamentosAsc.toReversed()
 
-  const { data: lancamentos, error } = await query
-
-  const total = (lancamentos ?? []).reduce(
-    (s, l) => s + valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method),
+  const total = lancamentos.reduce(
+    (s, l) => s + (l.status === 'cancelado'
+      ? 0
+      : l.status === 'pago'
+        ? valorMovimentadoLancamento(l.valor, l.desconto, l.modalidade)
+        : Math.max(0, l.valor - l.desconto)),
     0,
   )
 
   // Recebido por MODALIDADE (pagos no período), líquido do desconto.
-  let pagosQ = supabase.from('lancamento').select('valor, desconto, capture_method').eq('status', 'pago')
-  if (de) pagosQ = pagosQ.gte('vencimento', de)
-  if (ate) pagosQ = pagosQ.lte('vencimento', ate)
-  const [{ data: pagos }, { data: criancasAtivas }, { data: cfgDesc }] = await Promise.all([
-    pagosQ,
+  const [{ data: criancasAtivas }, { data: cfgDesc }] = await Promise.all([
     supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
     supabase.from('config_sistema').select('desconto_ativo').eq('id', 1).maybeSingle(),
   ])
@@ -62,10 +56,10 @@ export default async function FinanceiroPage({
   }
   const porModalidade: Record<string, number> = {}
   let totalRecebido = 0
-  for (const p of pagos ?? []) {
-    const v = valorMovimentadoLancamento(Number(p.valor), Number(p.desconto), p.capture_method)
+  for (const p of pagos) {
+    const v = valorMovimentadoLancamento(p.valor, p.desconto, p.modalidade)
     totalRecebido += v
-    const b = bucket(p.capture_method)
+    const b = bucket(p.modalidade)
     porModalidade[b] = (porModalidade[b] ?? 0) + v
   }
   const MODALIDADES: { k: string; label: string; cls: string }[] = [
@@ -75,7 +69,7 @@ export default async function FinanceiroPage({
     { k: 'credito', label: '💳 Crédito', cls: 'bg-fuchsia-100 text-fuchsia-800' },
   ]
 
-  const qs = new URLSearchParams({ status, ...(de && { de }), ...(ate && { ate }) })
+  const qs = new URLSearchParams({ status, origem, modalidade, ...(de && { de }), ...(ate && { ate }) })
 
   return (
     <div className="space-y-4">
@@ -108,7 +102,7 @@ export default async function FinanceiroPage({
       {/* Filtros numa linha só */}
       <form method="get" className={`flex flex-wrap items-end gap-2 ${card}`}>
         <div className="flex flex-wrap gap-2">
-          {(['pendente', 'pago', 'todos'] as StatusFiltro[]).map((s) => (
+          {STATUS_FINANCEIRO.map((s) => (
             <label key={s} className="cursor-pointer">
               <input
                 type="radio"
@@ -118,12 +112,28 @@ export default async function FinanceiroPage({
                 className="peer sr-only"
               />
               <span className="block rounded-full border-2 border-slate-200 px-4 py-1.5 text-sm font-semibold text-slate-500 peer-checked:border-emerald-400 peer-checked:bg-emerald-50 peer-checked:text-emerald-700">
-                {s === 'pendente' ? 'Pendentes' : s === 'pago' ? 'Pagos' : 'Todos'}
+                {s === 'pendente' ? 'Pendentes' : s === 'pago' ? 'Pagos' : s === 'cancelado' ? 'Cancelados' : 'Todos'}
               </span>
             </label>
           ))}
         </div>
         <span className="mx-1 hidden h-6 w-px bg-slate-200 sm:block" />
+        <label className="text-xs font-semibold text-slate-500">
+          Origem
+          <select name="origem" defaultValue={origem} className="mt-1 block rounded-2xl border-2 border-slate-200 bg-white px-3 py-1.5 text-sm">
+            <option value="todos">Todas</option><option value="presenca">Play / Diária</option>
+            <option value="mensalidade">Mensalidade</option><option value="colonia">Colônia</option>
+            <option value="avulso">Avulso</option>
+          </select>
+        </label>
+        <label className="text-xs font-semibold text-slate-500">
+          Modalidade
+          <select name="modalidade" defaultValue={modalidade} className="mt-1 block rounded-2xl border-2 border-slate-200 bg-white px-3 py-1.5 text-sm">
+            <option value="todos">Todas</option><option value="dinheiro">Dinheiro</option>
+            <option value="pix">Pix</option><option value="debito">Débito</option>
+            <option value="credito">Crédito</option><option value="cortesia">Cortesia</option>
+          </select>
+        </label>
         <label className="text-xs font-semibold text-slate-500">
           De
           <input
@@ -148,38 +158,37 @@ export default async function FinanceiroPage({
         >
           Filtrar
         </button>
+        <Link href="/financeiro" className="rounded-full px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
+          Limpar
+        </Link>
       </form>
 
       {/* Resultado + ações na mesma linha */}
       <div className="flex flex-wrap items-center gap-2 px-1">
         <span className="mr-auto text-sm text-slate-500">
-          {lancamentos?.length ?? 0} lançamento(s) · total{' '}
+          {lancamentos.length} lançamento(s) · total do filtro{' '}
           <strong>{formatBRL(total)}</strong>
         </span>
         <AvulsoForm criancas={criancasAtivas ?? []} />
-        <a
-          href={`/financeiro/export?${qs.toString()}`}
-          className="text-sm font-semibold text-emerald-700"
-        >
-          ⬇️ Exportar CSV
-        </a>
+        <a href={`/financeiro/export.xlsx?${qs.toString()}`} className="text-sm font-semibold text-emerald-700">📊 Exportar Excel</a>
+        <a href={`/financeiro/export?${qs.toString()}`} className="text-sm font-semibold text-slate-500">CSV</a>
       </div>
 
-      {error && (
-        <p className="text-sm font-semibold text-rose-500">Erro: {error.message}</p>
+      {(filtros.erro || erroLancamentos || erroPagos) && (
+        <p className="text-sm font-semibold text-rose-500">Erro: {filtros.erro ?? erroLancamentos ?? erroPagos}</p>
       )}
 
       <LancamentosLista
         descontoAtivo={descontoAtivo}
-        lancamentos={(lancamentos ?? []).map((l) => ({
+        lancamentos={lancamentos.map((l) => ({
           id: l.id,
           descricao: l.descricao,
           valor: Number(l.valor),
           desconto: Number(l.desconto),
           vencimento: l.vencimento,
           status: l.status,
-          captureMethod: l.capture_method,
-          nome: l.crianca?.nome ?? '—',
+          captureMethod: l.modalidade,
+          nome: l.crianca || '—',
         }))}
       />
     </div>

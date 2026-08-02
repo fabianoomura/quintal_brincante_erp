@@ -6,6 +6,7 @@ import { calcularLotacao } from '@/lib/lotacao'
 import { formatBRL } from '@/lib/dinheiro'
 import { valorMovimentadoLancamento } from '@/lib/financeiro'
 import GerarMensalidades from './gerar-mensalidades'
+import { normalizarMes, periodoDoMes } from '@/lib/financeiro-filtros'
 
 // KPI clicável: tocar no número abre a tela que explica o número.
 function Card({
@@ -39,17 +40,21 @@ function Card({
   return <div className={estilo}>{conteudo}</div>
 }
 
-export default async function GerencialPage() {
+export default async function GerencialPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   await requireAdmin()
+  const sp = await searchParams
   const supabase = await createClient()
   const hoje = hojeISO()
+  const mes = normalizarMes(sp.mes, hoje.slice(0, 7))
+  const periodo = periodoDoMes(mes)
 
   const [abertas, presencasHoje, criancasAtivas, lancamentos, cfg, mensalistas, inscricoes] =
     await Promise.all([
       supabase.from('presenca').select('id').eq('data', hoje).is('saida', null),
       supabase.from('presenca').select('origem').eq('data', hoje),
       supabase.from('crianca').select('id').eq('ativo', true),
-      supabase.from('lancamento').select('valor, desconto, status, origem_tipo, capture_method'),
+      supabase.from('lancamento').select('valor, desconto, status, origem_tipo, capture_method')
+        .gte('vencimento', periodo.de).lte('vencimento', periodo.ate),
       supabase.from('config_sistema').select('capacidade_dia').eq('id', 1).maybeSingle(),
       supabase.from('mensalidade').select('id').eq('ativo', true),
       supabase.from('inscricao_colonia').select('id, colonia:colonia_id (ativo)'),
@@ -76,6 +81,7 @@ export default async function GerencialPage() {
     { tipo: 'presenca', label: '🎠 Play / ☀️ Diária' },
     { tipo: 'mensalidade', label: '🎟️ Mensalidade' },
     { tipo: 'colonia', label: '🏕️ Colônia' },
+    { tipo: 'avulso', label: '🧾 Avulso' },
   ]
   const receitaPorTipo = TIPOS.map(({ tipo, label }) => {
     const doTipo = todos.filter((l) => l.origem_tipo === tipo)
@@ -97,6 +103,15 @@ export default async function GerencialPage() {
         </Link>
         <h1 className="text-2xl font-bold text-slate-700">📊 Painel gerencial</h1>
       </div>
+
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+        <label className="text-xs font-semibold text-slate-500">
+          Competência financeira
+          <input type="month" name="mes" defaultValue={mes} className="mt-1 block rounded-xl border-2 border-slate-200 px-3 py-1.5 text-sm" />
+        </label>
+        <button type="submit" className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold text-white">Atualizar</button>
+        <a href={`/financeiro/export.xlsx?status=todos&origem=todos&modalidade=todos&de=${periodo.de}&ate=${periodo.ate}`} className="ml-auto text-sm font-semibold text-emerald-700">📊 Exportar Excel</a>
+      </form>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card
@@ -133,16 +148,16 @@ export default async function GerencialPage() {
         />
         <Card
           titulo="A receber"
-          href="/financeiro?status=pendente"
+          href={`/financeiro?status=pendente&origem=todos&modalidade=todos&de=${periodo.de}&ate=${periodo.ate}`}
           valor={formatBRL(totalPend)}
-          sub={`${todos.filter((l) => l.status === 'pendente').length} pendente(s)`}
+          sub={`${todos.filter((l) => l.status === 'pendente').length} pendente(s) no mês`}
           cls="bg-orange-100 text-orange-800"
         />
         <Card
           titulo="Recebido"
-          href="/financeiro?status=pago"
+          href={`/financeiro?status=pago&origem=todos&modalidade=todos&de=${periodo.de}&ate=${periodo.ate}`}
           valor={formatBRL(totalPago)}
-          sub={`${todos.filter((l) => l.status === 'pago').length} pago(s)`}
+          sub={`${todos.filter((l) => l.status === 'pago').length} pago(s) no mês`}
           cls="bg-violet-100 text-violet-800"
         />
       </div>
@@ -198,7 +213,7 @@ export default async function GerencialPage() {
       {/* Receita por tipo de negócio */}
       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <div className="mb-2 font-display text-base font-bold text-slate-700">
-          💵 Receita por tipo
+          💵 Receita por tipo · competência {mes}
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-400">

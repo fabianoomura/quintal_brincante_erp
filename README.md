@@ -25,8 +25,8 @@ playground, recebimentos, mensagens, endereço e regras financeiras.
   recebimento e exclusão administrativa de operações de teste concluídas.
 - Mensagens editáveis com variáveis padrão, como `{{responsavel_nome}}` e
   `{{crianca_nome}}`; avisos rápidos do play têm até 6 ativos por vez.
-- Financeiro com lançamentos, baixa manual, valor editável, descontos, cortesia sem movimento
-  de receita e exportação CSV.
+- Financeiro com lançamentos, filtros por status/período/origem/modalidade, baixa manual, valor
+  editável, descontos, cortesia sem movimento de receita e exportação Excel/CSV.
 
 ## Stack
 

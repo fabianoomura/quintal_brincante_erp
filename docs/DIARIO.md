@@ -288,6 +288,22 @@ Levas pontuais após acompanhar a operação real:
 - **Qualidade:** 119 testes (novos: pausa no checkout + `pausaSegundos`), lint, typecheck e
   build de produção limpos.
 
+## Revisão dos módulos financeiros + Excel (2026-08-02)
+
+- **Lançamentos:** filtros validados por status (incluindo cancelados), período de vencimento,
+  origem e modalidade; botão para limpar; total e cards usam o mesmo conjunto filtrado.
+- **Gerencial:** os KPIs financeiros deixaram de misturar todo o histórico com links do dia.
+  Agora usam o mês de competência escolhido e abrem o mesmo período no Financeiro.
+- **Faturamento:** seletor direto de mês, competência explicitada como vencimento e card de
+  cortesias separado da receita.
+- **Exportação Excel real (`.xlsx`):** disponível nos três módulos. A pasta contém as abas
+  `Resumo` e `Lançamentos`, com fórmulas auditáveis, datas e valores tipados, cabeçalhos fixos,
+  autofiltro e detalhamento do movimento financeiro (cortesia = zero). CSV foi mantido.
+- **Escala e consistência:** tela e exportações carregam lançamentos em lotes de 1.000, sem o
+  antigo corte silencioso de 200 registros. Os mesmos filtros são reutilizados por CSV e Excel.
+- **Qualidade:** 124 testes e lint limpos; build local depende do acesso às fontes Google do
+  `next/font` e deve ser validado com rede disponível.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

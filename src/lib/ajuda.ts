@@ -107,19 +107,20 @@ export const AJUDA: Record<string, Ajuda> = {
       'Todos os lançamentos (play, mensalidade, colônia, diária). É onde se dá baixa quando o pagamento entra.',
     dicas: [
       'Na baixa você escolhe a forma de recebimento e pode aplicar desconto.',
-      'Os cards separam o total por modalidade de recebimento.',
-      'Dá para exportar a conciliação de um período em CSV.',
+      'Filtre por status, período de vencimento, origem e modalidade.',
+      'Os cards separam o total recebido por modalidade; cortesia não entra na receita.',
+      'A exportação Excel leva um resumo e todos os lançamentos do filtro; CSV continua disponível.',
     ],
   },
   '/faturamento': {
     titulo: 'Faturamento',
     texto:
-      'Visão da receita dividida por operação (play, mensalistas, colônia…) e por mês. Serve para acompanhar quanto cada frente rendeu.',
+      'Visão mensal por competência (vencimento), dividida por operação, com recebido, a receber e cortesias. Pode ser exportada para Excel.',
   },
   '/gerencial': {
     titulo: 'Gerencial',
     texto:
-      'Painel do dono (admin): indicadores do dia e ações de gestão, como gerar as mensalidades do mês.',
+      'Painel do dono (admin): operação do dia e indicadores financeiros do mês selecionado. Os cards financeiros abrem o mesmo período no Financeiro.',
   },
   '/ambientes': {
     titulo: 'Ambientes',

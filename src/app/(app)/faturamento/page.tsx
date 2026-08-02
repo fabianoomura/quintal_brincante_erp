@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/colaborador'
 import { hojeISO } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
 import { valorMovimentadoLancamento } from '@/lib/financeiro'
+import { normalizarMes, periodoDoMes } from '@/lib/financeiro-filtros'
+import { buscarLancamentosRelatorio } from '../financeiro/export/dados'
 
 const MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -26,29 +27,30 @@ export default async function FaturamentoPage({
 }) {
   await requireAdmin()
   const sp = await searchParams
-  const mesParam = sp.mes ?? hojeISO().slice(0, 7)
+  const mesParam = normalizarMes(sp.mes, hojeISO().slice(0, 7))
   const [ano, mes] = mesParam.split('-').map(Number)
-  const primeiro = `${ano}-${pad(mes)}-01`
-  const ultimo = `${ano}-${pad(mes)}-${pad(new Date(ano, mes, 0).getDate())}`
-
-  const supabase = await createClient()
-  const { data: lancs } = await supabase
-    .from('lancamento')
-    .select('valor, desconto, status, origem_tipo, capture_method')
-    .gte('vencimento', primeiro)
-    .lte('vencimento', ultimo)
+  const periodo = periodoDoMes(mesParam)
+  const { data: lancs, erro } = await buscarLancamentosRelatorio({
+    status: 'todos', origem: 'todos', modalidade: 'todos', ...periodo,
+  })
 
   const por: Record<string, { aReceber: number; recebido: number }> = {}
   let totAReceber = 0
   let totRecebido = 0
-  for (const l of lancs ?? []) {
-    const t = l.origem_tipo ?? 'avulso'
+  let totCortesia = 0
+  let qtdCortesia = 0
+  for (const l of lancs) {
+    const t = l.origem || 'avulso'
     por[t] ??= { aReceber: 0, recebido: 0 }
-    const v = Number(l.valor) - Number(l.desconto)
+    const v = Math.max(0, l.valor - l.desconto)
     if (l.status === 'pago') {
-      const movimentado = valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method)
+      const movimentado = valorMovimentadoLancamento(l.valor, l.desconto, l.modalidade)
       por[t].recebido += movimentado
       totRecebido += movimentado
+      if (l.modalidade === 'cortesia') {
+        totCortesia += v
+        qtdCortesia++
+      }
     } else if (l.status === 'pendente') {
       por[t].aReceber += v
       totAReceber += v
@@ -70,7 +72,18 @@ export default async function FaturamentoPage({
         <Link href={`/faturamento?mes=${addMes(ano, mes, 1)}`} className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">Próximo →</Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <form method="get" className="flex flex-wrap items-end gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+        <label className="text-xs font-semibold text-slate-500">
+          Mês de competência (vencimento)
+          <input type="month" name="mes" defaultValue={mesParam} className="mt-1 block rounded-xl border-2 border-slate-200 px-3 py-1.5 text-sm" />
+        </label>
+        <button type="submit" className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Ver mês</button>
+        <a href={`/financeiro/export.xlsx?status=todos&origem=todos&modalidade=todos&de=${periodo.de}&ate=${periodo.ate}`} className="ml-auto text-sm font-semibold text-emerald-700">📊 Exportar Excel</a>
+      </form>
+
+      {erro && <p className="text-sm font-semibold text-rose-500">Erro ao carregar: {erro}</p>}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <div className="rounded-2xl bg-emerald-600 p-4 text-white shadow-sm">
           <div className="text-xs font-semibold opacity-80">Recebido no mês</div>
           <div className="font-display text-2xl font-bold">{formatBRL(totRecebido)}</div>
@@ -78,6 +91,11 @@ export default async function FaturamentoPage({
         <div className="rounded-2xl bg-orange-500 p-4 text-white shadow-sm">
           <div className="text-xs font-semibold opacity-80">A receber no mês</div>
           <div className="font-display text-2xl font-bold">{formatBRL(totAReceber)}</div>
+        </div>
+        <div className="col-span-2 rounded-2xl bg-slate-700 p-4 text-white shadow-sm lg:col-span-1">
+          <div className="text-xs font-semibold opacity-80">Cortesias no mês</div>
+          <div className="font-display text-2xl font-bold">{formatBRL(totCortesia)}</div>
+          <div className="text-xs opacity-70">{qtdCortesia} lançamento(s) · não é receita</div>
         </div>
       </div>
 
