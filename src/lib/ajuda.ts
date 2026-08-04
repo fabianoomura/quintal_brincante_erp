@@ -121,7 +121,13 @@ export const AJUDA: Record<string, Ajuda> = {
   '/gerencial': {
     titulo: 'Gerencial',
     texto:
-      'Painel do dono (admin): operação do dia e indicadores financeiros do mês selecionado. Os cards financeiros abrem o mesmo período no Financeiro.',
+      'Painel do dono (admin): relatório operacional por período e indicadores financeiros das mesmas datas.',
+    dicas: [
+      'Escolha a data inicial e final para ver atendimentos, crianças diferentes, permanência e pico simultâneo.',
+      'Movimento por dia mostra quando houve mais e menos atendimento; dias sem presença não são tratados como dias abertos.',
+      'Dia da semana × faixa compara entradas até 14h, entre 14h e 18h e depois das 18h.',
+      'O Excel operacional leva resumo, movimento diário, horários, faixas e todos os atendimentos para auditoria.',
+    ],
   },
   '/ambientes': {
     titulo: 'Ambientes',

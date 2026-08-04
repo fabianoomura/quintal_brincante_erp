@@ -3,7 +3,7 @@
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
 (plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra), o [OPERACAO.md](OPERACAO.md)
 (rotinas do dia a dia) e o [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-07-20**.
+Última atualização: **2026-08-04**.
 
 ---
 
@@ -311,6 +311,27 @@ Levas pontuais após acompanhar a operação real:
   cobrança mediante motivo obrigatório (gravado em `presenca.obs` e nos campos estruturados
   de auditoria). Administradores também podem excluir entradas de teste, com confirmação,
   preservando cadastro da criança e conversas.
+
+## Relatório operacional mensal no Gerencial (2026-08-04)
+
+- **Período livre:** o Gerencial aceita data inicial e final (por exemplo, 01/07 a 31/07),
+  mantendo compatibilidade com links antigos por competência mensal.
+- **Resumo executivo:** atendimentos, crianças diferentes, dias com movimento, média por dia,
+  permanência média, criança-horas e maior pico simultâneo com data e horário.
+- **Leitura de movimento:** identifica os dias com maior e menor volume entre os dias que
+  possuem atendimento registrado. Dias zerados não são classificados como fracos porque o
+  sistema não distingue estabelecimento fechado de estabelecimento aberto sem movimento.
+- **Análise de horários:** tabelas por dia e por hora, além do cruzamento dia da semana × faixa
+  de entrada (até 14h, 14–18h e após 18h), permitindo avaliar abertura ao meio-dia e movimento
+  noturno de sexta, sábado e domingo.
+- **Qualidade dos dados:** check-outs antigos pendentes são destacados; contam como entrada,
+  mas ficam fora de duração e lotação para não criar permanências artificiais até o fim do dia.
+- **Excel operacional organizado:** cinco abas (`Resumo`, `Movimento diário`, `Dia x faixa`,
+  `Horários` e `Atendimentos`), com valores tipados, filtros, cabeçalhos fixos, fórmulas de
+  conferência e detalhamento registro a registro. O Excel financeiro continua disponível em
+  botão separado.
+- **Qualidade:** cálculos cobertos por testes unitários de volume, simultaneidade, horários,
+  faixas e presenças incompletas.
 
 ## Fila de próximos passos
 
