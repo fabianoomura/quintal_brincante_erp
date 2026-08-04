@@ -55,6 +55,12 @@ export type ResumoDiaSemana = {
   apos18: number
 }
 
+export type ResumoFaixa = {
+  label: string
+  atendimentos: number
+  percentual: number
+}
+
 export type RelatorioGerencial = {
   presencas: PresencaRelatorioNormalizada[]
   dias: ResumoDia[]
@@ -72,6 +78,11 @@ export type RelatorioGerencial = {
   picoLotacao: ResumoDia | null
   menorPicoLotacao: ResumoDia | null
   horarioMaisEntradas: ResumoHorario | null
+  rankingDiasSemana: ResumoDiaSemana[]
+  rankingDatas: ResumoDia[]
+  rankingHorarios: ResumoHorario[]
+  faixas: ResumoFaixa[]
+  faixaMaisForte: ResumoFaixa | null
 }
 
 const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
@@ -228,6 +239,19 @@ export function calcularRelatorioGerencial(
   const duracoes = presencas.flatMap((p) => p.duracaoMin == null ? [] : [p.duracaoMin])
   const diasComPico = dias.filter((d) => d.picoSimultaneo > 0)
   const horariosComEntrada = horarios.filter((h) => h.entradas > 0)
+  const totalAntes14 = dias.reduce((s, d) => s + d.antes14, 0)
+  const totalEntre14e18 = dias.reduce((s, d) => s + d.entre14e18, 0)
+  const totalApos18 = dias.reduce((s, d) => s + d.apos18, 0)
+  const faixas: ResumoFaixa[] = [
+    { label: 'Até 14h', atendimentos: totalAntes14, percentual: presencas.length ? totalAntes14 / presencas.length : 0 },
+    { label: '14h às 18h', atendimentos: totalEntre14e18, percentual: presencas.length ? totalEntre14e18 / presencas.length : 0 },
+    { label: 'Após 18h', atendimentos: totalApos18, percentual: presencas.length ? totalApos18 / presencas.length : 0 },
+  ]
+  const rankingDiasSemana = diasSemana
+    .filter((d) => d.diasComMovimento > 0)
+    .sort((a, b) => b.mediaPorDia - a.mediaPorDia || b.atendimentos - a.atendimentos || a.dia - b.dia)
+  const rankingDatas = [...dias].sort((a, b) => b.atendimentos - a.atendimentos || b.picoSimultaneo - a.picoSimultaneo || a.data.localeCompare(b.data))
+  const rankingHorarios = [...horariosComEntrada].sort((a, b) => b.entradas - a.entradas || b.picoSimultaneo - a.picoSimultaneo || a.hora - b.hora)
   return {
     presencas,
     dias,
@@ -245,6 +269,11 @@ export function calcularRelatorioGerencial(
     picoLotacao: escolher(diasComPico, (a, b) => b.picoSimultaneo - a.picoSimultaneo || a.data.localeCompare(b.data)),
     menorPicoLotacao: escolher(diasComPico, (a, b) => a.picoSimultaneo - b.picoSimultaneo || a.data.localeCompare(b.data)),
     horarioMaisEntradas: escolher(horariosComEntrada, (a, b) => b.entradas - a.entradas || a.hora - b.hora),
+    rankingDiasSemana,
+    rankingDatas,
+    rankingHorarios,
+    faixas,
+    faixaMaisForte: escolher(faixas.filter((f) => f.atendimentos > 0), (a, b) => b.atendimentos - a.atendimentos),
   }
 }
 

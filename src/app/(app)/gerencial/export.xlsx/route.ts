@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     [c('Check-outs antigos pendentes'), c(relatorio.incompletas, 'integer', `SUM(${abaDia}!$N$2:$N$${ultimaDia})`), c('Contam como entrada, mas não como duração ou lotação.')],
     [],
     [c('Como ler o arquivo', 'header')],
-    [c('Movimento diário mostra volume e pico de cada data. Dia x faixa compara os períodos antes das 14h, das 14h às 18h e após as 18h. Horários detalha cada hora. Atendimentos permite auditoria registro a registro.')],
+    [c('Melhores dias e horários traz rankings e gráficos para decisão. Movimento diário mostra volume e pico de cada data. Dia x faixa compara os períodos antes das 14h, das 14h às 18h e após as 18h. Horários detalha cada hora. Atendimentos permite auditoria registro a registro.')],
   ]
 
   const diario: XlsxCell[][] = [[
@@ -115,8 +115,112 @@ export async function GET(request: Request) {
     c(horaExcel(p.duracaoMin), 'duration'), c(p.incompleta ? 'Check-out pendente' : p.saida == null ? 'Em andamento' : 'Concluída'), c(p.id),
   ])]
 
+  const melhorDiaSemana = relatorio.rankingDiasSemana[0] ?? null
+  const melhorData = relatorio.rankingDatas[0] ?? null
+  const melhorHorario = relatorio.rankingHorarios[0] ?? null
+  const faixaApos18 = relatorio.faixas.find((f) => f.label === 'Após 18h')
+  const fimSemana = relatorio.diasSemana.filter((d) => d.dia === 0 || d.dia === 5 || d.dia === 6)
+  const totalFimSemana = fimSemana.reduce((s, d) => s + d.atendimentos, 0)
+  const apos18FimSemana = fimSemana.reduce((s, d) => s + d.apos18, 0)
+  const analise: XlsxCell[][] = [
+    [c('Melhores dias e horários — apoio à decisão', 'title')],
+    [c(`Período: ${dataBR(periodo.de)} a ${dataBR(periodo.ate)} · Rankings consideram apenas dias com movimento registrado.`, 'subtitle')],
+    [],
+    [c('Indicador', 'header'), c('Resultado', 'header'), c('Leitura', 'header')],
+    [c('Melhor dia da semana'), c(melhorDiaSemana?.label ?? '—'), c(melhorDiaSemana ? `${melhorDiaSemana.mediaPorDia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} atendimento(s) em média por dia ativo` : 'Sem movimento')],
+    [c('Melhor data do período'), c(melhorData ? dataExcel(melhorData.data) : null, 'date'), c(melhorData ? `${melhorData.atendimentos} atendimento(s) · pico simultâneo ${melhorData.picoSimultaneo}` : 'Sem movimento')],
+    [c('Melhor horário de entrada'), c(melhorHorario ? horaExcel(melhorHorario.hora * 60) : null, 'time'), c(melhorHorario ? `${melhorHorario.entradas} entrada(s) no período` : 'Sem movimento')],
+    [c('Faixa mais forte'), c(relatorio.faixaMaisForte?.label ?? '—'), c(relatorio.faixaMaisForte ? `${relatorio.faixaMaisForte.atendimentos} entrada(s) · ${(relatorio.faixaMaisForte.percentual * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do total` : 'Sem movimento')],
+    [c('Participação após 18h'), c(faixaApos18?.percentual ?? 0, 'percent'), c(`${faixaApos18?.atendimentos ?? 0} entrada(s) após 18h no período`) ],
+    [c('Após 18h em sex./sáb./dom.'), c(totalFimSemana ? apos18FimSemana / totalFimSemana : 0, 'percent'), c(`${apos18FimSemana} de ${totalFimSemana} entrada(s) nesses dias`) ],
+    [],
+    [c('Ranking dos dias da semana', 'header')],
+    [c('Dia da semana', 'header'), c('Média por dia ativo', 'header'), c('Atendimentos', 'header'), c('Dias ativos', 'header')],
+  ]
+  for (const d of relatorio.rankingDiasSemana) {
+    const origem = d.dia + 2
+    analise.push([
+      c(d.label, undefined, `'Dia x faixa'!A${origem}`),
+      c(d.mediaPorDia, 'decimal', `'Dia x faixa'!D${origem}`),
+      c(d.atendimentos, 'integer', `'Dia x faixa'!C${origem}`),
+      c(d.diasComMovimento, 'integer', `'Dia x faixa'!B${origem}`),
+    ])
+  }
+  analise.push([], [c('Top 10 datas do período', 'header')], [c('Data', 'header'), c('Atendimentos', 'header'), c('Pico simultâneo', 'header'), c('Permanência média', 'header')])
+  for (const d of relatorio.rankingDatas.slice(0, 10)) {
+    const origem = relatorio.dias.findIndex((item) => item.data === d.data) + 2
+    analise.push([
+      c(dataExcel(d.data), 'date', `'Movimento diário'!A${origem}`),
+      c(d.atendimentos, 'integer', `'Movimento diário'!C${origem}`),
+      c(d.picoSimultaneo, 'integer', `'Movimento diário'!G${origem}`),
+      c(horaExcel(d.permanenciaMediaMin), 'duration', `'Movimento diário'!I${origem}`),
+    ])
+  }
+  analise.push([], [c('Top 10 horários de entrada', 'header')], [c('Faixa horária', 'header'), c('Entradas', 'header'), c('Pico simultâneo', 'header'), c('Criança-horas', 'header')])
+  for (const h of relatorio.rankingHorarios.slice(0, 10)) {
+    const origem = h.hora + 2
+    analise.push([
+      c(`${String(h.hora).padStart(2, '0')}:00–${String(h.hora).padStart(2, '0')}:59`, undefined, `'Horários'!A${origem}`),
+      c(h.entradas, 'integer', `'Horários'!B${origem}`),
+      c(h.picoSimultaneo, 'integer', `'Horários'!F${origem}`),
+      c(h.criancaHoras, 'decimal', `'Horários'!E${origem}`),
+    ])
+  }
+  analise.push([], [c('Participação por faixa do dia', 'header')], [c('Faixa', 'header'), c('Entradas', 'header'), c('Participação', 'header')])
+  const linhaFaixasInicio = analise.length + 1
+  const colunasFaixa = ['E', 'F', 'G']
+  relatorio.faixas.forEach((f, i) => {
+    const formulaTotal = `SUM('Dia x faixa'!$${colunasFaixa[i]}$2:$${colunasFaixa[i]}$8)`
+    const linha = analise.length + 1
+    analise.push([
+      c(f.label),
+      c(f.atendimentos, 'integer', formulaTotal),
+      c(f.percentual, 'percent', `IFERROR(B${linha}/SUM($B$${linhaFaixasInicio}:$B$${linhaFaixasInicio + 2}),0)`),
+    ])
+  })
+
+  const horasComEntrada = relatorio.horarios.filter((h) => h.entradas > 0)
+  const primeiraHora = horasComEntrada.length ? Math.min(...horasComEntrada.map((h) => h.hora)) : 0
+  const ultimaHora = horasComEntrada.length ? Math.max(...horasComEntrada.map((h) => h.hora)) : 23
+  const horasGrafico = relatorio.horarios.slice(primeiraHora, ultimaHora + 1)
+  const graficosAnalise = [
+    {
+      type: 'column' as const,
+      title: 'Média de atendimentos por dia ativo',
+      from: { col: 4, row: 3 }, to: { col: 12, row: 18 },
+      series: [{
+        name: 'Média por dia ativo', color: '059669',
+        categoryRange: `'Dia x faixa'!$A$2:$A$8`, valueRange: `'Dia x faixa'!$D$2:$D$8`,
+        categories: relatorio.diasSemana.map((d) => d.label), values: relatorio.diasSemana.map((d) => d.mediaPorDia),
+      }],
+    },
+    {
+      type: 'line' as const,
+      title: 'Entradas por horário',
+      from: { col: 4, row: 20 }, to: { col: 12, row: 35 },
+      series: [{
+        name: 'Entradas', color: '4F46E5',
+        categoryRange: `'Horários'!$A$${primeiraHora + 2}:$A$${ultimaHora + 2}`,
+        valueRange: `'Horários'!$B$${primeiraHora + 2}:$B$${ultimaHora + 2}`,
+        categories: horasGrafico.map((h) => `${String(h.hora).padStart(2, '0')}:00`), values: horasGrafico.map((h) => h.entradas),
+      }],
+    },
+    {
+      type: 'column' as const,
+      title: 'Entradas por faixa do dia',
+      from: { col: 4, row: 37 }, to: { col: 12, row: 52 },
+      series: [{
+        name: 'Entradas', color: 'F59E0B',
+        categoryRange: `'Melhores dias e horários'!$A$${linhaFaixasInicio}:$A$${linhaFaixasInicio + 2}`,
+        valueRange: `'Melhores dias e horários'!$B$${linhaFaixasInicio}:$B$${linhaFaixasInicio + 2}`,
+        categories: relatorio.faixas.map((f) => f.label), values: relatorio.faixas.map((f) => f.atendimentos),
+      }],
+    },
+  ]
+
   const arquivo = criarXlsx([
     { name: 'Resumo', rows: resumo, widths: [34, 20, 74], freezeRows: 3, mergeTitleAcross: 3 },
+    { name: 'Melhores dias e horários', rows: analise, widths: [27, 22, 22, 20, 12, 12, 12, 12, 12, 12, 12, 12, 12], freezeRows: 3, mergeTitleAcross: 13, charts: graficosAnalise },
     { name: 'Movimento diário', rows: diario, widths: [13, 18, 15, 16, 17, 16, 17, 17, 19, 16, 18, 18, 19, 22], freezeRows: 1, autoFilterRow: 1 },
     { name: 'Dia x faixa', rows: diaFaixa, widths: [19, 21, 16, 21, 18, 18, 19], freezeRows: 1, autoFilterRow: 1 },
     { name: 'Horários', rows: horarios, widths: [20, 13, 13, 30, 17, 22], freezeRows: 1, autoFilterRow: 1 },

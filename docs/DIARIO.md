@@ -326,10 +326,15 @@ Levas pontuais após acompanhar a operação real:
   noturno de sexta, sábado e domingo.
 - **Qualidade dos dados:** check-outs antigos pendentes são destacados; contam como entrada,
   mas ficam fora de duração e lotação para não criar permanências artificiais até o fim do dia.
-- **Excel operacional organizado:** cinco abas (`Resumo`, `Movimento diário`, `Dia x faixa`,
-  `Horários` e `Atendimentos`), com valores tipados, filtros, cabeçalhos fixos, fórmulas de
-  conferência e detalhamento registro a registro. O Excel financeiro continua disponível em
-  botão separado.
+- **Excel operacional organizado:** seis abas (`Resumo`, `Melhores dias e horários`,
+  `Movimento diário`, `Dia x faixa`, `Horários` e `Atendimentos`), com valores tipados,
+  filtros, cabeçalhos fixos, fórmulas de conferência e detalhamento registro a registro. O
+  Excel financeiro continua disponível em botão separado.
+- **Apoio à decisão (2026-08-04):** a aba executiva ordena dias da semana pela média de
+  atendimentos por dia ativo, lista as dez melhores datas e os dez melhores horários, mede a
+  participação das faixas até 14h, 14–18h e após 18h, e destaca especificamente o movimento
+  noturno de sexta a domingo. Três gráficos nativos do Excel comparam dias da semana, curva de
+  entradas por horário e faixas do dia; todos apontam para tabelas auditáveis da pasta.
 - **Qualidade:** cálculos cobertos por testes unitários de volume, simultaneidade, horários,
   faixas e presenças incompletas.
 

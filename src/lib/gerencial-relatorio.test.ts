@@ -44,6 +44,19 @@ test('relatorio identifica faixas antes das 14, tarde e apos 18', () => {
     { antes14: 2, entre14e18: 0, apos18: 1 },
   )
   assert.equal(r.horarioMaisEntradas?.hora, 18)
+  assert.deepEqual(r.faixas.map((f) => [f.label, f.atendimentos]), [
+    ['Até 14h', 2], ['14h às 18h', 0], ['Após 18h', 2],
+  ])
+  assert.equal(r.faixas[2].percentual, 0.5)
+})
+
+test('rankings priorizam media do dia da semana e volume de datas e horarios', () => {
+  const r = calcularRelatorioGerencial(base, { hoje: '2026-08-04', agoraMin: 1000 })
+  assert.equal(r.rankingDiasSemana[0].label, 'sexta-feira')
+  assert.equal(r.rankingDiasSemana[0].mediaPorDia, 3)
+  assert.equal(r.rankingDatas[0].data, '2026-07-03')
+  assert.equal(r.rankingHorarios[0].hora, 18)
+  assert.equal(r.faixaMaisForte?.atendimentos, 2)
 })
 
 test('horarios medem entradas, sobreposicao e crianca-horas', () => {
