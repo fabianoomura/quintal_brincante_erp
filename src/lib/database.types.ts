@@ -814,6 +814,66 @@ export type Database = {
         }
         Relationships: []
       }
+      operacao_play_dia: {
+        Row: {
+          aberto: boolean
+          abertura: string | null
+          atualizado_por: string | null
+          created_at: string
+          criado_por: string | null
+          custo_pessoal: number | null
+          data: string
+          fechamento: string | null
+          observacao: string | null
+          outros_custos: number
+          pessoas: number
+          updated_at: string
+        }
+        Insert: {
+          aberto?: boolean
+          abertura?: string | null
+          atualizado_por?: string | null
+          created_at?: string
+          criado_por?: string | null
+          custo_pessoal?: number | null
+          data: string
+          fechamento?: string | null
+          observacao?: string | null
+          outros_custos?: number
+          pessoas?: number
+          updated_at?: string
+        }
+        Update: {
+          aberto?: boolean
+          abertura?: string | null
+          atualizado_por?: string | null
+          created_at?: string
+          criado_por?: string | null
+          custo_pessoal?: number | null
+          data?: string
+          fechamento?: string | null
+          observacao?: string | null
+          outros_custos?: number
+          pessoas?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operacao_play_dia_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operacao_play_dia_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presenca: {
         Row: {
           ambiente_id: string | null

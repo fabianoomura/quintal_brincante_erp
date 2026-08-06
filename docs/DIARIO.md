@@ -338,6 +338,31 @@ Levas pontuais após acompanhar a operação real:
 - **Qualidade:** cálculos cobertos por testes unitários de volume, simultaneidade, horários,
   faixas e presenças incompletas.
 
+## Viabilidade da operação do Play (2026-08-05)
+
+- **Comparação pronta para decisão:** nova visão no Gerencial separa mês anterior, mês atual
+  (identificado como parcial quando ainda está em andamento) e os dois meses consolidados.
+- **Dias realmente funcionando:** check-ins continuam provando que houve operação, mas agora a
+  tabela `operacao_play_dia` registra também dias abertos sem nenhuma criança e dias fechados.
+  Assim, a média deixa de ignorar justamente os dias de movimento zero.
+- **Semáforo relativo à média:** dias da semana, horários de 12h a 22h e o mapa dia × horário
+  usam vermelho abaixo de 70% da média, cinza entre 70% e 130% e verde nos picos acima de 130%.
+  A classificação é calculada separadamente para julho, agosto e consolidado.
+- **Custo e equipe externos:** o admin pode preencher quantidade de pessoas, abertura,
+  fechamento, custo total da equipe, outros custos e observação por data. Uma escala pode ser
+  aplicada em lote por dias da semana (por exemplo, seg.–qui. com 1 pessoa e sex.–sáb. com 2),
+  mantendo edição individual para domingos e exceções.
+- **Indicadores de viabilidade:** receita paga do Play (cortesia = zero), receita média por dia,
+  custo de equipe, outros custos, pessoa-horas, resultado e margem operacional. Enquanto houver
+  dia funcionando sem custo de equipe preenchido, resultado e margem são marcados como parciais.
+- **Excel próprio:** exporta `Resumo viabilidade`, `Dias da semana`, `Horários` e `Operação
+  diária`, com classificações textuais, custos, receita diária e gráficos nativos.
+- **Validação nos dados reais:** julho confirma menor movimento em segunda, quarta e quinta e
+  baixa demanda no início da tarde; os picos se concentram no fim da tarde/noite e no fim de
+  semana. Agosto é sempre apresentado como parcial até o fechamento do mês.
+- **Qualidade:** 143 testes verdes, incluindo períodos, limites de classificação, dia aberto sem
+  movimento, custo pendente, equipe/pessoa-horas e mapa dia × horário.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

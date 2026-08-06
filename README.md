@@ -27,6 +27,8 @@ playground, recebimentos, mensagens, endereço e regras financeiras.
   `{{crianca_nome}}`; avisos rápidos do play têm até 6 ativos por vez.
 - Financeiro com lançamentos, filtros por status/período/origem/modalidade, baixa manual, valor
   editável, descontos, cortesia sem movimento de receita e exportação Excel/CSV.
+- Gerencial com relatório operacional, comparação mensal de viabilidade, mapa colorido de dias
+  e horários, equipe/custos externos por dia e exportação Excel para apoiar decisões de abertura.
 
 ## Stack
 

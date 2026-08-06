@@ -129,6 +129,11 @@ export default async function GerencialPage({
         <h1 className="text-2xl font-bold text-slate-700">📊 Painel gerencial</h1>
       </div>
 
+      <nav className="flex flex-wrap gap-2" aria-label="Visões do gerencial">
+        <span className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Relatório operacional</span>
+        <Link href="/gerencial/viabilidade" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">Viabilidade e operação</Link>
+      </nav>
+
       <form method="get" className="flex flex-wrap items-end gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
         <label className="text-xs font-semibold text-slate-500">
           Data inicial

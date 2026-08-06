@@ -184,6 +184,25 @@ está normalizado com DDD.
 
 ---
 
+## Viabilidade e custos do Play
+
+1. Acesse **Gerencial → Viabilidade e operação**.
+2. Selecione mês anterior, mês atual ou consolidado. O mês em andamento aparece como parcial.
+3. Em **Aplicar escala por dia da semana**, cadastre os padrões conhecidos em lotes separados
+   (por exemplo, seg.–qui., sex.–sáb. e domingo).
+4. Corrija exceções em **Informar ou corrigir um dia**. Um dia aberto sem check-in precisa ser
+   informado aqui para entrar corretamente na quantidade de dias funcionando.
+5. O custo da equipe pode ficar vazio enquanto o dado externo não chegar. Nesse caso, resultado
+   e margem continuam visíveis, porém sinalizados como parciais; zero significa custo realmente
+   igual a zero.
+6. Use **Exportar esta visão** para gerar a pasta Excel do período selecionado.
+
+A receita da análise considera somente lançamentos pagos originados por presença. Cortesias não
+movimentam receita. A classificação visual é relativa ao próprio período: vermelho abaixo de 70%
+da média, cinza entre 70% e 130% e verde acima de 130%.
+
+---
+
 ## O que não apagar em produção
 
 Evite apagar estas tabelas em limpeza comum:
