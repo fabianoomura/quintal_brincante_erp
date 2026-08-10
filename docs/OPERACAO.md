@@ -197,8 +197,15 @@ está normalizado com DDD.
    igual a zero.
 6. Use **Exportar esta visão** para gerar a pasta Excel do período selecionado.
 
-A receita da análise considera somente lançamentos pagos originados por presença. Cortesias não
-movimentam receita. A classificação visual é relativa ao próprio período: vermelho abaixo de 70%
+O **Demonstrativo diário do Play** funciona como um extrato da operação: check-ins alimentam a
+quantidade de crianças, lançamentos pagos e pendentes alimentam o faturamento, e equipe/custos
+são preenchidos manualmente. Na linha amarela marcada como **inferido**, clique em **Preencher**
+para informar funcionários, custo da equipe, alimentação/outros gastos e horários. O total do
+rodapé mostra dias funcionando, crianças atendidas, faturamento, recebido, pendente, custos e
+resultado do período.
+
+O faturamento considera lançamentos pagos e pendentes originados por presença; o recebido aparece
+separado, e cortesias não movimentam receita. A classificação visual é relativa ao próprio período: vermelho abaixo de 70%
 da média, cinza entre 70% e 130% e verde acima de 130%.
 
 ---

@@ -48,7 +48,7 @@ export function OperacaoForms({
       <form action={actionDia} className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <div>
           <h3 className="font-display text-lg font-bold text-slate-700">Informar ou corrigir um dia</h3>
-          <p className="text-xs text-slate-500">Use para domingos com equipe diferente, feriados, dias fechados ou qualquer exceção.</p>
+          <p className="text-xs text-slate-500">Use para informar funcionários, alimentação e outros gastos, ou para corrigir domingos, feriados e dias fechados.</p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <label className="text-xs font-semibold text-slate-500">Data<input className={input} type="date" name="data" required defaultValue={dataPadrao} /></label>
@@ -57,8 +57,8 @@ export function OperacaoForms({
           <label className="text-xs font-semibold text-slate-500">Fechamento<input className={input} type="time" name="fechamento" defaultValue={edicao?.fechamento?.slice(0, 5) ?? ''} /></label>
           <label className="text-xs font-semibold text-slate-500">Pessoas<input className={input} type="number" min="0" step="1" name="pessoas" required defaultValue={edicao?.pessoas ?? 0} /></label>
           <label className="text-xs font-semibold text-slate-500">Custo da equipe/dia<input className={input} type="number" min="0" step="0.01" name="custo_pessoal" defaultValue={edicao?.custoPessoal ?? ''} placeholder="pendente" /></label>
-          <label className="text-xs font-semibold text-slate-500">Outros custos/dia<input className={input} type="number" min="0" step="0.01" name="outros_custos" required defaultValue={edicao?.outrosCustos ?? 0} /></label>
-          <label className="text-xs font-semibold text-slate-500">Observação<input className={input} name="observacao" maxLength={300} defaultValue={edicao?.observacao ?? ''} placeholder="Ex.: evento, chuva…" /></label>
+          <label className="text-xs font-semibold text-slate-500">Gastos extras/dia<input className={input} type="number" min="0" step="0.01" name="outros_custos" required defaultValue={edicao?.outrosCustos ?? 0} /></label>
+          <label className="text-xs font-semibold text-slate-500">Observação<input className={input} name="observacao" maxLength={300} defaultValue={edicao?.observacao ?? ''} placeholder="Ex.: alimentação, evento, chuva…" /></label>
         </div>
         <div className="flex flex-wrap items-center gap-3"><BotaoSalvar label="Salvar dia" /><Mensagem estado={estadoDia} /></div>
       </form>
@@ -75,7 +75,7 @@ export function OperacaoForms({
           <label className="text-xs font-semibold text-slate-500">Custo da equipe/dia<input className={input} type="number" min="0" step="0.01" name="custo_pessoal" placeholder="pode preencher depois" /></label>
           <label className="text-xs font-semibold text-slate-500">Abertura<input className={input} type="time" name="abertura" /></label>
           <label className="text-xs font-semibold text-slate-500">Fechamento<input className={input} type="time" name="fechamento" /></label>
-          <label className="text-xs font-semibold text-slate-500">Outros custos/dia<input className={input} type="number" min="0" step="0.01" name="outros_custos" required defaultValue="0" /></label>
+          <label className="text-xs font-semibold text-slate-500">Gastos extras/dia<input className={input} type="number" min="0" step="0.01" name="outros_custos" required defaultValue="0" /></label>
         </div>
         <fieldset>
           <legend className="mb-2 text-xs font-semibold text-slate-500">Dias que abrem com esta escala</legend>

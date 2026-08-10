@@ -43,7 +43,7 @@ function Comparativo({ periodo, analise, ativo }: { periodo: PeriodoViabilidade;
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div><span className="block text-xs text-slate-400">Dias funcionando</span><strong className="text-slate-700">{analise.diasFuncionamento}</strong></div>
         <div><span className="block text-xs text-slate-400">Atendimentos</span><strong className="text-slate-700">{analise.totalAtendimentos}</strong></div>
-        <div><span className="block text-xs text-slate-400">Receita paga</span><strong className="text-emerald-700">{formatBRL(analise.receita)}</strong></div>
+        <div><span className="block text-xs text-slate-400">Faturamento</span><strong className="text-emerald-700">{formatBRL(analise.faturamentoGerado)}</strong></div>
         <div><span className="block text-xs text-slate-400">Custo informado</span><strong className="text-rose-700">{formatBRL(analise.custoTotal)}</strong></div>
       </div>
     </Link>
@@ -84,12 +84,14 @@ export default async function ViabilidadePage({
   const chave = periodos.some((p) => p.chave === sp.visao) ? sp.visao as PeriodoViabilidade['chave'] : 'anterior'
   const periodo = periodos.find((p) => p.chave === chave)!
   const analise = resultados.get(chave)!
-  const operacoesPeriodo = operacoes.data.filter((o) => o.data >= periodo.de && o.data <= periodo.ate)
   const edicao = operacoes.data.find((o) => o.data === sp.editar) ?? null
   const erros = [presencas.erro, operacoes.erro, receitas.erro].filter(Boolean)
   const maxDia = Math.max(1, ...analise.diasSemana.map((d) => d.mediaPorDia))
   const maxHora = Math.max(1, ...analise.horarios.map((h) => h.mediaPorDia))
   const custoCompleto = analise.diasSemCustoInformado === 0 && analise.diasFuncionamento > 0
+  const diasFuncionando = analise.demonstrativoDias.filter((d) => d.funcionou)
+  const totalCriancasDia = diasFuncionando.reduce((s, d) => s + d.criancasUnicas, 0)
+  const totalPessoasDia = diasFuncionando.reduce((s, d) => s + (d.pessoas ?? 0), 0)
   const exportar = `/gerencial/viabilidade/export.xlsx?de=${periodo.de}&ate=${periodo.ate}`
 
   return (
@@ -114,18 +116,18 @@ export default async function ViabilidadePage({
       <section className="space-y-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
         <div>
           <h2 className="font-display text-xl font-bold capitalize text-slate-700">Leitura de {periodo.label}</h2>
-          <p className="text-sm text-slate-500">{dataBR(periodo.de)} a {dataBR(periodo.ate)} · receita considera pagamentos do Play marcados como pagos; cortesia não movimenta receita.</p>
+          <p className="text-sm text-slate-500">{dataBR(periodo.de)} a {dataBR(periodo.ate)} · faturamento soma valores pagos e pendentes do Play; cortesia não movimenta receita.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi titulo="Dias funcionando" valor={String(analise.diasFuncionamento)} sub={`${analise.diasAbertosInformados} informado(s) · ${analise.diasInferidosPorMovimento} inferido(s) por check-in`} cls="bg-sky-100 text-sky-800" />
           <Kpi titulo="Movimento médio" valor={`${decimal(analise.mediaAtendimentosDia)} / dia`} sub={`${analise.totalAtendimentos} atendimento(s) no período`} cls="bg-indigo-100 text-indigo-800" />
-          <Kpi titulo="Receita média" valor={formatBRL(analise.receitaMediaDia)} sub={`${formatBRL(analise.receita)} de receita paga`} cls="bg-emerald-100 text-emerald-800" />
+          <Kpi titulo="Faturamento médio" valor={formatBRL(analise.faturamentoMedioDia)} sub={`${formatBRL(analise.faturamentoGerado)} gerado · ${formatBRL(analise.receita)} recebido · ${formatBRL(analise.aReceber)} pendente`} cls="bg-emerald-100 text-emerald-800" />
           <Kpi titulo="Equipe média" valor={analise.mediaPessoas == null ? 'Pendente' : decimal(analise.mediaPessoas)} sub={analise.pessoasHora == null ? 'informe equipe e horários' : `${decimal(analise.pessoasHora)} pessoa-hora(s) no período`} cls="bg-amber-100 text-amber-800" />
           <Kpi titulo="Custo da equipe" valor={formatBRL(analise.custoPessoal)} sub={`${analise.diasComCustoInformado}/${analise.diasFuncionamento} dia(s) com custo informado`} cls="bg-orange-100 text-orange-800" />
           <Kpi titulo="Outros custos" valor={formatBRL(analise.outrosCustos)} sub="custos variáveis informados por dia" cls="bg-slate-200 text-slate-700" />
-          <Kpi titulo="Resultado operacional" valor={formatBRL(analise.resultadoOperacional)} sub={custoCompleto ? 'receita paga menos custos informados' : `parcial: faltam custos de ${analise.diasSemCustoInformado} dia(s)`} cls={analise.resultadoOperacional >= 0 ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'} />
-          <Kpi titulo="Margem operacional" valor={analise.margemPercentual == null ? '—' : `${decimal(analise.margemPercentual * 100)}%`} sub={custoCompleto ? 'sobre a receita paga' : 'parcial até completar os custos'} cls="bg-violet-100 text-violet-800" />
+          <Kpi titulo="Resultado operacional" valor={formatBRL(analise.resultadoOperacional)} sub={custoCompleto ? 'faturamento gerado menos custos informados' : `parcial: faltam custos de ${analise.diasSemCustoInformado} dia(s)`} cls={analise.resultadoOperacional >= 0 ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'} />
+          <Kpi titulo="Margem operacional" valor={analise.margemPercentual == null ? '—' : `${decimal(analise.margemPercentual * 100)}%`} sub={custoCompleto ? 'sobre o faturamento gerado' : 'parcial até completar os custos'} cls="bg-violet-100 text-violet-800" />
         </div>
 
         {(analise.diasSemCustoInformado > 0 || analise.diasAbertosSemMovimento > 0) && <div className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
@@ -170,15 +172,35 @@ export default async function ViabilidadePage({
         </div>
       </section>
 
-      <section className="space-y-4">
-        <div><h2 className="font-display text-xl font-bold text-slate-700">Dados externos da operação</h2><p className="text-sm text-slate-500">Preencha equipe e custos reais. Check-ins identificam dias com movimento, mas somente esta informação registra abertura sem clientes e permite medir margem.</p></div>
+      <section className="space-y-4" id="dados-operacao">
+        <div><h2 className="font-display text-xl font-bold text-slate-700">Demonstrativo diário do Play</h2><p className="text-sm text-slate-500">Cada linha reúne as entradas do dia (crianças e receita) e as saídas (equipe e gastos extras). Check-ins e receita entram automaticamente; preencha apenas os dados operacionais externos.</p></div>
         <OperacaoForms periodo={periodo} edicao={edicao} />
         <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <table className="w-full min-w-[850px] text-sm">
-            <thead className="text-left text-xs uppercase text-slate-400"><tr><th className="pb-2">Data</th><th>Funcionou</th><th>Horário</th><th>Pessoas</th><th>Custo equipe</th><th>Outros custos</th><th>Observação</th><th></th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{operacoesPeriodo.map((o) => <tr key={o.data} className="text-slate-600"><td className="py-2 font-semibold">{dataBR(o.data)}</td><td>{o.aberto ? 'sim' : 'não'}</td><td>{o.abertura?.slice(0, 5) ?? '—'}–{o.fechamento?.slice(0, 5) ?? '—'}</td><td>{o.pessoas}</td><td>{o.custoPessoal == null ? <span className="font-semibold text-amber-600">pendente</span> : formatBRL(o.custoPessoal)}</td><td>{formatBRL(o.outrosCustos)}</td><td className="max-w-[260px] truncate">{o.observacao ?? '—'}</td><td><Link href={`${periodoHref(chave)}&editar=${o.data}`} className="font-bold text-indigo-600">Editar</Link></td></tr>)}</tbody>
+          <table className="w-full min-w-[1380px] text-sm">
+            <thead className="text-left text-xs uppercase text-slate-400"><tr><th className="pb-2">Data</th><th>Situação</th><th className="text-right">Crianças</th><th className="text-right">Entrada · receita</th><th className="text-right">Funcionários</th><th className="text-right">Custo funcionários</th><th className="text-right">Gastos extras</th><th className="text-right">Saídas totais</th><th className="text-right">Saldo do dia</th><th>Observação</th><th></th></tr></thead>
+            <tbody className="divide-y divide-slate-100">{analise.demonstrativoDias.map((d) => {
+              const situacao = d.situacao === 'informado'
+                ? { label: 'informado', cls: 'bg-emerald-100 text-emerald-700' }
+                : d.situacao === 'inferido'
+                  ? { label: 'inferido', cls: 'bg-amber-100 text-amber-700' }
+                  : { label: 'não abriu', cls: 'bg-slate-100 text-slate-500' }
+              return <tr key={d.data} className={d.funcionou ? 'text-slate-600' : 'bg-slate-50 text-slate-400'}>
+                <td className="py-2.5 font-semibold text-slate-700">{dataBR(d.data)}<span className="block text-xs font-normal capitalize text-slate-400">{d.diaSemana}</span></td>
+                <td><span className={`rounded-full px-2 py-1 text-xs font-bold ${situacao.cls}`}>{situacao.label}</span>{(d.abertura || d.fechamento) && <span className="mt-1 block text-xs text-slate-400">{d.abertura?.slice(0, 5) ?? '—'}–{d.fechamento?.slice(0, 5) ?? '—'}</span>}</td>
+                <td className="text-right font-bold text-indigo-700">{d.criancasUnicas}{d.atendimentos !== d.criancasUnicas && <span className="block text-xs font-normal text-slate-400">{d.atendimentos} entrada(s)</span>}</td>
+                <td className="text-right font-bold text-emerald-700">{formatBRL(d.faturamentoGerado)}<span className="block text-xs font-normal text-slate-400">{formatBRL(d.receitaRecebida)} recebido{d.aReceber > 0 ? ` · ${formatBRL(d.aReceber)} pendente` : ''}</span></td>
+                <td className="text-right">{d.pessoas == null ? <span className="font-semibold text-amber-600">pendente</span> : d.pessoas}</td>
+                <td className="text-right">{d.custoPessoal == null ? <span className="font-semibold text-amber-600">pendente</span> : formatBRL(d.custoPessoal)}</td>
+                <td className="text-right">{formatBRL(d.gastosExtras)}</td>
+                <td className="text-right font-semibold text-rose-700">{formatBRL(d.custoTotal)}{d.resultadoParcial && <span className="block text-[10px] font-normal text-amber-600">parcial</span>}</td>
+                <td className={`text-right font-bold ${d.resultado >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(d.resultado)}{d.margemPercentual != null && !d.resultadoParcial && <span className="block text-xs font-normal text-slate-400">{decimal(d.margemPercentual * 100)}%</span>}</td>
+                <td className="max-w-[230px] truncate">{d.observacao ?? '—'}</td>
+                <td><Link href={`${periodoHref(chave)}&editar=${d.data}#dados-operacao`} className="font-bold text-indigo-600">{d.situacao === 'inferido' ? 'Preencher' : 'Editar'}</Link></td>
+              </tr>
+            })}</tbody>
+            {analise.demonstrativoDias.length > 0 && <tfoot className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-700"><tr><td className="py-3" colSpan={2}>TOTAL · {analise.diasFuncionamento} dia(s) funcionando</td><td className="text-right">{totalCriancasDia}</td><td className="text-right text-emerald-700">{formatBRL(analise.faturamentoGerado)}<span className="block text-[10px] font-normal text-slate-500">{formatBRL(analise.receita)} recebido · {formatBRL(analise.aReceber)} pendente</span></td><td className="text-right">{totalPessoasDia}</td><td className="text-right">{formatBRL(analise.custoPessoal)}</td><td className="text-right">{formatBRL(analise.outrosCustos)}</td><td className="text-right text-rose-700">{formatBRL(analise.custoTotal)}</td><td className={`text-right ${analise.resultadoOperacional >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(analise.resultadoOperacional)}{!custoCompleto && <span className="block text-[10px] font-normal text-amber-600">parcial</span>}</td><td colSpan={2}></td></tr></tfoot>}
           </table>
-          {operacoesPeriodo.length === 0 && <div className="py-6 text-center text-sm text-slate-400">Nenhum dado operacional externo preenchido neste período.</div>}
+          {analise.demonstrativoDias.length === 0 && <div className="py-6 text-center text-sm text-slate-400">Nenhuma operação ou movimento do Play neste período.</div>}
         </div>
       </section>
     </div>

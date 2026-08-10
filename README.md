@@ -28,7 +28,7 @@ playground, recebimentos, mensagens, endereço e regras financeiras.
 - Financeiro com lançamentos, filtros por status/período/origem/modalidade, baixa manual, valor
   editável, descontos, cortesia sem movimento de receita e exportação Excel/CSV.
 - Gerencial com relatório operacional, comparação mensal de viabilidade, mapa colorido de dias
-  e horários, equipe/custos externos por dia e exportação Excel para apoiar decisões de abertura.
+  e horários, demonstrativo diário de faturamento/custos, equipe por dia e exportação Excel.
 
 ## Stack
 

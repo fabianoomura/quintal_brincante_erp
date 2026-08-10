@@ -40,20 +40,34 @@ test('classificação usa vermelho abaixo de 70%, cinza no entorno e pico acima 
 test('viabilidade inclui dia aberto sem atendimento e cruza receita, equipe e custos', () => {
   const relatorio = calcularRelatorioGerencial(presencas, { hoje: '2026-08-05', agoraMin: 1000 })
   const r = calcularViabilidade(relatorio, operacoes, [
-    { data: '2026-07-03', valor: 150 },
-    { data: '2026-07-04', valor: 50 },
+    { data: '2026-07-03', gerado: 150, recebido: 150, pendente: 0 },
+    { data: '2026-07-04', gerado: 50, recebido: 30, pendente: 20 },
   ])
   assert.equal(r.diasFuncionamento, 3)
   assert.equal(r.diasAbertosSemMovimento, 1)
   assert.equal(r.totalAtendimentos, 4)
   assert.equal(r.mediaAtendimentosDia, 4 / 3)
-  assert.equal(r.receita, 200)
+  assert.equal(r.faturamentoGerado, 200)
+  assert.equal(r.receita, 180)
+  assert.equal(r.aReceber, 20)
   assert.equal(r.custoPessoal, 640)
   assert.equal(r.outrosCustos, 80)
   assert.equal(r.resultadoOperacional, -520)
   assert.equal(r.diasSemCustoInformado, 0)
   assert.equal(r.mediaPessoas, 7 / 3)
   assert.equal(r.pessoasHora, 64)
+  assert.deepEqual(r.demonstrativoDias.map((d) => d.data), ['2026-07-03', '2026-07-04', '2026-07-05'])
+  assert.deepEqual(
+    r.demonstrativoDias.find((d) => d.data === '2026-07-03'),
+    {
+      data: '2026-07-03', diaSemana: 'sexta-feira', funcionou: true, situacao: 'informado',
+      abertura: '12:00', fechamento: '22:00', criancasUnicas: 3, atendimentos: 3,
+      faturamentoGerado: 150, receitaRecebida: 150, aReceber: 0,
+      pessoas: 2, custoPessoal: 200, gastosExtras: 30, custoTotal: 230,
+      resultado: -80, resultadoParcial: false, margemPercentual: -80 / 150, observacao: null,
+    },
+  )
+  assert.equal(r.demonstrativoDias.find((d) => d.data === '2026-07-05')?.criancasUnicas, 0)
 })
 
 test('dias com movimento sem cadastro operacional são inferidos e deixam custo pendente', () => {
@@ -62,6 +76,10 @@ test('dias com movimento sem cadastro operacional são inferidos e deixam custo 
   assert.equal(r.diasFuncionamento, 2)
   assert.equal(r.diasInferidosPorMovimento, 1)
   assert.equal(r.diasSemCustoInformado, 1)
+  const inferido = r.demonstrativoDias.find((d) => d.data === '2026-07-04')!
+  assert.equal(inferido.situacao, 'inferido')
+  assert.equal(inferido.custoPessoal, null)
+  assert.equal(inferido.resultadoParcial, true)
 })
 
 test('dia cadastrado com custo ainda vazio mantém resultado como parcial', () => {
@@ -80,4 +98,14 @@ test('mapa dia e horário mede média por ocorrência aberta do dia da semana', 
   assert.equal(sexta.diasAbertos, 1)
   assert.equal(sexta.horarios.find((h) => h.hora === 18)?.entradas, 2)
   assert.equal(r.horarios.find((h) => h.hora === 12)?.entradas, 1)
+})
+
+test('receita sem presença preserva o dia no demonstrativo e infere funcionamento', () => {
+  const relatorio = calcularRelatorioGerencial([], { hoje: '2026-08-05', agoraMin: 1000 })
+  const r = calcularViabilidade(relatorio, [], [{ data: '2026-07-10', gerado: 75, recebido: 50, pendente: 25 }])
+  assert.equal(r.diasFuncionamento, 1)
+  assert.equal(r.demonstrativoDias[0].faturamentoGerado, 75)
+  assert.equal(r.demonstrativoDias[0].receitaRecebida, 50)
+  assert.equal(r.demonstrativoDias[0].aReceber, 25)
+  assert.equal(r.demonstrativoDias[0].situacao, 'inferido')
 })

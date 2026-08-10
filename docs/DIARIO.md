@@ -355,12 +355,23 @@ Levas pontuais após acompanhar a operação real:
 - **Indicadores de viabilidade:** receita paga do Play (cortesia = zero), receita média por dia,
   custo de equipe, outros custos, pessoa-horas, resultado e margem operacional. Enquanto houver
   dia funcionando sem custo de equipe preenchido, resultado e margem são marcados como parciais.
-- **Excel próprio:** exporta `Resumo viabilidade`, `Dias da semana`, `Horários` e `Operação
-  diária`, com classificações textuais, custos, receita diária e gráficos nativos.
+- **Excel próprio:** exporta `Resumo viabilidade`, `Dias da semana`, `Horários` e `Demonstrativo
+  diário`, com classificações textuais, custos, receita diária e gráficos nativos.
+- **Demonstrativo diário dentro do sistema (2026-08-09):** cada linha reúne data, situação da
+  abertura, crianças únicas, quantidade de atendimentos, faturamento gerado, valor recebido e
+  pendente, funcionários, custo da equipe, gastos extras (como alimentação), saídas totais,
+  resultado, margem e observação. Check-ins e lançamentos montam a linha automaticamente; o
+  botão da própria linha abre o preenchimento dos dados externos.
+- **Faturamento × caixa:** a viabilidade usa faturamento gerado (pago + pendente, cortesia = zero)
+  para comparar valor produzido com custo operacional, mas mantém o recebido e o pendente
+  visíveis para não confundir desempenho do negócio com fluxo de caixa.
+- **Excel espelhado:** a aba passou a se chamar `Demonstrativo diário` e exporta as mesmas linhas
+  e totais da tela, com fórmulas para crianças, atendimentos, faturamento, recebido, pendente,
+  pessoas-dia, custos, resultado e margem.
 - **Validação nos dados reais:** julho confirma menor movimento em segunda, quarta e quinta e
   baixa demanda no início da tarde; os picos se concentram no fim da tarde/noite e no fim de
   semana. Agosto é sempre apresentado como parcial até o fechamento do mês.
-- **Qualidade:** 143 testes verdes, incluindo períodos, limites de classificação, dia aberto sem
+- **Qualidade:** 144 testes verdes, incluindo períodos, limites de classificação, dia aberto sem
   movimento, custo pendente, equipe/pessoa-horas e mapa dia × horário.
 
 ## Fila de próximos passos

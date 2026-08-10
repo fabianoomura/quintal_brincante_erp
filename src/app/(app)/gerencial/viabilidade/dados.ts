@@ -35,15 +35,15 @@ export async function buscarReceitasPlay(
   ate: string,
 ): Promise<{ data: ReceitaPlayDia[]; erro: string | null }> {
   const supabase = await createClient()
-  const porData = new Map<string, number>()
+  const porData = new Map<string, { gerado: number; recebido: number; pendente: number }>()
   const lote = 1000
 
   for (let inicio = 0; ; inicio += lote) {
     const { data, error } = await supabase
       .from('lancamento')
-      .select('vencimento, valor, desconto, capture_method')
+      .select('vencimento, valor, desconto, capture_method, status')
       .eq('origem_tipo', 'presenca')
-      .eq('status', 'pago')
+      .in('status', ['pago', 'pendente'])
       .gte('vencimento', de)
       .lte('vencimento', ate)
       .order('vencimento', { ascending: true })
@@ -52,13 +52,17 @@ export async function buscarReceitasPlay(
     if (error) return { data: [], erro: error.message }
     for (const l of data ?? []) {
       const valor = valorMovimentadoLancamento(Number(l.valor), Number(l.desconto), l.capture_method)
-      porData.set(l.vencimento, (porData.get(l.vencimento) ?? 0) + valor)
+      const atual = porData.get(l.vencimento) ?? { gerado: 0, recebido: 0, pendente: 0 }
+      atual.gerado += valor
+      if (l.status === 'pago') atual.recebido += valor
+      else atual.pendente += valor
+      porData.set(l.vencimento, atual)
     }
     if (!data || data.length < lote) break
   }
 
   return {
-    data: [...porData.entries()].map(([data, valor]) => ({ data, valor })),
+    data: [...porData.entries()].map(([data, valores]) => ({ data, ...valores })),
     erro: null,
   }
 }

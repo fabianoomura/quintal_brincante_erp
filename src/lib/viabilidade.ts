@@ -15,7 +15,9 @@ export type OperacaoPlayDia = {
 
 export type ReceitaPlayDia = {
   data: string
-  valor: number
+  gerado: number
+  recebido: number
+  pendente: number
 }
 
 export type PeriodoViabilidade = {
@@ -56,6 +58,28 @@ export type ViabilidadeDiaHorario = {
   horarios: ViabilidadeCelula[]
 }
 
+export type DemonstrativoPlayDia = {
+  data: string
+  diaSemana: string
+  funcionou: boolean
+  situacao: 'informado' | 'inferido' | 'fechado'
+  abertura: string | null
+  fechamento: string | null
+  criancasUnicas: number
+  atendimentos: number
+  faturamentoGerado: number
+  receitaRecebida: number
+  aReceber: number
+  pessoas: number | null
+  custoPessoal: number | null
+  gastosExtras: number
+  custoTotal: number
+  resultado: number
+  resultadoParcial: boolean
+  margemPercentual: number | null
+  observacao: string | null
+}
+
 export type AnaliseViabilidade = {
   diasFuncionamento: number
   diasAbertosInformados: number
@@ -65,6 +89,9 @@ export type AnaliseViabilidade = {
   mediaAtendimentosDia: number
   receita: number
   receitaMediaDia: number
+  faturamentoGerado: number
+  faturamentoMedioDia: number
+  aReceber: number
   custoPessoal: number
   outrosCustos: number
   custoTotal: number
@@ -77,6 +104,7 @@ export type AnaliseViabilidade = {
   diasSemana: ViabilidadeDiaSemana[]
   horarios: ViabilidadeHorario[]
   mapaDiaHorario: ViabilidadeDiaHorario[]
+  demonstrativoDias: DemonstrativoPlayDia[]
 }
 
 const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
@@ -151,18 +179,29 @@ export function calcularViabilidade(
   const movimentoPorData = new Map(relatorio.dias.map((d) => [d.data, d]))
   const operacaoPorData = new Map(operacoes.map((o) => [o.data, o]))
   const datasMovimento = new Set(relatorio.dias.map((d) => d.data))
+  const receitaPorData = new Map<string, { gerado: number; recebido: number; pendente: number }>()
+  for (const item of receitas) {
+    const atual = receitaPorData.get(item.data) ?? { gerado: 0, recebido: 0, pendente: 0 }
+    atual.gerado += item.gerado
+    atual.recebido += item.recebido
+    atual.pendente += item.pendente
+    receitaPorData.set(item.data, atual)
+  }
+  const datasReceita = new Set([...receitaPorData.entries()].filter(([, valor]) => valor.gerado > 0).map(([data]) => data))
   const datasAbertasInformadas = new Set(operacoes.filter((o) => o.aberto).map((o) => o.data))
-  const datasFuncionamento = new Set([...datasMovimento, ...datasAbertasInformadas])
+  const datasFuncionamento = new Set([...datasMovimento, ...datasReceita, ...datasAbertasInformadas])
   const diasFuncionamento = datasFuncionamento.size
-  const diasInferidosPorMovimento = [...datasMovimento].filter((data) => !datasAbertasInformadas.has(data)).length
-  const diasAbertosSemMovimento = [...datasAbertasInformadas].filter((data) => !datasMovimento.has(data)).length
+  const diasInferidosPorMovimento = [...new Set([...datasMovimento, ...datasReceita])].filter((data) => !datasAbertasInformadas.has(data)).length
+  const diasAbertosSemMovimento = [...datasAbertasInformadas].filter((data) => !datasMovimento.has(data) && !datasReceita.has(data)).length
 
   const operacoesAbertas = operacoes.filter((o) => o.aberto)
   const custoPessoal = operacoesAbertas.reduce((s, o) => s + (o.custoPessoal ?? 0), 0)
   const outrosCustos = operacoesAbertas.reduce((s, o) => s + o.outrosCustos, 0)
   const custoTotal = custoPessoal + outrosCustos
-  const receita = receitas.reduce((s, r) => s + r.valor, 0)
-  const resultadoOperacional = receita - custoTotal
+  const receita = receitas.reduce((s, r) => s + r.recebido, 0)
+  const faturamentoGerado = receitas.reduce((s, r) => s + r.gerado, 0)
+  const aReceber = receitas.reduce((s, r) => s + r.pendente, 0)
+  const resultadoOperacional = faturamentoGerado - custoTotal
   const diasComCustoInformado = [...datasFuncionamento].filter((data) => {
     const operacao = operacaoPorData.get(data)
     return operacao?.aberto && operacao.custoPessoal != null
@@ -230,6 +269,44 @@ export function calcularViabilidade(
     }
   })
 
+  const datasDemonstrativo = new Set([
+    ...datasFuncionamento,
+    ...operacoes.map((o) => o.data),
+  ])
+  const demonstrativoDias: DemonstrativoPlayDia[] = [...datasDemonstrativo]
+    .sort((a, b) => a.localeCompare(b))
+    .map((data) => {
+      const movimento = movimentoPorData.get(data)
+      const operacao = operacaoPorData.get(data)
+      const receitaDia = receitaPorData.get(data) ?? { gerado: 0, recebido: 0, pendente: 0 }
+      const funcionou = datasFuncionamento.has(data)
+      const gastosExtras = operacao?.outrosCustos ?? 0
+      const custoPessoalDia = operacao?.custoPessoal ?? null
+      const custoTotalDia = (custoPessoalDia ?? 0) + gastosExtras
+      const resultado = receitaDia.gerado - custoTotalDia
+      return {
+        data,
+        diaSemana: DIAS[numeroDiaSemana(data)],
+        funcionou,
+        situacao: operacao?.aberto ? 'informado' : funcionou ? 'inferido' : 'fechado',
+        abertura: operacao?.abertura ?? null,
+        fechamento: operacao?.fechamento ?? null,
+        criancasUnicas: movimento?.criancasUnicas ?? 0,
+        atendimentos: movimento?.atendimentos ?? 0,
+        faturamentoGerado: receitaDia.gerado,
+        receitaRecebida: receitaDia.recebido,
+        aReceber: receitaDia.pendente,
+        pessoas: operacao ? operacao.pessoas : null,
+        custoPessoal: custoPessoalDia,
+        gastosExtras,
+        custoTotal: custoTotalDia,
+        resultado,
+        resultadoParcial: funcionou && custoPessoalDia == null,
+        margemPercentual: receitaDia.gerado ? resultado / receitaDia.gerado : null,
+        observacao: operacao?.observacao ?? null,
+      }
+    })
+
   return {
     diasFuncionamento,
     diasAbertosInformados: datasAbertasInformadas.size,
@@ -239,11 +316,14 @@ export function calcularViabilidade(
     mediaAtendimentosDia: mediaGeralDia,
     receita,
     receitaMediaDia: diasFuncionamento ? receita / diasFuncionamento : 0,
+    faturamentoGerado,
+    faturamentoMedioDia: diasFuncionamento ? faturamentoGerado / diasFuncionamento : 0,
+    aReceber,
     custoPessoal,
     outrosCustos,
     custoTotal,
     resultadoOperacional,
-    margemPercentual: receita ? resultadoOperacional / receita : null,
+    margemPercentual: faturamentoGerado ? resultadoOperacional / faturamentoGerado : null,
     diasComCustoInformado,
     diasSemCustoInformado,
     mediaPessoas: equipeInformada.length ? equipeInformada.reduce((s, o) => s + o.pessoas, 0) / equipeInformada.length : null,
@@ -251,5 +331,6 @@ export function calcularViabilidade(
     diasSemana,
     horarios,
     mapaDiaHorario,
+    demonstrativoDias,
   }
 }
