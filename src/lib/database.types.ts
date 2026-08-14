@@ -821,12 +821,15 @@ export type Database = {
           atualizado_por: string | null
           created_at: string
           criado_por: string | null
+          custo_alimentacao: number
           custo_pessoal: number | null
           data: string
           fechamento: string | null
+          clima: string | null
           observacao: string | null
           outros_custos: number
           pessoas: number
+          temperatura_media: number | null
           updated_at: string
         }
         Insert: {
@@ -835,12 +838,15 @@ export type Database = {
           atualizado_por?: string | null
           created_at?: string
           criado_por?: string | null
+          custo_alimentacao?: number
           custo_pessoal?: number | null
           data: string
           fechamento?: string | null
+          clima?: string | null
           observacao?: string | null
           outros_custos?: number
           pessoas?: number
+          temperatura_media?: number | null
           updated_at?: string
         }
         Update: {
@@ -849,12 +855,15 @@ export type Database = {
           atualizado_por?: string | null
           created_at?: string
           criado_por?: string | null
+          custo_alimentacao?: number
           custo_pessoal?: number | null
           data?: string
           fechamento?: string | null
+          clima?: string | null
           observacao?: string | null
           outros_custos?: number
           pessoas?: number
+          temperatura_media?: number | null
           updated_at?: string
         }
         Relationships: [

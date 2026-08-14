@@ -2,6 +2,26 @@ import type { RelatorioGerencial } from './gerencial-relatorio'
 
 export type ClassificacaoMovimento = 'ruim' | 'medio' | 'pico' | 'sem_dados'
 
+export const CLIMAS_PLAY = [
+  'sol',
+  'sol_entre_nuvens',
+  'nublado',
+  'garoa',
+  'chuva',
+  'tempestade',
+] as const
+
+export type ClimaPlay = typeof CLIMAS_PLAY[number]
+
+export const CLIMA_PLAY_LABEL: Record<ClimaPlay, string> = {
+  sol: 'Sol',
+  sol_entre_nuvens: 'Sol entre nuvens',
+  nublado: 'Nublado',
+  garoa: 'Garoa',
+  chuva: 'Chuva',
+  tempestade: 'Tempestade',
+}
+
 export type OperacaoPlayDia = {
   data: string
   aberto: boolean
@@ -9,7 +29,10 @@ export type OperacaoPlayDia = {
   fechamento: string | null
   pessoas: number
   custoPessoal: number | null
+  custoAlimentacao: number
   outrosCustos: number
+  clima: ClimaPlay | null
+  temperaturaMedia: number | null
   observacao: string | null
 }
 
@@ -72,12 +95,27 @@ export type DemonstrativoPlayDia = {
   aReceber: number
   pessoas: number | null
   custoPessoal: number | null
+  custoAlimentacao: number
   gastosExtras: number
   custoTotal: number
+  saldoCaixa: number
   resultado: number
   resultadoParcial: boolean
   margemPercentual: number | null
+  clima: ClimaPlay | null
+  temperaturaMedia: number | null
   observacao: string | null
+}
+
+export type ViabilidadeClima = {
+  clima: ClimaPlay
+  label: string
+  dias: number
+  atendimentos: number
+  mediaAtendimentos: number
+  receitaRecebida: number
+  mediaReceita: number
+  temperaturaMedia: number | null
 }
 
 export type AnaliseViabilidade = {
@@ -93,17 +131,22 @@ export type AnaliseViabilidade = {
   faturamentoMedioDia: number
   aReceber: number
   custoPessoal: number
+  custoAlimentacao: number
   outrosCustos: number
   custoTotal: number
+  saldoCaixa: number
   resultadoOperacional: number
   margemPercentual: number | null
   diasComCustoInformado: number
   diasSemCustoInformado: number
+  diasComClimaInformado: number
+  diasSemClimaInformado: number
   mediaPessoas: number | null
   pessoasHora: number | null
   diasSemana: ViabilidadeDiaSemana[]
   horarios: ViabilidadeHorario[]
   mapaDiaHorario: ViabilidadeDiaHorario[]
+  porClima: ViabilidadeClima[]
   demonstrativoDias: DemonstrativoPlayDia[]
 }
 
@@ -196,17 +239,24 @@ export function calcularViabilidade(
 
   const operacoesAbertas = operacoes.filter((o) => o.aberto)
   const custoPessoal = operacoesAbertas.reduce((s, o) => s + (o.custoPessoal ?? 0), 0)
+  const custoAlimentacao = operacoesAbertas.reduce((s, o) => s + o.custoAlimentacao, 0)
   const outrosCustos = operacoesAbertas.reduce((s, o) => s + o.outrosCustos, 0)
-  const custoTotal = custoPessoal + outrosCustos
+  const custoTotal = custoPessoal + custoAlimentacao + outrosCustos
   const receita = receitas.reduce((s, r) => s + r.recebido, 0)
   const faturamentoGerado = receitas.reduce((s, r) => s + r.gerado, 0)
   const aReceber = receitas.reduce((s, r) => s + r.pendente, 0)
   const resultadoOperacional = faturamentoGerado - custoTotal
+  const saldoCaixa = receita - custoTotal
   const diasComCustoInformado = [...datasFuncionamento].filter((data) => {
     const operacao = operacaoPorData.get(data)
     return operacao?.aberto && operacao.custoPessoal != null
   }).length
   const diasSemCustoInformado = Math.max(0, diasFuncionamento - diasComCustoInformado)
+  const diasComClimaInformado = [...datasFuncionamento].filter((data) => {
+    const operacao = operacaoPorData.get(data)
+    return operacao?.aberto && operacao.clima != null
+  }).length
+  const diasSemClimaInformado = Math.max(0, diasFuncionamento - diasComClimaInformado)
   const equipeInformada = operacoesAbertas.filter((o) => o.pessoas > 0)
   const pessoasHoraValores = equipeInformada.flatMap((o) => {
     const abertura = minutos(o.abertura)
@@ -269,6 +319,26 @@ export function calcularViabilidade(
     }
   })
 
+  const porClima: ViabilidadeClima[] = CLIMAS_PLAY.flatMap((clima) => {
+    const dias = operacoesAbertas.filter((o) => o.clima === clima)
+    if (!dias.length) return []
+    const atendimentos = dias.reduce((s, o) => s + (movimentoPorData.get(o.data)?.atendimentos ?? 0), 0)
+    const receitaRecebida = dias.reduce((s, o) => s + (receitaPorData.get(o.data)?.recebido ?? 0), 0)
+    const temperaturas = dias.flatMap((o) => o.temperaturaMedia == null ? [] : [o.temperaturaMedia])
+    return [{
+      clima,
+      label: CLIMA_PLAY_LABEL[clima],
+      dias: dias.length,
+      atendimentos,
+      mediaAtendimentos: atendimentos / dias.length,
+      receitaRecebida,
+      mediaReceita: receitaRecebida / dias.length,
+      temperaturaMedia: temperaturas.length
+        ? temperaturas.reduce((s, temperatura) => s + temperatura, 0) / temperaturas.length
+        : null,
+    }]
+  }).sort((a, b) => b.mediaAtendimentos - a.mediaAtendimentos)
+
   const datasDemonstrativo = new Set([
     ...datasFuncionamento,
     ...operacoes.map((o) => o.data),
@@ -280,9 +350,10 @@ export function calcularViabilidade(
       const operacao = operacaoPorData.get(data)
       const receitaDia = receitaPorData.get(data) ?? { gerado: 0, recebido: 0, pendente: 0 }
       const funcionou = datasFuncionamento.has(data)
+      const custoAlimentacaoDia = operacao?.custoAlimentacao ?? 0
       const gastosExtras = operacao?.outrosCustos ?? 0
       const custoPessoalDia = operacao?.custoPessoal ?? null
-      const custoTotalDia = (custoPessoalDia ?? 0) + gastosExtras
+      const custoTotalDia = (custoPessoalDia ?? 0) + custoAlimentacaoDia + gastosExtras
       const resultado = receitaDia.gerado - custoTotalDia
       return {
         data,
@@ -298,11 +369,15 @@ export function calcularViabilidade(
         aReceber: receitaDia.pendente,
         pessoas: operacao ? operacao.pessoas : null,
         custoPessoal: custoPessoalDia,
+        custoAlimentacao: custoAlimentacaoDia,
         gastosExtras,
         custoTotal: custoTotalDia,
+        saldoCaixa: receitaDia.recebido - custoTotalDia,
         resultado,
         resultadoParcial: funcionou && custoPessoalDia == null,
         margemPercentual: receitaDia.gerado ? resultado / receitaDia.gerado : null,
+        clima: operacao?.clima ?? null,
+        temperaturaMedia: operacao?.temperaturaMedia ?? null,
         observacao: operacao?.observacao ?? null,
       }
     })
@@ -320,17 +395,22 @@ export function calcularViabilidade(
     faturamentoMedioDia: diasFuncionamento ? faturamentoGerado / diasFuncionamento : 0,
     aReceber,
     custoPessoal,
+    custoAlimentacao,
     outrosCustos,
     custoTotal,
+    saldoCaixa,
     resultadoOperacional,
     margemPercentual: faturamentoGerado ? resultadoOperacional / faturamentoGerado : null,
     diasComCustoInformado,
     diasSemCustoInformado,
+    diasComClimaInformado,
+    diasSemClimaInformado,
     mediaPessoas: equipeInformada.length ? equipeInformada.reduce((s, o) => s + o.pessoas, 0) / equipeInformada.length : null,
     pessoasHora: pessoasHoraValores.length ? pessoasHoraValores.reduce((s, v) => s + v, 0) : null,
     diasSemana,
     horarios,
     mapaDiaHorario,
+    porClima,
     demonstrativoDias,
   }
 }

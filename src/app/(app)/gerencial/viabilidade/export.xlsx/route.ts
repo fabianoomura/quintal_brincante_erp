@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/colaborador'
 import { agoraHora, hojeISO, horaParaMinutos } from '@/lib/datas'
 import { dataISOValida } from '@/lib/financeiro-filtros'
 import { calcularRelatorioGerencial } from '@/lib/gerencial-relatorio'
-import { calcularViabilidade } from '@/lib/viabilidade'
+import { CLIMA_PLAY_LABEL, calcularViabilidade } from '@/lib/viabilidade'
 import { criarXlsx, type XlsxCell } from '@/lib/xlsx'
 import { buscarPresencasRelatorio } from '../../dados'
 import { buscarOperacoesPlay, buscarReceitasPlay } from '../dados'
@@ -59,12 +59,16 @@ export async function GET(request: Request) {
     [c('Receita recebida'), c(analise.receita, 'currency'), c(`${analise.receitaMediaDia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} por dia funcionando`) ],
     [c('A receber'), c(analise.aReceber, 'currency'), c('Faturamento gerado que ainda está pendente.')],
     [c('Custo da equipe'), c(analise.custoPessoal, 'currency'), c('Total informado nos dias de operação.')],
-    [c('Outros custos'), c(analise.outrosCustos, 'currency'), c('Custos variáveis informados.')],
+    [c('Alimentação, café e similares'), c(analise.custoAlimentacao, 'currency'), c('Saída informada separadamente por dia.')],
+    [c('Outras saídas'), c(analise.outrosCustos, 'currency'), c('Demais custos variáveis informados.')],
+    [c('Saídas totais'), c(analise.custoTotal, 'currency'), c('Equipe + alimentação + outras saídas.')],
+    [c('Saldo de caixa'), c(analise.saldoCaixa, 'currency'), c('Valor recebido menos todas as saídas.')],
     [c('Resultado operacional'), c(analise.resultadoOperacional, 'currency'), c(analise.diasSemCustoInformado ? `Parcial: faltam custos de ${analise.diasSemCustoInformado} dia(s).` : 'Faturamento gerado menos custos informados.')],
     [c('Margem operacional'), c(analise.margemPercentual ?? 0, 'percent'), c(analise.diasSemCustoInformado ? 'Parcial.' : 'Sobre o faturamento gerado.')],
     [c('Equipe média'), c(analise.mediaPessoas ?? 0, 'decimal'), c('Média nos dias com equipe informada.')],
     [c('Pessoa-horas'), c(analise.pessoasHora ?? 0, 'decimal'), c('Depende de equipe, abertura e fechamento preenchidos.')],
     [c('Cobertura dos custos'), c(analise.diasFuncionamento ? analise.diasComCustoInformado / analise.diasFuncionamento : 0, 'percent'), c(`${analise.diasComCustoInformado} de ${analise.diasFuncionamento} dia(s)`) ],
+    [c('Cobertura do clima'), c(analise.diasFuncionamento ? analise.diasComClimaInformado / analise.diasFuncionamento : 0, 'percent'), c(`${analise.diasComClimaInformado} de ${analise.diasFuncionamento} dia(s)`) ],
   ]
 
   const dias: XlsxCell[][] = [[c('Dia da semana', 'header'), c('Dias funcionando', 'header'), c('Atendimentos', 'header'), c('Média/dia', 'header'), c('Classificação', 'header')],
@@ -73,34 +77,45 @@ export async function GET(request: Request) {
   const horarios: XlsxCell[][] = [[c('Horário', 'header'), c('Entradas', 'header'), c('Média/dia funcionando', 'header'), c('Classificação', 'header')],
     ...analise.horarios.map((h) => [c(`${String(h.hora).padStart(2, '0')}:00–${String(h.hora + 1).padStart(2, '0')}:00`), c(h.entradas, 'integer'), c(h.mediaPorDia, 'decimal'), c(classeLabel(h.classificacao))])]
 
+  const clima: XlsxCell[][] = [[
+    c('Clima', 'header'), c('Dias informados', 'header'), c('Atendimentos', 'header'), c('Média de crianças/dia', 'header'),
+    c('Entrada recebida', 'header'), c('Entrada média/dia', 'header'), c('Temperatura média (°C)', 'header'),
+  ], ...analise.porClima.map((item) => [
+    c(item.label), c(item.dias, 'integer'), c(item.atendimentos, 'integer'), c(item.mediaAtendimentos, 'decimal'),
+    c(item.receitaRecebida, 'currency'), c(item.mediaReceita, 'currency'), c(item.temperaturaMedia, 'decimal'),
+  ])]
+
   const demonstrativoLinhas: XlsxCell[][] = analise.demonstrativoDias.map((d) => [
     c(dataExcel(d.data), 'date'), c(d.diaSemana), c(d.funcionou ? 'Sim' : 'Não'),
     c(d.situacao === 'informado' ? 'Informado' : d.situacao === 'inferido' ? 'Inferido por check-in/receita' : 'Não abriu'),
+    c(d.clima ? CLIMA_PLAY_LABEL[d.clima] : null), c(d.temperaturaMedia, 'decimal'),
     c(horaExcel(d.abertura), 'time'), c(horaExcel(d.fechamento), 'time'), c(d.criancasUnicas, 'integer'), c(d.atendimentos, 'integer'),
     c(d.faturamentoGerado, 'currency'), c(d.receitaRecebida, 'currency'), c(d.aReceber, 'currency'),
-    c(d.pessoas, 'integer'), c(d.custoPessoal, 'currency'), c(d.gastosExtras, 'currency'),
-    c(d.custoTotal, 'currency'), c(d.resultado, 'currency'), c(d.resultadoParcial ? null : d.margemPercentual, 'percent'),
+    c(d.pessoas, 'integer'), c(d.custoPessoal, 'currency'), c(d.custoAlimentacao, 'currency'), c(d.gastosExtras, 'currency'),
+    c(d.custoTotal, 'currency'), c(d.saldoCaixa, 'currency'), c(d.resultado, 'currency'), c(d.resultadoParcial ? null : d.margemPercentual, 'percent'),
     c(d.resultadoParcial ? 'Parcial — custo de funcionários pendente' : 'Completo'), c(d.observacao),
   ])
   const totalLinha = demonstrativoLinhas.length + 2
   const ultimaLinhaDados = Math.max(2, demonstrativoLinhas.length + 1)
   const demonstrativo: XlsxCell[][] = [[
     c('Data', 'header'), c('Dia da semana', 'header'), c('Funcionou', 'header'), c('Origem da informação', 'header'),
-    c('Abertura', 'header'), c('Fechamento', 'header'), c('Crianças únicas', 'header'), c('Atendimentos', 'header'),
+    c('Clima', 'header'), c('Temperatura média (°C)', 'header'), c('Abertura', 'header'), c('Fechamento', 'header'), c('Crianças únicas', 'header'), c('Atendimentos', 'header'),
     c('Faturamento gerado', 'header'), c('Receita recebida', 'header'), c('A receber', 'header'),
     c('Funcionários', 'header'), c('Custo dos funcionários', 'header'),
-    c('Gastos extras', 'header'), c('Saídas totais', 'header'), c('Saldo do dia', 'header'), c('Margem', 'header'),
+    c('Alimentação e café', 'header'), c('Outras saídas', 'header'), c('Saídas totais', 'header'), c('Saldo de caixa', 'header'),
+    c('Resultado operacional', 'header'), c('Margem operacional', 'header'),
     c('Situação do resultado', 'header'), c('Observação', 'header'),
   ], ...demonstrativoLinhas, [
-    c('TOTAL DO PERÍODO', 'header'), c(null), c(`${analise.diasFuncionamento} dia(s)`), c(null), c(null), c(null),
-    c(analise.demonstrativoDias.reduce((s, d) => s + (d.funcionou ? d.criancasUnicas : 0), 0), 'integer', `SUM(G2:G${ultimaLinhaDados})`),
-    c(analise.totalAtendimentos, 'integer', `SUM(H2:H${ultimaLinhaDados})`),
-    c(analise.faturamentoGerado, 'currency', `SUM(I2:I${ultimaLinhaDados})`), c(analise.receita, 'currency', `SUM(J2:J${ultimaLinhaDados})`),
-    c(analise.aReceber, 'currency', `SUM(K2:K${ultimaLinhaDados})`),
-    c(analise.demonstrativoDias.reduce((s, d) => s + (d.funcionou ? (d.pessoas ?? 0) : 0), 0), 'integer', `SUM(L2:L${ultimaLinhaDados})`),
-    c(analise.custoPessoal, 'currency', `SUM(M2:M${ultimaLinhaDados})`), c(analise.outrosCustos, 'currency', `SUM(N2:N${ultimaLinhaDados})`),
-    c(analise.custoTotal, 'currency', `SUM(O2:O${ultimaLinhaDados})`), c(analise.resultadoOperacional, 'currency', `SUM(P2:P${ultimaLinhaDados})`),
-    c(analise.margemPercentual ?? 0, 'percent', `IFERROR(P${totalLinha}/I${totalLinha},0)`),
+    c('TOTAL DO PERÍODO', 'header'), c(null), c(`${analise.diasFuncionamento} dia(s)`), c(null), c(null), c(null), c(null), c(null),
+    c(analise.demonstrativoDias.reduce((s, d) => s + (d.funcionou ? d.criancasUnicas : 0), 0), 'integer', `SUM(I2:I${ultimaLinhaDados})`),
+    c(analise.totalAtendimentos, 'integer', `SUM(J2:J${ultimaLinhaDados})`),
+    c(analise.faturamentoGerado, 'currency', `SUM(K2:K${ultimaLinhaDados})`), c(analise.receita, 'currency', `SUM(L2:L${ultimaLinhaDados})`),
+    c(analise.aReceber, 'currency', `SUM(M2:M${ultimaLinhaDados})`),
+    c(analise.demonstrativoDias.reduce((s, d) => s + (d.funcionou ? (d.pessoas ?? 0) : 0), 0), 'integer', `SUM(N2:N${ultimaLinhaDados})`),
+    c(analise.custoPessoal, 'currency', `SUM(O2:O${ultimaLinhaDados})`), c(analise.custoAlimentacao, 'currency', `SUM(P2:P${ultimaLinhaDados})`),
+    c(analise.outrosCustos, 'currency', `SUM(Q2:Q${ultimaLinhaDados})`), c(analise.custoTotal, 'currency', `SUM(R2:R${ultimaLinhaDados})`),
+    c(analise.saldoCaixa, 'currency', `SUM(S2:S${ultimaLinhaDados})`), c(analise.resultadoOperacional, 'currency', `SUM(T2:T${ultimaLinhaDados})`),
+    c(analise.margemPercentual ?? 0, 'percent', `IFERROR(T${totalLinha}/K${totalLinha},0)`),
     c(analise.diasSemCustoInformado ? `Parcial — faltam ${analise.diasSemCustoInformado} dia(s)` : 'Completo'), c(null),
   ]]
 
@@ -114,7 +129,8 @@ export async function GET(request: Request) {
       type: 'column', title: 'Entradas médias por horário', from: { col: 5, row: 1 }, to: { col: 13, row: 18 },
       series: [{ name: 'Média/dia', color: '4F46E5', categoryRange: `'Horários'!$A$2:$A$${analise.horarios.length + 1}`, valueRange: `'Horários'!$C$2:$C$${analise.horarios.length + 1}`, categories: analise.horarios.map((h) => `${h.hora}h`), values: analise.horarios.map((h) => h.mediaPorDia) }],
     }] },
-    { name: 'Demonstrativo diário', rows: demonstrativo, widths: [13, 18, 13, 30, 13, 13, 17, 15, 21, 19, 17, 15, 23, 17, 18, 18, 14, 36, 42], freezeRows: 1, autoFilterRow: 1 },
+    { name: 'Clima', rows: clima, widths: [24, 17, 17, 24, 20, 20, 24], freezeRows: 1, autoFilterRow: 1 },
+    { name: 'Demonstrativo diário', rows: demonstrativo, widths: [13, 18, 13, 30, 22, 24, 13, 13, 17, 15, 21, 19, 17, 15, 23, 20, 17, 18, 18, 22, 20, 36, 42], freezeRows: 1, autoFilterRow: 1 },
   ])
 
   return new Response(arquivo as BodyInit, {

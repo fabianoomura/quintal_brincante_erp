@@ -16,9 +16,9 @@ const presencas: PresencaRelatorio[] = [
 ]
 
 const operacoes: OperacaoPlayDia[] = [
-  { data: '2026-07-03', aberto: true, abertura: '12:00', fechamento: '22:00', pessoas: 2, custoPessoal: 200, outrosCustos: 30, observacao: null },
-  { data: '2026-07-04', aberto: true, abertura: '12:00', fechamento: '22:00', pessoas: 2, custoPessoal: 200, outrosCustos: 30, observacao: null },
-  { data: '2026-07-05', aberto: true, abertura: '12:00', fechamento: '20:00', pessoas: 3, custoPessoal: 240, outrosCustos: 20, observacao: 'abriu sem movimento' },
+  { data: '2026-07-03', aberto: true, abertura: '12:00', fechamento: '22:00', pessoas: 2, custoPessoal: 200, custoAlimentacao: 20, outrosCustos: 30, clima: 'sol', temperaturaMedia: 25, observacao: null },
+  { data: '2026-07-04', aberto: true, abertura: '12:00', fechamento: '22:00', pessoas: 2, custoPessoal: 200, custoAlimentacao: 10, outrosCustos: 30, clima: 'chuva', temperaturaMedia: 19, observacao: null },
+  { data: '2026-07-05', aberto: true, abertura: '12:00', fechamento: '20:00', pessoas: 3, custoPessoal: 240, custoAlimentacao: 15, outrosCustos: 20, clima: 'sol', temperaturaMedia: 24, observacao: 'abriu sem movimento' },
 ]
 
 test('periodos de viabilidade separam mês anterior, atual parcial e consolidado', () => {
@@ -51,9 +51,14 @@ test('viabilidade inclui dia aberto sem atendimento e cruza receita, equipe e cu
   assert.equal(r.receita, 180)
   assert.equal(r.aReceber, 20)
   assert.equal(r.custoPessoal, 640)
+  assert.equal(r.custoAlimentacao, 45)
   assert.equal(r.outrosCustos, 80)
-  assert.equal(r.resultadoOperacional, -520)
+  assert.equal(r.custoTotal, 765)
+  assert.equal(r.saldoCaixa, -585)
+  assert.equal(r.resultadoOperacional, -565)
   assert.equal(r.diasSemCustoInformado, 0)
+  assert.equal(r.diasComClimaInformado, 3)
+  assert.equal(r.diasSemClimaInformado, 0)
   assert.equal(r.mediaPessoas, 7 / 3)
   assert.equal(r.pessoasHora, 64)
   assert.deepEqual(r.demonstrativoDias.map((d) => d.data), ['2026-07-03', '2026-07-04', '2026-07-05'])
@@ -63,11 +68,14 @@ test('viabilidade inclui dia aberto sem atendimento e cruza receita, equipe e cu
       data: '2026-07-03', diaSemana: 'sexta-feira', funcionou: true, situacao: 'informado',
       abertura: '12:00', fechamento: '22:00', criancasUnicas: 3, atendimentos: 3,
       faturamentoGerado: 150, receitaRecebida: 150, aReceber: 0,
-      pessoas: 2, custoPessoal: 200, gastosExtras: 30, custoTotal: 230,
-      resultado: -80, resultadoParcial: false, margemPercentual: -80 / 150, observacao: null,
+      pessoas: 2, custoPessoal: 200, custoAlimentacao: 20, gastosExtras: 30, custoTotal: 250,
+      saldoCaixa: -100, resultado: -100, resultadoParcial: false, margemPercentual: -100 / 150,
+      clima: 'sol', temperaturaMedia: 25, observacao: null,
     },
   )
   assert.equal(r.demonstrativoDias.find((d) => d.data === '2026-07-05')?.criancasUnicas, 0)
+  assert.deepEqual(r.porClima.map((item) => item.clima), ['sol', 'chuva'])
+  assert.equal(r.porClima.find((item) => item.clima === 'sol')?.temperaturaMedia, 24.5)
 })
 
 test('dias com movimento sem cadastro operacional são inferidos e deixam custo pendente', () => {
@@ -76,6 +84,7 @@ test('dias com movimento sem cadastro operacional são inferidos e deixam custo 
   assert.equal(r.diasFuncionamento, 2)
   assert.equal(r.diasInferidosPorMovimento, 1)
   assert.equal(r.diasSemCustoInformado, 1)
+  assert.equal(r.diasSemClimaInformado, 1)
   const inferido = r.demonstrativoDias.find((d) => d.data === '2026-07-04')!
   assert.equal(inferido.situacao, 'inferido')
   assert.equal(inferido.custoPessoal, null)

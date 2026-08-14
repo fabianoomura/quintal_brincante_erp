@@ -374,6 +374,22 @@ Levas pontuais após acompanhar a operação real:
 - **Qualidade:** 144 testes verdes, incluindo períodos, limites de classificação, dia aberto sem
   movimento, custo pendente, equipe/pessoa-horas e mapa dia × horário.
 
+## Caixa diário e clima do Play (2026-08-14)
+
+- **Entradas automáticas:** a linha diária destaca como entrada de caixa somente os valores pagos
+  nos lançamentos do Play. Faturamento gerado e valores pendentes permanecem visíveis para a
+  análise por competência, sem serem confundidos com dinheiro recebido.
+- **Saídas separadas:** quantidade de colaboradores e custo da equipe continuam informados por
+  dia; alimentação, café e similares ganharam um campo próprio, separado das demais saídas.
+- **Duas leituras financeiras:** saldo de caixa é recebido menos todas as saídas; resultado
+  operacional é faturamento gerado menos custos. Isso permite avaliar liquidez e viabilidade.
+- **Clima estruturado:** cada dia aceita sol, sol entre nuvens, nublado, garoa, chuva ou tempestade,
+  além da temperatura média. O relatório compara dias, crianças e entrada média por condição.
+- **Excel espelhado:** o demonstrativo exporta clima, temperatura, alimentação, outras saídas,
+  saldo de caixa e resultado operacional; a pasta ganhou também a aba `Clima`.
+- **Banco:** a migration `20260814120000_clima_e_custos_play.sql` adiciona os campos estruturados
+  com validações de custo, condição climática e temperatura.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

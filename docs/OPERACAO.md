@@ -191,22 +191,25 @@ está normalizado com DDD.
 3. Em **Aplicar escala por dia da semana**, cadastre os padrões conhecidos em lotes separados
    (por exemplo, seg.–qui., sex.–sáb. e domingo).
 4. Corrija exceções em **Informar ou corrigir um dia**. Um dia aberto sem check-in precisa ser
-   informado aqui para entrar corretamente na quantidade de dias funcionando.
+   informado aqui para entrar corretamente na quantidade de dias funcionando. Informe também
+   o clima predominante e a temperatura média aproximada para formar a análise histórica.
 5. O custo da equipe pode ficar vazio enquanto o dado externo não chegar. Nesse caso, resultado
    e margem continuam visíveis, porém sinalizados como parciais; zero significa custo realmente
    igual a zero.
 6. Use **Exportar esta visão** para gerar a pasta Excel do período selecionado.
 
-O **Demonstrativo diário do Play** funciona como um extrato da operação: check-ins alimentam a
-quantidade de crianças, lançamentos pagos e pendentes alimentam o faturamento, e equipe/custos
-são preenchidos manualmente. Na linha amarela marcada como **inferido**, clique em **Preencher**
-para informar funcionários, custo da equipe, alimentação/outros gastos e horários. O total do
-rodapé mostra dias funcionando, crianças atendidas, faturamento, recebido, pendente, custos e
-resultado do período.
+O **Caixa e operação diária do Play** funciona como um extrato da operação: check-ins alimentam
+a quantidade de crianças e lançamentos pagos alimentam automaticamente a entrada de caixa.
+Equipe, custo dos colaboradores, alimentação/café, outras saídas, horários, clima e temperatura
+são preenchidos manualmente. Na linha amarela marcada como **inferido**, clique em **Preencher**.
+O rodapé mostra dias funcionando, crianças, entradas pagas, faturamento, pendências, cada grupo
+de saída e o saldo real de caixa.
 
-O faturamento considera lançamentos pagos e pendentes originados por presença; o recebido aparece
-separado, e cortesias não movimentam receita. A classificação visual é relativa ao próprio período: vermelho abaixo de 70%
-da média, cinza entre 70% e 130% e verde acima de 130%.
+O faturamento considera lançamentos pagos e pendentes originados por presença; o caixa considera
+somente o que foi pago, e cortesias não movimentam receita. O resultado operacional usa faturado
+menos custos, enquanto o saldo de caixa usa recebido menos saídas. A classificação visual é
+relativa ao próprio período: vermelho abaixo de 70% da média, cinza entre 70% e 130% e verde
+acima de 130%. A seção **Clima × movimento** compara movimento e receita média por condição.
 
 ---
 

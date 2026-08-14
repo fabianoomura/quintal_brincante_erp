@@ -9,7 +9,7 @@ export async function buscarOperacoesPlay(
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('operacao_play_dia')
-    .select('data, aberto, abertura, fechamento, pessoas, custo_pessoal, outros_custos, observacao')
+    .select('data, aberto, abertura, fechamento, pessoas, custo_pessoal, custo_alimentacao, outros_custos, clima, temperatura_media, observacao')
     .gte('data', de)
     .lte('data', ate)
     .order('data', { ascending: true })
@@ -23,7 +23,10 @@ export async function buscarOperacoesPlay(
       fechamento: o.fechamento,
       pessoas: Number(o.pessoas),
       custoPessoal: o.custo_pessoal == null ? null : Number(o.custo_pessoal),
+      custoAlimentacao: Number(o.custo_alimentacao),
       outrosCustos: Number(o.outros_custos),
+      clima: o.clima as OperacaoPlayDia['clima'],
+      temperaturaMedia: o.temperatura_media == null ? null : Number(o.temperatura_media),
       observacao: o.observacao,
     })),
     erro: null,

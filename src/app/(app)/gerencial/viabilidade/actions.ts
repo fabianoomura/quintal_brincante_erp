@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/colaborador'
 import { dataISOValida } from '@/lib/financeiro-filtros'
 import { createClient } from '@/lib/supabase/server'
+import { CLIMAS_PLAY, type ClimaPlay } from '@/lib/viabilidade'
 
 export type OperacaoActionState = {
   ok: boolean
@@ -26,6 +27,21 @@ function decimalOpcional(valor: FormDataEntryValue | null): number | null | unde
   if (!texto) return null
   const numero = Number(texto.replace(',', '.'))
   return Number.isFinite(numero) && numero >= 0 ? Math.round(numero * 100) / 100 : undefined
+}
+
+function temperaturaOpcional(valor: FormDataEntryValue | null): number | null | undefined {
+  const texto = String(valor ?? '').trim()
+  if (!texto) return null
+  const numero = Number(texto.replace(',', '.'))
+  return Number.isFinite(numero) && numero >= -10 && numero <= 60
+    ? Math.round(numero * 10) / 10
+    : undefined
+}
+
+function climaOpcional(valor: FormDataEntryValue | null): ClimaPlay | null | undefined {
+  const texto = String(valor ?? '').trim()
+  if (!texto) return null
+  return (CLIMAS_PLAY as readonly string[]).includes(texto) ? texto as ClimaPlay : undefined
 }
 
 function hora(valor: FormDataEntryValue | null): string | null | undefined {
@@ -53,7 +69,10 @@ export async function salvarOperacaoDia(
   const data = String(formData.get('data') ?? '')
   const pessoas = inteiro(formData.get('pessoas'))
   const custoPessoal = decimalOpcional(formData.get('custo_pessoal'))
+  const custoAlimentacao = decimal(formData.get('custo_alimentacao'))
   const outrosCustos = decimal(formData.get('outros_custos'))
+  const clima = climaOpcional(formData.get('clima'))
+  const temperaturaMedia = temperaturaOpcional(formData.get('temperatura_media'))
   const abertura = hora(formData.get('abertura'))
   const fechamento = hora(formData.get('fechamento'))
   const aberto = formData.get('aberto') === 'true'
@@ -61,7 +80,8 @@ export async function salvarOperacaoDia(
 
   if (!dataISOValida(data)) return { ok: false, mensagem: 'Informe uma data válida.' }
   if (pessoas == null) return { ok: false, mensagem: 'A quantidade de pessoas deve ser um número inteiro positivo ou zero.' }
-  if (custoPessoal === undefined || outrosCustos == null) return { ok: false, mensagem: 'Os custos devem ser valores positivos ou zero.' }
+  if (custoPessoal === undefined || custoAlimentacao == null || outrosCustos == null) return { ok: false, mensagem: 'Os custos devem ser valores positivos ou zero.' }
+  if (clima === undefined || temperaturaMedia === undefined) return { ok: false, mensagem: 'Revise o clima e a temperatura média informados.' }
   if (abertura === undefined || fechamento === undefined) return { ok: false, mensagem: 'Informe horários válidos.' }
   if (abertura && fechamento && fechamento <= abertura) return { ok: false, mensagem: 'O fechamento deve ser posterior à abertura.' }
 
@@ -78,7 +98,10 @@ export async function salvarOperacaoDia(
     fechamento,
     pessoas,
     custo_pessoal: custoPessoal,
+    custo_alimentacao: custoAlimentacao,
     outros_custos: outrosCustos,
+    clima,
+    temperatura_media: temperaturaMedia,
     observacao,
     criado_por: existente?.criado_por ?? colaborador.id,
     atualizado_por: colaborador.id,
@@ -99,13 +122,14 @@ export async function aplicarEscalaOperacao(
   const diasSelecionados = new Set(formData.getAll('dias').map(Number))
   const pessoas = inteiro(formData.get('pessoas'))
   const custoPessoal = decimalOpcional(formData.get('custo_pessoal'))
+  const custoAlimentacao = decimal(formData.get('custo_alimentacao'))
   const outrosCustos = decimal(formData.get('outros_custos'))
   const abertura = hora(formData.get('abertura'))
   const fechamento = hora(formData.get('fechamento'))
 
   if (!dataISOValida(de) || !dataISOValida(ate) || de > ate) return { ok: false, mensagem: 'Informe um período válido.' }
   if (diasSelecionados.size === 0) return { ok: false, mensagem: 'Selecione ao menos um dia da semana.' }
-  if (pessoas == null || custoPessoal === undefined || outrosCustos == null) return { ok: false, mensagem: 'Revise equipe e custos informados.' }
+  if (pessoas == null || custoPessoal === undefined || custoAlimentacao == null || outrosCustos == null) return { ok: false, mensagem: 'Revise equipe e custos informados.' }
   if (abertura === undefined || fechamento === undefined) return { ok: false, mensagem: 'Informe horários válidos.' }
   if (abertura && fechamento && fechamento <= abertura) return { ok: false, mensagem: 'O fechamento deve ser posterior à abertura.' }
 
@@ -126,6 +150,7 @@ export async function aplicarEscalaOperacao(
     fechamento,
     pessoas,
     custo_pessoal: custoPessoal,
+    custo_alimentacao: custoAlimentacao,
     outros_custos: outrosCustos,
     criado_por: criadores.get(data) ?? colaborador.id,
     atualizado_por: colaborador.id,
