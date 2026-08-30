@@ -26,6 +26,7 @@ const VARIAVEIS_RECOMENDADAS: Record<string, string[]> = {
   aviso_tempo: ['responsavel_nome', 'crianca_nome', 'minutos_restantes'],
   ocorrencia: ['responsavel_nome', 'crianca_nome', 'detalhe'],
   boas_vindas: ['responsavel_nome', 'crianca_nome'],
+  boas_vindas_parte_2: ['responsavel_nome', 'crianca_nome'],
   agradecimento_checkout: ['responsavel_nome', 'crianca_nome'],
 }
 
@@ -146,7 +147,7 @@ export default function TemplateRow({
       <textarea
         value={f.texto}
         onChange={(e) => setF({ ...f, texto: e.target.value })}
-        rows={chave === 'boas_vindas' ? 8 : 3}
+        rows={chave.startsWith('boas_vindas') ? 8 : 3}
         className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed"
       />
 

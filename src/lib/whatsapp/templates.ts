@@ -18,21 +18,33 @@ const TEXTO_BOAS_VINDAS = `💚 Boas-vindas ao nosso Play Vila Verde!
 Olá, {{responsavel_nome}}! 🌿
 Que alegria receber {{crianca_nome}} por aqui!
 
-Antes da brincadeira começar, alguns combinados de cuidado:
+📲 A partir de agora, estamos conectados por este WhatsApp.
 
-🪟 O Play é território das crianças: adultos não permanecem no espaço. Se quiser ficar pertinho, escolha uma mesa próxima ao vidro.
+Esse é um dos nossos principais protocolos de cuidado e segurança: sempre que {{crianca_nome}} precisar de você — para ir ao banheiro, se alimentar, pedir colo ou por qualquer outra necessidade — nossa equipe entrará em contato por este número.
 
-🚻 Precisou ir ao banheiro? A gente te chama pelo celular para buscar {{crianca_nome}} e, depois, é só trazer de volta.
+Pode ficar tranquilo e aproveitar seu tempo por aqui. Se sua criança precisar de você, nós vamos chamar. Só mantenha o celular por perto. 💚
 
-🍎 Comidas e bebidas ficam do lado de fora, combinado? Assim, a brincadeira acontece sem interrupções.
+💵 VALORES — por hora
+Segunda, terça e quarta — R$ 15/h
+Quinta, sexta, sábado e domingo — R$ 25/h
 
-⏱️ O tempo é contínuo: saídas não pausam o cronômetro e, caso {{crianca_nome}} não se adapte, a primeira hora será contabilizada integralmente.
+⏱️ O tempo é contínuo e não pode ser pausado.
+A criança pode sair e retornar ao Play sempre que precisar, mas a contagem segue normalmente. Em caso de não adaptação, a primeira hora é contabilizada integralmente.`
+const TEXTO_BOAS_VINDAS_PARTE_2 = `🌿 Antes da brincadeira começar, alguns combinados importantes de cuidado e segurança:
 
-📹 Nosso espaço é monitorado por câmeras, como parte dos nossos protocolos de cuidado e segurança.
+🪟 O Play é território das crianças.
+Nosso espaço foi pensado para elas e, por segurança, somente nossa equipe permanece dentro do Play. Os adultos responsáveis podem ficar pertinho, nas mesas próximas ao vidro.
 
-🌿 Pronto. Por aqui começa a nossa grande aventura! 💚
+🚻 Precisou ir ao banheiro?
+Para a segurança das crianças e também da nossa equipe, não acompanhamos crianças ao banheiro. Chamaremos por este WhatsApp para que o responsável venha buscar {{crianca_nome}} na recepção e, depois, a traga de volta.
 
-Sempre que precisar, estamos à disposição.
+🍎 Comidas e bebidas ficam do lado de fora.
+Você pode retirar {{crianca_nome}} para se alimentar e trazê-la de volta normalmente.
+
+🤝 Cuidado também é a forma como nos tratamos.
+Respeito e cordialidade com nossos colaboradores são indispensáveis. Não serão toleradas ofensas, ameaças ou qualquer forma de desrespeito à nossa equipe.
+
+💚 Com os combinados feitos, que comece a brincadeira!
 
 Equipe Vilarejo Londrina 🌿`
 // Botão interativo não é confiável na Evolution/Baileys → resposta por texto SIM/NÃO.
@@ -137,6 +149,22 @@ export function tplBoasVindas(
   const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
   return {
     template: 'boas_vindas',
+    variaveis,
+    conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
+  }
+}
+
+export function tplBoasVindasParte2(
+  responsavel: string,
+  crianca: string,
+  textoTemplate = TEXTO_BOAS_VINDAS_PARTE_2,
+  primeiroNomeResponsavel?: string | null,
+  primeiroNomeCrianca?: string | null,
+): TemplateRender {
+  const ctx = nomesMensagem(responsavel, crianca, primeiroNomeResponsavel, primeiroNomeCrianca)
+  const variaveis = [ctx.responsavel_nome, ctx.crianca_nome]
+  return {
+    template: 'boas_vindas_parte_2',
     variaveis,
     conteudo: renderizarTemplate(textoTemplate, variaveis, ctx),
   }

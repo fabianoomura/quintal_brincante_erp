@@ -12,6 +12,7 @@ import {
   tplAgradecimentoCheckout,
   tplAutorizacaoImagem,
   tplBoasVindas,
+  tplBoasVindasParte2,
   tplDesculpaEngano,
 } from '@/lib/whatsapp/templates'
 import type { Database } from '@/lib/database.types'
@@ -230,20 +231,20 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
   }
 }
 
-// Envia a mensagem de boas-vindas com os combinados (template editável em /mensagens,
-// chave 'boas_vindas') em TODA entrada no play. {{1}}=responsável, {{2}}=criança.
+// Envia as duas partes das boas-vindas (editáveis em /mensagens) em TODA entrada
+// no play. A parte 2 só sai se a parte 1 tiver sido aceita pelo provider.
 async function enviarBoasVindas(
   supabase: Awaited<ReturnType<typeof createClient>>,
   criancaId: string,
   presencaId: string,
 ) {
-  const [{ data: tpl }, { data: crianca }, { data: vinculo }] = await Promise.all([
+  const [{ data: templates }, { data: crianca }, { data: vinculo }] = await Promise.all([
     supabase
       .from('mensagem_template')
-      .select('texto')
-      .eq('chave', 'boas_vindas')
+      .select('chave, texto')
+      .in('chave', ['boas_vindas', 'boas_vindas_parte_2'])
       .eq('ativo', true)
-      .maybeSingle(),
+      .order('ordem'),
     supabase.from('crianca').select('nome, primeiro_nome').eq('id', criancaId).single(),
     supabase
       .from('crianca_contato')
@@ -254,24 +255,47 @@ async function enviarBoasVindas(
       .maybeSingle(),
   ])
   const responsavel = vinculo?.contato
-  if (!tpl || !responsavel?.telefone || !crianca) return
+  const porChave = new Map((templates ?? []).map((template) => [template.chave, template.texto]))
+  const textoParte1 = porChave.get('boas_vindas')
+  const textoParte2 = porChave.get('boas_vindas_parte_2')
+  if (!textoParte1 || !responsavel?.telefone || !crianca) return
 
-  const render = tplBoasVindas(
+  const renderParte1 = tplBoasVindas(
     responsavel.nome,
     crianca.nome,
-    tpl.texto,
+    textoParte1,
     responsavel.primeiro_nome,
     crianca.primeiro_nome,
   )
 
-  await enviarNotificacao(supabase, getSender(), {
+  const sender = getSender()
+  const resultadoParte1 = await enviarNotificacao(supabase, sender, {
     crianca_id: criancaId,
     contato_id: responsavel.id,
     para: responsavel.telefone,
     tipo: 'boas_vindas',
-    template: render.template,
-    variaveis: render.variaveis,
-    conteudo: render.conteudo,
+    template: renderParte1.template,
+    variaveis: renderParte1.variaveis,
+    conteudo: renderParte1.conteudo,
+    presenca_id: presencaId,
+  })
+  if (!resultadoParte1.ok || !textoParte2) return
+
+  const renderParte2 = tplBoasVindasParte2(
+    responsavel.nome,
+    crianca.nome,
+    textoParte2,
+    responsavel.primeiro_nome,
+    crianca.primeiro_nome,
+  )
+  await enviarNotificacao(supabase, sender, {
+    crianca_id: criancaId,
+    contato_id: responsavel.id,
+    para: responsavel.telefone,
+    tipo: 'boas_vindas',
+    template: renderParte2.template,
+    variaveis: renderParte2.variaveis,
+    conteudo: renderParte2.conteudo,
     presenca_id: presencaId,
   })
 }

@@ -390,6 +390,16 @@ Levas pontuais após acompanhar a operação real:
 - **Banco:** a migration `20260814120000_clima_e_custos_play.sql` adiciona os campos estruturados
   com validações de custo, condição climática e temperatura.
 
+## Boas-vindas em duas partes (2026-08-30)
+
+- A mensagem de entrada do Play foi dividida em duas para melhorar a leitura no WhatsApp.
+- A primeira parte apresenta o canal de contato, valores e regra de tempo contínuo; a segunda
+  reúne permanência dos responsáveis, banheiro, alimentação e respeito à equipe.
+- As chaves `boas_vindas` e `boas_vindas_parte_2` continuam editáveis em `/mensagens`.
+- Os envios são sequenciais: a segunda parte só é enviada se a primeira for aceita pelo provider.
+  Ambas aparecem separadamente na Central de Conversas e ficam vinculadas à presença.
+- Quando a autorização de imagem está pendente, ela continua sendo enviada depois das duas partes.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

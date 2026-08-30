@@ -71,7 +71,8 @@ Crie no WhatsApp Manager templates com estes nomes, porque são os nomes usados 
 
 | Template | Uso | Variáveis |
 |---|---|---|
-| `boas_vindas` | Entrada no play com combinados | `{{1}}` responsável, `{{2}}` criança |
+| `boas_vindas` | Entrada no play: contato, valores e tempo (parte 1) | `{{1}}` responsável, `{{2}}` criança |
+| `boas_vindas_parte_2` | Entrada no play: combinados de cuidado (parte 2) | `{{1}}` responsável, `{{2}}` criança |
 | `aviso_tempo` | Tempo contratado chegando ao fim | `{{1}}` responsável, `{{2}}` criança, `{{3}}` minutos |
 | `ocorrencia` | Avisos rápidos e ocorrências | `{{1}}` responsável, `{{2}}` criança, `{{3}}` detalhe |
 | `agradecimento_checkout` | Agradecimento ao sair do play | `{{1}}` responsável, `{{2}}` criança |

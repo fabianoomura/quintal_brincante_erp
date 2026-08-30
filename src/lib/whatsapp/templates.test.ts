@@ -8,6 +8,7 @@ import {
   tplAutorizacaoImagem,
   tplAvisoTempo,
   tplBoasVindas,
+  tplBoasVindasParte2,
   tplDesculpaEngano,
   tplOcorrencia,
 } from './templates'
@@ -78,6 +79,22 @@ test('tplBoasVindas renderiza variáveis nomeadas e posicionais', () => {
   assert.equal(r.template, 'boas_vindas')
   assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
   assert.equal(r.conteudo, 'Oi Ana/Ana: Beto/Beto')
+})
+
+test('tplBoasVindas usa a nova primeira parte com valores e tempo contínuo', () => {
+  const r = tplBoasVindas('Ana Silva', 'Beto Souza')
+  assert.ok(r.conteudo.includes('Olá, Ana!'))
+  assert.ok(r.conteudo.includes('R$ 15/h'))
+  assert.ok(r.conteudo.includes('R$ 25/h'))
+  assert.ok(r.conteudo.includes('tempo é contínuo'))
+})
+
+test('tplBoasVindasParte2 renderiza os combinados separadamente', () => {
+  const r = tplBoasVindasParte2('Ana Silva', 'Beto Souza')
+  assert.equal(r.template, 'boas_vindas_parte_2')
+  assert.deepEqual(r.variaveis, ['Ana', 'Beto'])
+  assert.ok(r.conteudo.includes('buscar Beto na recepção'))
+  assert.ok(r.conteudo.includes('Respeito e cordialidade'))
 })
 
 test('tplAgradecimentoCheckout renderiza agradecimento', () => {
