@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { checkIn, checkOut, pausarPresenca, retomarPresenca } from '../presenca/actions'
+import {
+  checkIn,
+  checkOut,
+  encerrarPlayPorDesacordo,
+  pausarPresenca,
+  retomarPresenca,
+} from '../presenca/actions'
 import { abrirConversaDoResponsavel } from '../conversas/actions'
 import { entrarNaFila } from './fila-actions'
 import { duracaoMinutos, precoHoraCheia } from '@/lib/tarifador'
@@ -30,6 +36,8 @@ type Presente = {
   naoLidas: number // mensagens não lidas na conversa do responsável (badge 💬)
   pausadaEm: string | null // ISO; não-nulo = pausada agora (cronômetro parado)
   pausaTotalSeg: number // segundos já acumulados em pausas retomadas
+  alertaAtivo: boolean
+  alertaTexto: string | null
 }
 
 function agoraHHMM() {
@@ -54,7 +62,7 @@ export default function PlaygroundPanel({
   descontoAtivo = false,
 }: {
   presentes: Presente[]
-  criancas: { id: string; nome: string }[]
+  criancas: { id: string; nome: string; alerta_ativo?: boolean; alerta_texto?: string | null }[]
   avisos: AvisoRapido[]
   toleranciaMin?: number
   capacidadePlay?: number | null
@@ -121,6 +129,10 @@ export default function PlaygroundPanel({
   const [receb, setReceb] = useState<{ lancamentoId: string | null; valor: number; nome: string; presencaId: string } | null>(null)
   // confirmação antes do check-out (evita saída sem querer)
   const [confirmar, setConfirmar] = useState<{ p: Presente; decorrido: number; valor: number | null } | null>(null)
+  const [desacordoAberto, setDesacordoAberto] = useState(false)
+  const [relatoDesacordo, setRelatoDesacordo] = useState('')
+  const [marcarRedFlag, setMarcarRedFlag] = useState(true)
+  const [erroDesacordo, setErroDesacordo] = useState<string | null>(null)
   // card com o leque de avisos rápidos aberto (botão ⚡)
   const [avisosAbertos, setAvisosAbertos] = useState<string | null>(null)
 
@@ -193,6 +205,40 @@ export default function PlaygroundPanel({
     const p = confirmar.p
     setConfirmar(null)
     await sair(p)
+  }
+
+  async function confirmarDesacordo() {
+    if (!confirmar) return
+    const relato = relatoDesacordo.trim()
+    if (relato.length < 10) {
+      setErroDesacordo('Descreva o ocorrido com pelo menos 10 caracteres.')
+      return
+    }
+
+    const p = confirmar.p
+    setOcupado(`desacordo-${p.id}`)
+    setErroDesacordo(null)
+    try {
+      const res = await encerrarPlayPorDesacordo(p.id, relato, marcarRedFlag)
+      if (!res.ok) {
+        setErroDesacordo(res.erro)
+        return
+      }
+      setConfirmar(null)
+      setDesacordoAberto(false)
+      setRelatoDesacordo('')
+      setSaida(
+        `⚠️ ${p.nome} saiu sem cobrança por desacordo${marcarRedFlag ? ' e recebeu red flag no cadastro' : ''}.`,
+      )
+      setTimeout(() => setSaida(null), 8000)
+      router.refresh()
+    } catch (err) {
+      setErroDesacordo(
+        `Não consegui encerrar (${err instanceof Error ? err.message : 'erro inesperado'}).`,
+      )
+    } finally {
+      setOcupado(null)
+    }
   }
 
   // Coloca a criança selecionada na fila (botão aparece só quando lotado).
@@ -338,7 +384,9 @@ export default function PlaygroundPanel({
             <div
               key={p.id}
               className={`space-y-1.5 rounded-2xl p-3 shadow-sm ${
-                pausada
+                p.alertaAtivo
+                  ? 'bg-rose-50 ring-2 ring-rose-400'
+                  : pausada
                   ? 'bg-indigo-50 ring-2 ring-indigo-300'
                   : estourou
                     ? 'bg-rose-50 ring-1 ring-black/5'
@@ -365,6 +413,14 @@ export default function PlaygroundPanel({
                       </small>
                     )}
                   </span>
+                  {p.alertaAtivo && (
+                    <span
+                      className="shrink-0 rounded-full bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white"
+                      title={p.alertaTexto ?? 'Cadastro com red flag'}
+                    >
+                      🚩
+                    </span>
+                  )}
                   {p.autorizacaoImagem === null ? (
                     <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700" title="Autorização de imagem pendente">
                       📸?
@@ -381,6 +437,15 @@ export default function PlaygroundPanel({
                 </div>
                 <span className="shrink-0 text-xs text-slate-400">{p.entrada.slice(0, 5)}</span>
               </div>
+              {p.alertaAtivo && (
+                <Link
+                  href={`/criancas/${p.criancaId}`}
+                  className="block rounded-xl bg-rose-100 px-2.5 py-2 text-xs font-bold text-rose-800 ring-1 ring-rose-200"
+                  title="Abrir a ficha completa"
+                >
+                  🚩 {p.alertaTexto ?? 'Atenção: consulte a ficha antes do atendimento.'}
+                </Link>
+              )}
               <div className="flex items-baseline justify-between">
                 <span
                   className={`font-display text-xl font-bold ${
@@ -435,7 +500,13 @@ export default function PlaygroundPanel({
                   {ocupado === `pausa-${p.id}` ? '…' : pausada ? '▶ Retomar' : '⏸ Pausar'}
                 </button>
                 <button
-                  onClick={() => setConfirmar({ p, decorrido, valor })}
+                  onClick={() => {
+                    setConfirmar({ p, decorrido, valor })
+                    setDesacordoAberto(false)
+                    setRelatoDesacordo('')
+                    setMarcarRedFlag(true)
+                    setErroDesacordo(null)
+                  }}
                   disabled={ocupado === p.id}
                   className="pop min-w-0 flex-1 truncate rounded-xl bg-slate-800 py-2 text-sm font-bold text-white disabled:opacity-60"
                 >
@@ -488,33 +559,111 @@ export default function PlaygroundPanel({
 
       {/* Confirmação antes do check-out — evita saída sem querer */}
       {confirmar && (
-        <Modal open onClose={() => setConfirmar(null)} title="Confirmar check-out?">
+        <Modal
+          open
+          onClose={() => {
+            setConfirmar(null)
+            setDesacordoAberto(false)
+            setRelatoDesacordo('')
+            setErroDesacordo(null)
+          }}
+          title={desacordoAberto ? '⚠️ Encerrar por desacordo' : 'Confirmar check-out?'}
+        >
           <div className="space-y-3">
             <p className="text-sm text-slate-500">
               Encerrar a permanência de <strong className="text-slate-800">{confirmar.p.nome}</strong>?
             </p>
-            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-              <span className="font-display text-xl font-bold text-slate-700">
-                {fmtDuracao(confirmar.decorrido)}
-              </span>
-              <span className="font-display text-xl font-bold text-emerald-700">
-                {confirmar.valor != null ? formatBRL(confirmar.valor) : '—'}
-              </span>
-            </div>
-            <button
-              onClick={confirmarCheckout}
-              disabled={ocupado === confirmar.p.id}
-              className="pop w-full rounded-2xl bg-slate-800 py-3.5 font-display text-lg font-bold text-white shadow-sm disabled:opacity-60"
-            >
-              {ocupado === confirmar.p.id ? '…' : '✅ Confirmar check-out'}
-            </button>
-            <button
-              onClick={() => setConfirmar(null)}
-              disabled={ocupado === confirmar.p.id}
-              className="w-full rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-500 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
+            {!desacordoAberto ? (
+              <>
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                  <span className="font-display text-xl font-bold text-slate-700">
+                    {fmtDuracao(confirmar.decorrido)}
+                  </span>
+                  <span className="font-display text-xl font-bold text-emerald-700">
+                    {confirmar.valor != null ? formatBRL(confirmar.valor) : '—'}
+                  </span>
+                </div>
+                <button
+                  onClick={confirmarCheckout}
+                  disabled={ocupado === confirmar.p.id}
+                  className="pop w-full rounded-2xl bg-slate-800 py-3.5 font-display text-lg font-bold text-white shadow-sm disabled:opacity-60"
+                >
+                  {ocupado === confirmar.p.id ? '…' : '✅ Encerrar normalmente'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDesacordoAberto(true)
+                    setErroDesacordo(null)
+                  }}
+                  className="w-full rounded-2xl border-2 border-rose-200 bg-rose-50 py-3 text-sm font-bold text-rose-700"
+                >
+                  ⚠️ Encerrar por desacordo — sem cobrar
+                </button>
+                <p className="text-center text-[11px] text-slate-400">
+                  Cortesia continua disponível na próxima tela de recebimento.
+                </p>
+                <button
+                  onClick={() => setConfirmar(null)}
+                  disabled={ocupado === confirmar.p.id}
+                  className="w-full rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-500 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-2xl bg-rose-50 p-3 text-xs text-rose-700 ring-1 ring-rose-200">
+                  Não será criado lançamento financeiro. O relato ficará no histórico da permanência e nas ocorrências.
+                </div>
+                <label className="block space-y-1">
+                  <span className="text-xs font-bold text-slate-600">O que aconteceu? *</span>
+                  <textarea
+                    value={relatoDesacordo}
+                    onChange={(e) => setRelatoDesacordo(e.target.value)}
+                    rows={4}
+                    maxLength={1000}
+                    placeholder="Descreva objetivamente o desacordo e as informações importantes para a equipe."
+                    className="w-full resize-y rounded-2xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                    autoFocus
+                  />
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={marcarRedFlag}
+                    onChange={(e) => setMarcarRedFlag(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-rose-600"
+                  />
+                  <span className="text-sm text-slate-600">
+                    <strong className="block text-rose-700">🚩 Marcar red flag no cadastro</strong>
+                    O aviso ficará visível nos próximos atendimentos e poderá ser revisado por um administrador.
+                  </span>
+                </label>
+                {erroDesacordo && (
+                  <p className="text-sm font-semibold text-rose-600">{erroDesacordo}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={confirmarDesacordo}
+                  disabled={ocupado === `desacordo-${confirmar.p.id}`}
+                  className="pop w-full rounded-2xl bg-rose-600 py-3.5 font-display text-base font-bold text-white shadow-sm disabled:opacity-60"
+                >
+                  {ocupado === `desacordo-${confirmar.p.id}` ? '…' : 'Confirmar saída sem cobrança'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDesacordoAberto(false)
+                    setErroDesacordo(null)
+                  }}
+                  disabled={ocupado === `desacordo-${confirmar.p.id}`}
+                  className="w-full rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-500 disabled:opacity-50"
+                >
+                  Voltar
+                </button>
+              </>
+            )}
           </div>
         </Modal>
       )}

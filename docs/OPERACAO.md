@@ -213,6 +213,21 @@ acima de 130%. A seção **Clima × movimento** compara movimento e receita méd
 
 ---
 
+## Encerramento por desacordo e red flag
+
+- **Cortesia** continua sendo uma modalidade de recebimento: registra o valor concedido, quita o
+  lançamento e não movimenta a receita.
+- **Encerrar por desacordo — sem cobrar** fica na confirmação do check-out do Playground. Exige
+  um relato, encerra a permanência sem criar lançamento financeiro e não envia o agradecimento
+  automático de saída.
+- O relato fica na presença e também em **Ocorrências registradas** na ficha da criança.
+- A opção de red flag vem marcada nesse fluxo. Quando confirmada, o alerta aparece na busca de
+  entrada, no card do Play, em **Quem está aqui**, na lista de crianças e na ficha.
+- Administradores podem adicionar, editar ou retirar a red flag diretamente na ficha. Retirar o
+  alerta não apaga as ocorrências anteriores.
+
+---
+
 ## O que não apagar em produção
 
 Evite apagar estas tabelas em limpeza comum:

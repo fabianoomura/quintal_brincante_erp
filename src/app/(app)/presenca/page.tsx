@@ -34,14 +34,14 @@ export default async function PresencaPage() {
       supabase
         .from('presenca')
         .select(
-          'id, entrada, origem, tempo_contratado_min, crianca:crianca_id (id, nome), ambiente:ambiente_id (id, nome)',
+          'id, entrada, origem, tempo_contratado_min, crianca:crianca_id (id, nome, alerta_ativo, alerta_texto), ambiente:ambiente_id (id, nome)',
         )
         .eq('data', hoje)
         .is('saida', null)
         .order('entrada', { ascending: true }),
       supabase
         .from('crianca')
-        .select('id, nome')
+        .select('id, nome, alerta_ativo, alerta_texto')
         .eq('ativo', true)
         .order('nome', { ascending: true }),
       supabase.from('config_sistema').select('capacidade_dia').eq('id', 1).maybeSingle(),
@@ -131,12 +131,23 @@ export default async function PresencaPage() {
           {presentes?.map((p) => (
             <li
               key={p.id}
-              className={`flex items-center justify-between ${card}`}
+              className={`flex items-center justify-between ${card} ${
+                p.crianca?.alerta_ativo ? 'bg-rose-50 ring-2 ring-rose-300' : ''
+              }`}
             >
               <div className="min-w-0">
                 <div className="truncate font-display text-lg font-semibold">
-                  {p.crianca?.nome}
+                  {p.crianca?.alerta_ativo ? '🚩 ' : ''}{p.crianca?.nome}
                 </div>
+                {p.crianca?.alerta_ativo && p.crianca.id && (
+                  <Link
+                    href={`/criancas/${p.crianca.id}`}
+                    className="mb-1 block max-w-xl truncate text-xs font-bold text-rose-700"
+                    title={p.crianca.alerta_texto ?? 'Cadastro com red flag'}
+                  >
+                    RED FLAG — {p.crianca.alerta_texto ?? 'consulte a ficha'}
+                  </Link>
+                )}
                 <div className="text-xs text-slate-500">
                   {ORIGEM_LABEL[p.origem] ?? p.origem} · entrada {hhmm(p.entrada)}
                   {p.tempo_contratado_min
@@ -153,7 +164,11 @@ export default async function PresencaPage() {
                     naoLidas={naoLidas.get(p.crianca.id) ?? 0}
                   />
                 )}
-                <CheckoutButton presencaId={p.id} />
+                <CheckoutButton
+                  presencaId={p.id}
+                  nome={p.crianca?.nome ?? ''}
+                  permiteDesacordo={p.origem === 'espaco_kids'}
+                />
               </div>
             </li>
           ))}

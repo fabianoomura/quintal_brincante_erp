@@ -12,6 +12,7 @@ import MatriculaSection from './matricula-section'
 import MensalistaControle from './mensalista-controle'
 import ConsentimentoSection from './consentimento-section'
 import AutorizacaoImagemSection from './autorizacao-imagem-section'
+import AlertaCadastroSection from './alerta-cadastro-section'
 
 const ORIGEM_LABEL: Record<string, string> = {
   mensalista: '🎟️ Mensalista',
@@ -30,7 +31,7 @@ export default async function FichaPage({
 
   const { data: crianca } = await supabase
     .from('crianca')
-    .select('id, nome, primeiro_nome, sobrenome, nascimento, saude, endereco, cep, logradouro, numero, complemento, bairro, cidade, uf, ativo, foto, consentimento_em, consentimento_por, autorizacao_imagem, autorizacao_imagem_em')
+    .select('id, nome, primeiro_nome, sobrenome, nascimento, saude, endereco, cep, logradouro, numero, complemento, bairro, cidade, uf, ativo, foto, consentimento_em, consentimento_por, autorizacao_imagem, autorizacao_imagem_em, alerta_ativo, alerta_texto, alerta_em, alerta_responsavel:alerta_por (nome)')
     .eq('id', id)
     .maybeSingle()
 
@@ -54,6 +55,7 @@ export default async function FichaPage({
     { data: inscricoes },
     { data: origens },
     { data: reposicoes },
+    { data: ocorrencias },
   ] = await Promise.all([
     getColaboradorAtual(),
     supabase
@@ -88,6 +90,12 @@ export default async function FichaPage({
       .select('id, data_falta, data_reposicao, obs')
       .eq('crianca_id', id)
       .order('data_falta', { ascending: false }),
+    supabase
+      .from('ocorrencia')
+      .select('id, tipo, descricao, created_at')
+      .eq('crianca_id', id)
+      .order('created_at', { ascending: false })
+      .limit(10),
   ])
 
   const origensUsadas = new Set((origens ?? []).map((r) => r.origem))
@@ -163,6 +171,15 @@ export default async function FichaPage({
           </span>
         )}
       </div>
+
+      <AlertaCadastroSection
+        criancaId={crianca.id}
+        ativo={crianca.alerta_ativo}
+        texto={crianca.alerta_texto}
+        alertaEm={crianca.alerta_em}
+        alertaPor={crianca.alerta_responsavel?.nome ?? null}
+        ehAdmin={colaborador?.papel_acesso === 'admin'}
+      />
 
       {/* Contatos primeiro: o telefone do responsável é o que a equipe mais consulta */}
       <ContatosManager criancaId={crianca.id} contatos={contatos} />
@@ -258,6 +275,35 @@ export default async function FichaPage({
           </ul>
         )}
       </section>
+
+      {(ocorrencias?.length ?? 0) > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-display text-lg font-bold text-slate-600">📋 Ocorrências registradas</h2>
+          <ul className="space-y-2">
+            {ocorrencias?.map((o) => {
+              const desacordo = o.descricao?.startsWith('Encerrado por desacordo:')
+              return (
+                <li
+                  key={o.id}
+                  className={`${card} ${desacordo ? 'bg-rose-50 ring-rose-200' : ''}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className={`text-xs font-bold ${desacordo ? 'text-rose-700' : 'text-slate-600'}`}>
+                      {desacordo ? '⚠️ Desacordo no Play' : o.tipo}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {new Date(o.created_at).toLocaleString('pt-BR')}
+                    </span>
+                  </div>
+                  {o.descricao && (
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{o.descricao}</p>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       <OcorrenciaForm criancaId={crianca.id} />
     </div>

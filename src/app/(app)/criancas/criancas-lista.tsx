@@ -4,7 +4,14 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { input } from '@/lib/ui'
 
-type Crianca = { id: string; nome: string; ativo: boolean; foto: string | null }
+type Crianca = {
+  id: string
+  nome: string
+  ativo: boolean
+  foto: string | null
+  alerta_ativo: boolean
+  alerta_texto: string | null
+}
 
 const CORES = ['bg-rose-500', 'bg-sky-500', 'bg-amber-500', 'bg-violet-500', 'bg-emerald-500']
 
@@ -51,7 +58,12 @@ export default function CriancasLista({ criancas }: { criancas: Crianca[] }) {
                 <li key={c.id}>
                   <Link
                     href={`/criancas/${c.id}`}
-                    className="pop flex items-center gap-2.5 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200 hover:shadow-md"
+                    className={`pop flex items-center gap-2.5 rounded-2xl px-3 py-2 shadow-sm ring-1 hover:shadow-md ${
+                      c.alerta_ativo
+                        ? 'bg-rose-50 ring-2 ring-rose-300'
+                        : 'bg-white ring-slate-200'
+                    }`}
+                    title={c.alerta_ativo ? c.alerta_texto ?? 'Cadastro com red flag' : undefined}
                   >
                     <span className={`grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full ${CORES[i % CORES.length]} font-display text-xs font-bold text-white`}>
                       {c.foto ? (
@@ -64,6 +76,11 @@ export default function CriancasLista({ criancas }: { criancas: Crianca[] }) {
                     <span className="min-w-0 flex-1 truncate font-display font-semibold text-slate-800">
                       {nome}
                     </span>
+                    {c.alerta_ativo && (
+                      <span className="shrink-0 rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">
+                        🚩 RED FLAG
+                      </span>
+                    )}
                     {!c.ativo && (
                       <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
                         inativa

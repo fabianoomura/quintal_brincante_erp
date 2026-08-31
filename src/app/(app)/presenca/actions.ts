@@ -28,6 +28,52 @@ type ResultadoCheckout =
 
 type ResultadoExcecao = { ok: true } | { ok: false; erro: string }
 
+// Saída excepcional do Play: não gera lançamento financeiro, registra o relato como
+// ocorrência e, se solicitado, deixa uma red flag persistente na ficha da criança.
+// Diferente de cortesia, porque aqui não houve um atendimento normal concedido.
+export async function encerrarPlayPorDesacordo(
+  presencaId: string,
+  relato: string,
+  marcarAlerta: boolean,
+): Promise<ResultadoExcecao> {
+  const colaborador = await getColaboradorAtual()
+  if (!colaborador) return { ok: false, erro: 'Usuário não vinculado a um colaborador ativo.' }
+
+  const descricao = relato.trim()
+  if (descricao.length < 10) {
+    return { ok: false, erro: 'Descreva o desacordo ou ocorrido com pelo menos 10 caracteres.' }
+  }
+  if (descricao.length > 1000) return { ok: false, erro: 'O relato deve ter no máximo 1000 caracteres.' }
+
+  try {
+    const supabase = await createClient()
+    const { data: criancaId, error } = await supabase.rpc('encerrar_play_por_desacordo', {
+      p_presenca_id: presencaId,
+      p_relato: descricao,
+      p_marcar_alerta: marcarAlerta,
+    })
+    if (error) return { ok: false, erro: error.message }
+    if (!criancaId) return { ok: false, erro: 'Essa permanência já foi encerrada.' }
+
+    // O encerramento libera uma vaga. Falha ao chamar a fila não desfaz a saída;
+    // o worker periódico cobre o reprocessamento.
+    try {
+      await processarFila(supabase, getSender())
+    } catch {
+      // best-effort
+    }
+
+    revalidatePath('/presenca')
+    revalidatePath('/playground')
+    revalidatePath('/financeiro')
+    revalidatePath('/criancas')
+    revalidatePath(`/criancas/${criancaId}`)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, erro: `Erro no servidor: ${e instanceof Error ? e.message : String(e)}` }
+  }
+}
+
 export async function finalizarPresencaSemCobranca(
   presencaId: string,
   saida: string,
@@ -68,6 +114,7 @@ export async function finalizarPresencaSemCobranca(
       sem_cobranca_motivo: justificativa,
       sem_cobranca_em: new Date().toISOString(),
       sem_cobranca_por: colaborador.id,
+      sem_cobranca_tipo: 'outro',
     })
     .eq('id', presencaId)
     .is('saida', null)

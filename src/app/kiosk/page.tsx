@@ -36,12 +36,16 @@ export default async function KioskPage() {
     await Promise.all([
       supabase
         .from('presenca')
-        .select('id, entrada, tempo_contratado_min, tarifa_hora, pausada_em, pausa_total_seg, crianca:crianca_id (id, nome, primeiro_nome, sobrenome, foto, autorizacao_imagem)')
+        .select('id, entrada, tempo_contratado_min, tarifa_hora, pausada_em, pausa_total_seg, crianca:crianca_id (id, nome, primeiro_nome, sobrenome, foto, autorizacao_imagem, alerta_ativo, alerta_texto)')
         .eq('data', hoje)
         .eq('origem', 'espaco_kids')
         .is('saida', null)
         .order('entrada', { ascending: true }),
-      supabase.from('crianca').select('id, nome').eq('ativo', true).order('nome'),
+      supabase
+        .from('crianca')
+        .select('id, nome, alerta_ativo, alerta_texto')
+        .eq('ativo', true)
+        .order('nome'),
       supabase
         .from('mensagem_template')
         .select('id, nome, tipo_ocorrencia, texto')
@@ -118,6 +122,8 @@ export default async function KioskPage() {
             naoLidas: naoLidas.get(p.crianca?.id ?? '') ?? 0,
             pausadaEm: p.pausada_em,
             pausaTotalSeg: p.pausa_total_seg,
+            alertaAtivo: p.crianca?.alerta_ativo ?? false,
+            alertaTexto: p.crianca?.alerta_texto ?? null,
           }))}
           criancas={criancas ?? []}
           avisos={(avisos ?? [])

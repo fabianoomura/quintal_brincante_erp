@@ -25,7 +25,7 @@ export default function CheckinForm({
   ambientes = [],
   onSuccess,
 }: {
-  criancas: { id: string; nome: string }[]
+  criancas: { id: string; nome: string; alerta_ativo?: boolean; alerta_texto?: string | null }[]
   ambientes?: { id: string; nome: string }[]
   onSuccess?: () => void
 }) {

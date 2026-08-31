@@ -9,7 +9,7 @@ export default function NovaEntradaButton({
   criancas,
   ambientes,
 }: {
-  criancas: { id: string; nome: string }[]
+  criancas: { id: string; nome: string; alerta_ativo?: boolean; alerta_texto?: string | null }[]
   ambientes: { id: string; nome: string }[]
 }) {
   const [aberto, setAberto] = useState(false)

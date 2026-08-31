@@ -232,6 +232,10 @@ export type Database = {
       crianca: {
         Row: {
           ativo: boolean
+          alerta_ativo: boolean
+          alerta_em: string | null
+          alerta_por: string | null
+          alerta_texto: string | null
           autorizacao_imagem: boolean | null
           autorizacao_imagem_em: string | null
           bairro: string | null
@@ -255,6 +259,10 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          alerta_ativo?: boolean
+          alerta_em?: string | null
+          alerta_por?: string | null
+          alerta_texto?: string | null
           autorizacao_imagem?: boolean | null
           autorizacao_imagem_em?: string | null
           bairro?: string | null
@@ -278,6 +286,10 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          alerta_ativo?: boolean
+          alerta_em?: string | null
+          alerta_por?: string | null
+          alerta_texto?: string | null
           autorizacao_imagem?: boolean | null
           autorizacao_imagem_em?: string | null
           bairro?: string | null
@@ -299,7 +311,15 @@ export type Database = {
           sobrenome?: string | null
           uf?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crianca_alerta_por_fkey"
+            columns: ["alerta_por"]
+            isOneToOne: false
+            referencedRelation: "colaborador"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crianca_contato: {
         Row: {
@@ -899,6 +919,7 @@ export type Database = {
           sem_cobranca_em: string | null
           sem_cobranca_motivo: string | null
           sem_cobranca_por: string | null
+          sem_cobranca_tipo: string | null
           tarifa_hora: number | null
           tempo_contratado_min: number | null
           valor: number | null
@@ -918,6 +939,7 @@ export type Database = {
           sem_cobranca_em?: string | null
           sem_cobranca_motivo?: string | null
           sem_cobranca_por?: string | null
+          sem_cobranca_tipo?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
@@ -937,6 +959,7 @@ export type Database = {
           sem_cobranca_em?: string | null
           sem_cobranca_motivo?: string | null
           sem_cobranca_por?: string | null
+          sem_cobranca_tipo?: string | null
           tarifa_hora?: number | null
           tempo_contratado_min?: number | null
           valor?: number | null
@@ -1126,6 +1149,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      encerrar_play_por_desacordo: {
+        Args: { p_marcar_alerta?: boolean; p_presenca_id: string; p_relato: string }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       excluir_operacao_play: { Args: { p_presenca_id: string }; Returns: boolean }
       excluir_presenca_esquecida: { Args: { p_presenca_id: string }; Returns: boolean }

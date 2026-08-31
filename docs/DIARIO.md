@@ -400,6 +400,18 @@ Levas pontuais após acompanhar a operação real:
   Ambas aparecem separadamente na Central de Conversas e ficam vinculadas à presença.
 - Quando a autorização de imagem está pendente, ela continua sendo enviada depois das duas partes.
 
+## Red flag e encerramento por desacordo (2026-08-30)
+
+- O check-out do Playground agora separa atendimento normal, cortesia e desacordo.
+- Desacordo encerra sem cobrança e sem lançamento financeiro, exige relato e não envia a mensagem
+  automática de agradecimento.
+- A saída grava `sem_cobranca_tipo = 'desacordo'`, justificativa, data e colaborador, além de criar
+  uma ocorrência vinculada à permanência.
+- A red flag é opcional nesse encerramento e fica marcada por padrão. O texto aparece nas buscas,
+  cards operacionais, lista e ficha da criança.
+- Administradores podem gerenciar o alerta na ficha sem apagar o histórico de ocorrências.
+- Banco: migration `20260830170000_red_flag_desacordo_play.sql`.
+
 ## Fila de próximos passos
 
 1. Sinal de vida dos workers: alerta se `aviso-tempo` ou `mensalidades` parar/falhar

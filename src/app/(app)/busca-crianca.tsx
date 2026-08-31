@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from 'react'
 
-type Crianca = { id: string; nome: string }
+type Crianca = {
+  id: string
+  nome: string
+  alerta_ativo?: boolean
+  alerta_texto?: string | null
+}
 
 // tira acentos e caixa p/ a busca ser "esperta" (mesmo estilo da tela Crianças)
 const norm = (s: string) =>
@@ -38,8 +43,13 @@ export default function BuscaCrianca({
           compact ? 'h-[42px] rounded-xl px-3 sm:h-[46px]' : 'rounded-2xl px-4 py-3'
         }`}
       >
-        <span className="truncate font-display font-bold text-emerald-800">
-          🧒 {selecionada.nome}
+        <span className="min-w-0 truncate font-display font-bold text-emerald-800">
+          {selecionada.alerta_ativo ? '🚩' : '🧒'} {selecionada.nome}
+          {selecionada.alerta_ativo && (
+            <small className="ml-2 font-sans text-xs font-bold text-rose-700">
+              RED FLAG — consulte a ficha
+            </small>
+          )}
         </span>
         <button
           type="button"
@@ -77,9 +87,15 @@ export default function BuscaCrianca({
               <button
                 type="button"
                 onClick={() => onChange(c.id)}
-                className="block w-full px-4 py-2.5 text-left font-semibold text-slate-700 hover:bg-fuchsia-50"
+                className={`block w-full px-4 py-2.5 text-left font-semibold hover:bg-fuchsia-50 ${
+                  c.alerta_ativo ? 'bg-rose-50 text-rose-800' : 'text-slate-700'
+                }`}
+                title={c.alerta_ativo ? c.alerta_texto ?? 'Cadastro com red flag' : undefined}
               >
-                {c.nome}
+                {c.alerta_ativo ? '🚩 ' : ''}{c.nome}
+                {c.alerta_ativo && (
+                  <small className="ml-2 text-xs font-bold text-rose-600">RED FLAG</small>
+                )}
               </button>
             </li>
           ))}

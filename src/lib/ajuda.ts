@@ -17,6 +17,7 @@ export const AJUDA: Record<string, Ajuda> = {
     dicas: [
       'Check-in: marca a entrada e fixa o valor/hora do play daquele horário.',
       'Check-out: calcula o valor do play e gera o lançamento no Financeiro.',
+      'No Play, “desacordo” encerra sem cobrança, exige relato e pode marcar uma red flag.',
       'A lista de hoje sai automaticamente (quem entrou e ainda não saiu).',
     ],
   },
@@ -28,6 +29,7 @@ export const AJUDA: Record<string, Ajuda> = {
       'Filtre por tipo (play, colônia, mensalista) ou busque pelo nome.',
       'A ficha pede documento do responsável (CPF preferencial).',
       'O selo "⚠️ LGPD pendente" lembra de registrar o consentimento.',
+      'A red flag destaca um cuidado ou ocorrido; administradores podem revisar ou retirar o alerta.',
     ],
   },
   '/conversas': {
@@ -48,6 +50,7 @@ export const AJUDA: Record<string, Ajuda> = {
     dicas: [
       'Avisos rápidos: banheiro, trocar roupa, chorando, vir buscar.',
       'Cada aviso vira uma notificação registrada e enviada ao responsável.',
+      'No check-out, cortesia é uma concessão normal; desacordo fecha sem lançamento e registra ocorrência.',
     ],
   },
   '/grade': {

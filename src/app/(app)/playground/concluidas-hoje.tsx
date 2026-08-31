@@ -16,7 +16,7 @@ export default async function ConcluidasHoje() {
 
   const { data: sessoes } = await supabase
     .from('presenca')
-    .select('id, entrada, saida, valor, crianca:crianca_id (nome)')
+    .select('id, entrada, saida, valor, sem_cobranca_tipo, sem_cobranca_motivo, crianca:crianca_id (nome)')
     .eq('data', hoje)
     .eq('origem', 'espaco_kids')
     .not('saida', 'is', null)
@@ -65,6 +65,7 @@ export default async function ConcluidasHoje() {
           const cortesia = lan?.captureMethod === 'cortesia'
           // sem lançamento = terminou sem valor na grade → dá pra cobrar retroativo
           const semCobranca = !lan
+          const desacordo = semCobranca && p.sem_cobranca_tipo === 'desacordo'
           return (
             <li key={p.id} className={`flex items-center justify-between ${card}`}>
               <div className="min-w-0">
@@ -75,15 +76,33 @@ export default async function ConcluidasHoje() {
                 </div>
                 <span
                   className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    pago
+                    desacordo
+                      ? 'bg-rose-100 text-rose-700'
+                      : pago
                       ? 'bg-emerald-100 text-emerald-700'
                       : semCobranca
                         ? 'bg-slate-100 text-slate-500'
                         : 'bg-amber-100 text-amber-700'
                   }`}
                 >
-                  {cortesia ? '🎁 cortesia' : pago ? 'pago' : semCobranca ? 'sem cobrança' : 'pendente'}
+                  {cortesia
+                    ? '🎁 cortesia'
+                    : desacordo
+                      ? '⚠️ desacordo · sem cobrança'
+                      : pago
+                        ? 'pago'
+                        : semCobranca
+                          ? 'sem cobrança'
+                          : 'pendente'}
                 </span>
+                {desacordo && p.sem_cobranca_motivo && (
+                  <div
+                    className="mt-1 max-w-64 truncate text-[11px] font-semibold text-rose-600"
+                    title={p.sem_cobranca_motivo}
+                  >
+                    {p.sem_cobranca_motivo}
+                  </div>
+                )}
               </div>
               <div className="ml-2 flex shrink-0 items-center gap-2">
                 {lan && !pago && (

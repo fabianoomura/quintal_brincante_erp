@@ -3,7 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { pill } from '@/lib/ui'
 import CriancasLista from './criancas-lista'
 
-type Row = { id: string; nome: string; ativo: boolean; foto: string | null }
+type Row = {
+  id: string
+  nome: string
+  ativo: boolean
+  foto: string | null
+  alerta_ativo: boolean
+  alerta_texto: string | null
+}
 
 export default async function CriancasPage({
   searchParams,
@@ -27,26 +34,26 @@ export default async function CriancasPage({
 
   if (tipo === 'mensalista') {
     const res = await aplicaStatus(
-      supabase.from('crianca').select('id, nome, ativo, foto, mensalidade!inner(id)').eq('mensalidade.ativo', true).order('nome').limit(500),
+      supabase.from('crianca').select('id, nome, ativo, foto, alerta_ativo, alerta_texto, mensalidade!inner(id)').eq('mensalidade.ativo', true).order('nome').limit(500),
     )
     error = res.error
     rows = res.data ?? []
   } else if (tipo === 'colonia') {
     const res = await aplicaStatus(
-      supabase.from('crianca').select('id, nome, ativo, foto, inscricao_colonia!inner(id)').order('nome').limit(500),
+      supabase.from('crianca').select('id, nome, ativo, foto, alerta_ativo, alerta_texto, inscricao_colonia!inner(id)').order('nome').limit(500),
     )
     error = res.error
     rows = res.data ?? []
   } else if (tipo === 'play' || tipo === 'diaria') {
     const origem = tipo === 'play' ? 'espaco_kids' : 'diaria'
     const res = await aplicaStatus(
-      supabase.from('crianca').select('id, nome, ativo, foto, presenca!inner(id)').eq('presenca.origem', origem).order('nome').limit(500),
+      supabase.from('crianca').select('id, nome, ativo, foto, alerta_ativo, alerta_texto, presenca!inner(id)').eq('presenca.origem', origem).order('nome').limit(500),
     )
     error = res.error
     rows = res.data ?? []
   } else {
     const res = await aplicaStatus(
-      supabase.from('crianca').select('id, nome, ativo, foto').order('nome').limit(500),
+      supabase.from('crianca').select('id, nome, ativo, foto, alerta_ativo, alerta_texto').order('nome').limit(500),
     )
     error = res.error
     rows = res.data ?? []
@@ -58,7 +65,14 @@ export default async function CriancasPage({
   for (const r of rows) {
     if (!vistos.has(r.id)) {
       vistos.add(r.id)
-      criancas.push({ id: r.id, nome: r.nome, ativo: r.ativo, foto: r.foto })
+      criancas.push({
+        id: r.id,
+        nome: r.nome,
+        ativo: r.ativo,
+        foto: r.foto,
+        alerta_ativo: r.alerta_ativo,
+        alerta_texto: r.alerta_texto,
+      })
     }
   }
 

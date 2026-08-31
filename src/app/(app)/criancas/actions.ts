@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { comporEndereco, formatarCEP, normalizarUF, type EnderecoCampos } from '@/lib/endereco'
 import { normalizeE164BR } from '@/lib/fone'
+import { getColaboradorAtual } from '@/lib/colaborador'
 import type { Database } from '@/lib/database.types'
 
 type PapelContato = Database['public']['Enums']['papel_contato']
@@ -32,6 +33,44 @@ export type CriancaInput = EnderecoInput & {
 }
 
 type Resultado = { ok: true; id: string } | { ok: false; erro: string }
+
+export async function atualizarAlertaCadastro(
+  criancaId: string,
+  ativo: boolean,
+  texto: string,
+): Promise<Resultado> {
+  const colaborador = await getColaboradorAtual()
+  if (colaborador?.papel_acesso !== 'admin') {
+    return { ok: false, erro: 'Apenas administradores podem alterar ou retirar a red flag.' }
+  }
+
+  const descricao = texto.trim()
+  if (ativo && descricao.length < 10) {
+    return { ok: false, erro: 'Descreva o alerta com pelo menos 10 caracteres.' }
+  }
+  if (descricao.length > 1000) return { ok: false, erro: 'O alerta deve ter no máximo 1000 caracteres.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('crianca')
+    .update({
+      alerta_ativo: ativo,
+      alerta_texto: ativo ? descricao : null,
+      alerta_em: ativo ? new Date().toISOString() : null,
+      alerta_por: ativo ? colaborador.id : null,
+    })
+    .eq('id', criancaId)
+    .select('id')
+    .maybeSingle()
+  if (error) return { ok: false, erro: error.message }
+  if (!data) return { ok: false, erro: 'Cadastro não encontrado.' }
+
+  revalidatePath('/criancas')
+  revalidatePath(`/criancas/${criancaId}`)
+  revalidatePath('/playground')
+  revalidatePath('/kiosk')
+  return { ok: true, id: criancaId }
+}
 
 function textoOuNull(v: string | undefined): string | null {
   const t = v?.trim() ?? ''
