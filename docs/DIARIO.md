@@ -423,6 +423,8 @@ Levas pontuais após acompanhar a operação real:
   e pela nebulosidade do dia. A execução é limitada a 366 dias.
 - A importação atua apenas nos dias em que o Play funcionou e somente nos campos vazios. Dados
   inseridos manualmente são preservados, e datas sem observação permanecem sinalizadas.
+- O demonstrativo diário ganhou colunas com larguras previsíveis, espaçamento financeiro,
+  observações com quebra de linha, linhas alternadas e data fixa durante a rolagem horizontal.
 - Qualidade: 148 testes verdes, incluindo agrupamento por data local e classificação meteorológica.
 
 ## Fila de próximos passos

@@ -252,34 +252,51 @@ export default async function ViabilidadePage({
       <section className="space-y-4" id="dados-operacao">
         <div><h2 className="font-display text-xl font-bold text-slate-700">Caixa e operação diária do Play</h2><p className="text-sm text-slate-500">Entradas pagas e crianças vêm automaticamente do sistema. Preencha colaboradores, alimentação, outras saídas, horários e clima de cada dia.</p></div>
         <OperacaoForms periodo={periodo} edicao={edicao} />
-        <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <table className="w-full min-w-[1780px] text-sm">
-            <thead className="text-left text-xs uppercase text-slate-400"><tr><th className="pb-2">Data</th><th>Clima</th><th>Situação</th><th className="text-right">Crianças</th><th className="text-right">Entrada paga</th><th className="text-right">Colaboradores</th><th className="text-right">Custo equipe</th><th className="text-right">Alimentação</th><th className="text-right">Outras saídas</th><th className="text-right">Saídas totais</th><th className="text-right">Saldo caixa</th><th>Observação</th><th></th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{analise.demonstrativoDias.map((d) => {
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+          <table className="w-full min-w-[2050px] border-separate border-spacing-0 text-sm">
+            <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-500">
+              <tr>
+                <th scope="col" className="sticky left-0 z-20 min-w-[130px] border-b border-r border-slate-200 bg-slate-50 px-4 py-3">Data</th>
+                <th scope="col" className="min-w-[190px] border-b border-slate-200 px-4 py-3">Clima</th>
+                <th scope="col" className="min-w-[145px] border-b border-slate-200 px-4 py-3">Situação</th>
+                <th scope="col" className="min-w-[105px] border-b border-slate-200 px-4 py-3 text-right">Crianças</th>
+                <th scope="col" className="min-w-[205px] border-b border-slate-200 px-4 py-3 text-right">Entrada paga</th>
+                <th scope="col" className="min-w-[135px] border-b border-slate-200 px-4 py-3 text-right">Colaboradores</th>
+                <th scope="col" className="min-w-[135px] border-b border-slate-200 px-4 py-3 text-right">Custo equipe</th>
+                <th scope="col" className="min-w-[130px] border-b border-slate-200 px-4 py-3 text-right">Alimentação</th>
+                <th scope="col" className="min-w-[125px] border-b border-slate-200 px-4 py-3 text-right">Outras saídas</th>
+                <th scope="col" className="min-w-[130px] border-b border-slate-200 px-4 py-3 text-right">Saídas totais</th>
+                <th scope="col" className="min-w-[155px] border-b border-slate-200 px-4 py-3 text-right">Saldo de caixa</th>
+                <th scope="col" className="min-w-[300px] border-b border-l border-slate-200 px-5 py-3">Observação</th>
+                <th scope="col" className="min-w-[105px] border-b border-slate-200 px-4 py-3 text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>{analise.demonstrativoDias.map((d, indice) => {
               const situacao = d.situacao === 'informado'
                 ? { label: 'informado', cls: 'bg-emerald-100 text-emerald-700' }
                 : d.situacao === 'inferido'
                   ? { label: 'inferido', cls: 'bg-amber-100 text-amber-700' }
                   : { label: 'não abriu', cls: 'bg-slate-100 text-slate-500' }
-              return <tr key={d.data} className={d.funcionou ? 'text-slate-600' : 'bg-slate-50 text-slate-400'}>
-                <td className="py-2.5 font-semibold text-slate-700">{dataBR(d.data)}<span className="block text-xs font-normal capitalize text-slate-400">{d.diaSemana}</span></td>
-                <td>{d.clima ? <span className="font-semibold text-slate-600">{CLIMA_ICONE[d.clima]} {CLIMA_PLAY_LABEL[d.clima]}<span className="block text-xs font-normal text-slate-400">{d.temperaturaMedia == null ? 'temperatura pendente' : `${decimal(d.temperaturaMedia)} °C`}</span></span> : <span className="font-semibold text-amber-600">pendente</span>}</td>
-                <td><span className={`rounded-full px-2 py-1 text-xs font-bold ${situacao.cls}`}>{situacao.label}</span>{(d.abertura || d.fechamento) && <span className="mt-1 block text-xs text-slate-400">{d.abertura?.slice(0, 5) ?? '—'}–{d.fechamento?.slice(0, 5) ?? '—'}</span>}</td>
-                <td className="text-right font-bold text-indigo-700">{d.criancasUnicas}{d.atendimentos !== d.criancasUnicas && <span className="block text-xs font-normal text-slate-400">{d.atendimentos} entrada(s)</span>}</td>
-                <td className="text-right font-bold text-emerald-700">{formatBRL(d.receitaRecebida)}<span className="block text-xs font-normal text-slate-400">{formatBRL(d.faturamentoGerado)} gerado{d.aReceber > 0 ? ` · ${formatBRL(d.aReceber)} pendente` : ''}</span></td>
-                <td className="text-right">{d.pessoas == null ? <span className="font-semibold text-amber-600">pendente</span> : d.pessoas}</td>
-                <td className="text-right">{d.custoPessoal == null ? <span className="font-semibold text-amber-600">pendente</span> : formatBRL(d.custoPessoal)}</td>
-                <td className="text-right">{formatBRL(d.custoAlimentacao)}</td>
-                <td className="text-right">{formatBRL(d.gastosExtras)}</td>
-                <td className="text-right font-semibold text-rose-700">{formatBRL(d.custoTotal)}{d.resultadoParcial && <span className="block text-[10px] font-normal text-amber-600">parcial</span>}</td>
-                <td className={`text-right font-bold ${d.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(d.saldoCaixa)}<span className="block text-[10px] font-normal text-slate-400">recebido − saídas</span></td>
-                <td className="max-w-[230px] truncate">{d.observacao ?? '—'}</td>
-                <td><Link href={`${periodoHref(periodo, d.data)}#dados-operacao`} className="font-bold text-indigo-600">{d.situacao === 'inferido' ? 'Preencher' : 'Editar'}</Link></td>
+              const fundo = indice % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'
+              return <tr key={d.data} className={`group transition-colors hover:bg-indigo-50/70 ${d.funcionou ? `text-slate-600 ${fundo}` : 'bg-slate-100/80 text-slate-400'}`}>
+                <td className="sticky left-0 z-10 border-b border-r border-slate-100 bg-inherit px-4 py-3 align-top font-semibold text-slate-700 group-hover:bg-indigo-50">{dataBR(d.data)}<span className="mt-0.5 block text-xs font-normal capitalize text-slate-400">{d.diaSemana}</span></td>
+                <td className="border-b border-slate-100 px-4 py-3 align-top">{d.clima ? <span className="font-semibold text-slate-600">{CLIMA_ICONE[d.clima]} {CLIMA_PLAY_LABEL[d.clima]}<span className="mt-0.5 block text-xs font-normal text-slate-400">{d.temperaturaMedia == null ? 'temperatura pendente' : `${decimal(d.temperaturaMedia)} °C`}</span></span> : <span className="inline-flex rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">pendente</span>}</td>
+                <td className="border-b border-slate-100 px-4 py-3 align-top"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${situacao.cls}`}>{situacao.label}</span>{(d.abertura || d.fechamento) && <span className="mt-1.5 block whitespace-nowrap text-xs text-slate-400">{d.abertura?.slice(0, 5) ?? '—'}–{d.fechamento?.slice(0, 5) ?? '—'}</span>}</td>
+                <td className="border-b border-slate-100 px-4 py-3 text-right align-top font-bold tabular-nums text-indigo-700">{d.criancasUnicas}{d.atendimentos !== d.criancasUnicas && <span className="mt-0.5 block whitespace-nowrap text-xs font-normal text-slate-400">{d.atendimentos} entrada(s)</span>}</td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top font-bold tabular-nums text-emerald-700">{formatBRL(d.receitaRecebida)}<span className="mt-0.5 block text-xs font-normal text-slate-400">{formatBRL(d.faturamentoGerado)} gerado{d.aReceber > 0 ? ` · ${formatBRL(d.aReceber)} pendente` : ''}</span></td>
+                <td className="border-b border-slate-100 px-4 py-3 text-right align-top tabular-nums">{d.pessoas == null ? <span className="font-semibold text-amber-600">pendente</span> : d.pessoas}</td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top tabular-nums">{d.custoPessoal == null ? <span className="font-semibold text-amber-600">pendente</span> : formatBRL(d.custoPessoal)}</td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top tabular-nums">{formatBRL(d.custoAlimentacao)}</td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top tabular-nums">{formatBRL(d.gastosExtras)}</td>
+                <td className="whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top font-semibold tabular-nums text-rose-700">{formatBRL(d.custoTotal)}{d.resultadoParcial && <span className="mt-0.5 block text-[10px] font-normal text-amber-600">parcial</span>}</td>
+                <td className={`whitespace-nowrap border-b border-slate-100 px-4 py-3 text-right align-top font-bold tabular-nums ${d.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(d.saldoCaixa)}<span className="mt-0.5 block text-[10px] font-normal text-slate-400">recebido − saídas</span></td>
+                <td className="max-w-[360px] whitespace-normal break-words border-b border-l border-slate-100 px-5 py-3 align-top leading-5 text-slate-600">{d.observacao ?? <span className="text-slate-300">Sem observação</span>}</td>
+                <td className="border-b border-slate-100 px-4 py-3 text-center align-top"><Link href={`${periodoHref(periodo, d.data)}#dados-operacao`} className="inline-flex min-h-9 items-center justify-center rounded-full bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200 transition hover:bg-indigo-600 hover:text-white">{d.situacao === 'inferido' ? 'Preencher' : 'Editar'}</Link></td>
               </tr>
             })}</tbody>
-            {analise.demonstrativoDias.length > 0 && <tfoot className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-700"><tr><td className="py-3" colSpan={3}>TOTAL · {analise.diasFuncionamento} dia(s) funcionando</td><td className="text-right">{totalCriancasDia}</td><td className="text-right text-emerald-700">{formatBRL(analise.receita)}<span className="block text-[10px] font-normal text-slate-500">{formatBRL(analise.faturamentoGerado)} gerado · {formatBRL(analise.aReceber)} pendente</span></td><td className="text-right">{totalPessoasDia}</td><td className="text-right">{formatBRL(analise.custoPessoal)}</td><td className="text-right">{formatBRL(analise.custoAlimentacao)}</td><td className="text-right">{formatBRL(analise.outrosCustos)}</td><td className="text-right text-rose-700">{formatBRL(analise.custoTotal)}</td><td className={`text-right ${analise.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(analise.saldoCaixa)}</td><td colSpan={2}></td></tr></tfoot>}
+            {analise.demonstrativoDias.length > 0 && <tfoot className="bg-slate-100 font-bold text-slate-700"><tr><td className="border-t-2 border-slate-300 px-4 py-4" colSpan={3}>TOTAL · {analise.diasFuncionamento} dia(s) funcionando</td><td className="border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums">{totalCriancasDia}</td><td className="whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums text-emerald-700">{formatBRL(analise.receita)}<span className="mt-0.5 block text-[10px] font-normal text-slate-500">{formatBRL(analise.faturamentoGerado)} gerado · {formatBRL(analise.aReceber)} pendente</span></td><td className="border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums">{totalPessoasDia}</td><td className="whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums">{formatBRL(analise.custoPessoal)}</td><td className="whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums">{formatBRL(analise.custoAlimentacao)}</td><td className="whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums">{formatBRL(analise.outrosCustos)}</td><td className="whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums text-rose-700">{formatBRL(analise.custoTotal)}</td><td className={`whitespace-nowrap border-t-2 border-slate-300 px-4 py-4 text-right tabular-nums ${analise.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(analise.saldoCaixa)}</td><td className="border-t-2 border-slate-300" colSpan={2}></td></tr></tfoot>}
           </table>
-          {analise.demonstrativoDias.length === 0 && <div className="py-6 text-center text-sm text-slate-400">Nenhuma operação ou movimento do Play neste período.</div>}
+          {analise.demonstrativoDias.length === 0 && <div className="p-6 text-center text-sm text-slate-400">Nenhuma operação ou movimento do Play neste período.</div>}
         </div>
       </section>
     </div>
