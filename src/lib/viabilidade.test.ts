@@ -21,12 +21,11 @@ const operacoes: OperacaoPlayDia[] = [
   { data: '2026-07-05', aberto: true, abertura: '12:00', fechamento: '20:00', pessoas: 3, custoPessoal: 240, custoAlimentacao: 15, outrosCustos: 20, clima: 'sol', temperaturaMedia: 24, observacao: 'abriu sem movimento' },
 ]
 
-test('periodos de viabilidade separam mês anterior, atual parcial e consolidado', () => {
+test('períodos de viabilidade separam mês anterior e mês atual parcial', () => {
   const periodos = periodosViabilidade('2026-08-05')
   assert.deepEqual(periodos.map((p) => [p.chave, p.de, p.ate, p.parcial]), [
     ['anterior', '2026-07-01', '2026-07-31', false],
     ['atual', '2026-08-01', '2026-08-05', true],
-    ['consolidado', '2026-07-01', '2026-08-05', true],
   ])
 })
 

@@ -44,7 +44,7 @@ export type ReceitaPlayDia = {
 }
 
 export type PeriodoViabilidade = {
-  chave: 'anterior' | 'atual' | 'consolidado'
+  chave: 'anterior' | 'atual' | 'personalizado'
   label: string
   de: string
   ate: string
@@ -194,13 +194,6 @@ export function periodosViabilidade(hoje: string): PeriodoViabilidade[] {
       chave: 'atual',
       label: `${MESES[mesAtual - 1]} de ${anoAtual}`,
       de: atualDe,
-      ate: atualAte,
-      parcial: diaAtual < ultimoDiaMes(anoAtual, mesAtual),
-    },
-    {
-      chave: 'consolidado',
-      label: `${MESES[mesAnterior - 1]} + ${MESES[mesAtual - 1]}`,
-      de: anteriorDe,
       ate: atualAte,
       parcial: diaAtual < ultimoDiaMes(anoAtual, mesAtual),
     },

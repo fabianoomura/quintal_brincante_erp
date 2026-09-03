@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { agoraHora, hojeISO, horaParaMinutos } from '@/lib/datas'
 import { formatBRL } from '@/lib/dinheiro'
 import { requireAdmin } from '@/lib/colaborador'
+import { dataISOValida } from '@/lib/financeiro-filtros'
 import { calcularRelatorioGerencial } from '@/lib/gerencial-relatorio'
 import {
   CLIMA_PLAY_LABEL,
@@ -13,7 +14,7 @@ import {
 } from '@/lib/viabilidade'
 import { buscarPresencasRelatorio } from '../dados'
 import { buscarOperacoesPlay, buscarReceitasPlay } from './dados'
-import { OperacaoForms } from './operacao-forms'
+import { ClimaRetroativoForm, OperacaoForms } from './operacao-forms'
 
 const CLASSE: Record<ClassificacaoMovimento, { bloco: string; barra: string; label: string }> = {
   ruim: { bloco: 'bg-rose-100 text-rose-800 ring-rose-200', barra: 'bg-rose-500', label: 'Abaixo da média' },
@@ -39,13 +40,21 @@ function dataBR(data: string): string {
   return data.split('-').reverse().join('/')
 }
 
-function periodoHref(chave: PeriodoViabilidade['chave']): string {
-  return `/gerencial/viabilidade?visao=${chave}`
+function periodoHref(periodo: PeriodoViabilidade, editar?: string): string {
+  const params = new URLSearchParams()
+  if (periodo.chave === 'personalizado') {
+    params.set('de', periodo.de)
+    params.set('ate', periodo.ate)
+  } else {
+    params.set('visao', periodo.chave)
+  }
+  if (editar) params.set('editar', editar)
+  return `/gerencial/viabilidade?${params.toString()}`
 }
 
 function Comparativo({ periodo, analise, ativo }: { periodo: PeriodoViabilidade; analise: AnaliseViabilidade; ativo: boolean }) {
   return (
-    <Link href={periodoHref(periodo.chave)} className={`rounded-2xl p-4 shadow-sm ring-2 transition ${ativo ? 'bg-indigo-50 ring-indigo-400' : 'bg-white ring-slate-200 hover:ring-indigo-200'}`}>
+    <Link href={periodoHref(periodo)} className={`rounded-2xl p-4 shadow-sm ring-2 transition ${ativo ? 'bg-indigo-50 ring-indigo-400' : 'bg-white ring-slate-200 hover:ring-indigo-200'}`}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold capitalize text-slate-700">{periodo.label}</h2>
         {periodo.parcial && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">parcial até {dataBR(periodo.ate)}</span>}
@@ -67,17 +76,31 @@ function Kpi({ titulo, valor, sub, cls }: { titulo: string; valor: string; sub: 
 export default async function ViabilidadePage({
   searchParams,
 }: {
-  searchParams: Promise<{ visao?: string; editar?: string }>
+  searchParams: Promise<{ visao?: string; editar?: string; de?: string; ate?: string }>
 }) {
   await requireAdmin()
   const sp = await searchParams
   const hoje = hojeISO()
   const periodos = periodosViabilidade(hoje)
-  const consolidado = periodos.find((p) => p.chave === 'consolidado')!
+  const anterior = periodos.find((p) => p.chave === 'anterior')!
+  const atual = periodos.find((p) => p.chave === 'atual')!
+  const filtroSolicitado = sp.de !== undefined || sp.ate !== undefined
+  const filtroValido = dataISOValida(sp.de ?? '') && dataISOValida(sp.ate ?? '') && sp.de! <= sp.ate!
+  const periodoPersonalizado: PeriodoViabilidade | null = filtroValido ? {
+    chave: 'personalizado',
+    label: 'período personalizado',
+    de: sp.de!,
+    ate: sp.ate!,
+    parcial: false,
+  } : null
+  const periodoCard = periodos.find((p) => p.chave === sp.visao) ?? periodos[0]
+  const periodo = periodoPersonalizado ?? periodoCard
+  const consultaDe = periodo.de < anterior.de ? periodo.de : anterior.de
+  const consultaAte = periodo.ate > atual.ate ? periodo.ate : atual.ate
   const [presencas, operacoes, receitas] = await Promise.all([
-    buscarPresencasRelatorio(consolidado.de, consolidado.ate),
-    buscarOperacoesPlay(consolidado.de, consolidado.ate),
-    buscarReceitasPlay(consolidado.de, consolidado.ate),
+    buscarPresencasRelatorio(consultaDe, consultaAte),
+    buscarOperacoesPlay(consultaDe, consultaAte),
+    buscarReceitasPlay(consultaDe, consultaAte),
   ])
   const agoraMin = horaParaMinutos(agoraHora())
   const resultados = new Map(periodos.map((periodo) => {
@@ -91,9 +114,17 @@ export default async function ViabilidadePage({
       receitas.data.filter((r) => r.data >= periodo.de && r.data <= periodo.ate),
     )]
   }))
-  const chave = periodos.some((p) => p.chave === sp.visao) ? sp.visao as PeriodoViabilidade['chave'] : 'anterior'
-  const periodo = periodos.find((p) => p.chave === chave)!
-  const analise = resultados.get(chave)!
+  const chave = periodo.chave
+  const analise = periodoPersonalizado
+    ? calcularViabilidade(
+        calcularRelatorioGerencial(
+          presencas.data.filter((p) => p.data >= periodo.de && p.data <= periodo.ate),
+          { hoje, agoraMin },
+        ),
+        operacoes.data.filter((o) => o.data >= periodo.de && o.data <= periodo.ate),
+        receitas.data.filter((r) => r.data >= periodo.de && r.data <= periodo.ate),
+      )
+    : resultados.get(chave)!
   const edicao = operacoes.data.find((o) => o.data === sp.editar) ?? null
   const erros = [presencas.erro, operacoes.erro, receitas.erro].filter(Boolean)
   const maxDia = Math.max(1, ...analise.diasSemana.map((d) => d.mediaPorDia))
@@ -118,10 +149,22 @@ export default async function ViabilidadePage({
       </nav>
 
       {erros.length > 0 && <div className="rounded-2xl bg-rose-50 p-3 text-sm font-semibold text-rose-700 ring-1 ring-rose-200">Não foi possível carregar toda a análise: {erros.join(' · ')}</div>}
+      {filtroSolicitado && !filtroValido && <div className="rounded-2xl bg-rose-50 p-3 text-sm font-semibold text-rose-700 ring-1 ring-rose-200">Informe uma data inicial e uma data final válidas; a inicial não pode ser posterior à final.</div>}
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {periodos.map((p) => <Comparativo key={p.chave} periodo={p} analise={resultados.get(p.chave)!} ativo={p.chave === chave} />)}
       </div>
+
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <div className="min-w-[220px] flex-1">
+          <h2 className="font-display font-bold text-slate-700">Filtrar outro período</h2>
+          <p className="mt-0.5 text-xs text-slate-500">O filtro atualiza toda a análise e a planilha exportada. Os cards mensais continuam disponíveis acima.</p>
+        </div>
+        <label className="text-xs font-semibold text-slate-500">Data inicial<input type="date" name="de" required max={hoje} defaultValue={periodo.de} className="mt-1 block h-11 rounded-xl border-2 border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" /></label>
+        <label className="text-xs font-semibold text-slate-500">Data final<input type="date" name="ate" required max={hoje} defaultValue={periodo.ate} className="mt-1 block h-11 rounded-xl border-2 border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" /></label>
+        <button type="submit" className="min-h-11 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700">Aplicar período</button>
+        {periodoPersonalizado && <Link href={periodoHref(periodos[0])} className="min-h-11 rounded-full bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-200">Limpar filtro</Link>}
+      </form>
 
       <section className="space-y-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
         <div>
@@ -149,6 +192,7 @@ export default async function ViabilidadePage({
           {analise.diasAbertosSemMovimento > 0 && <span>{analise.diasAbertosSemMovimento} dia(s) aberto(s) sem atendimento foram incluídos corretamente.</span>}
           {analise.diasSemClimaInformado > 0 && <span> Falta informar o clima de {analise.diasSemClimaInformado} dia(s) para comparar seu impacto.</span>}
         </div>}
+        {analise.diasFuncionamento > 0 && <ClimaRetroativoForm periodo={periodo} diasPendentes={analise.diasSemClimaInformado} />}
       </section>
 
       <section className="space-y-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -230,7 +274,7 @@ export default async function ViabilidadePage({
                 <td className="text-right font-semibold text-rose-700">{formatBRL(d.custoTotal)}{d.resultadoParcial && <span className="block text-[10px] font-normal text-amber-600">parcial</span>}</td>
                 <td className={`text-right font-bold ${d.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(d.saldoCaixa)}<span className="block text-[10px] font-normal text-slate-400">recebido − saídas</span></td>
                 <td className="max-w-[230px] truncate">{d.observacao ?? '—'}</td>
-                <td><Link href={`${periodoHref(chave)}&editar=${d.data}#dados-operacao`} className="font-bold text-indigo-600">{d.situacao === 'inferido' ? 'Preencher' : 'Editar'}</Link></td>
+                <td><Link href={`${periodoHref(periodo, d.data)}#dados-operacao`} className="font-bold text-indigo-600">{d.situacao === 'inferido' ? 'Preencher' : 'Editar'}</Link></td>
               </tr>
             })}</tbody>
             {analise.demonstrativoDias.length > 0 && <tfoot className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-700"><tr><td className="py-3" colSpan={3}>TOTAL · {analise.diasFuncionamento} dia(s) funcionando</td><td className="text-right">{totalCriancasDia}</td><td className="text-right text-emerald-700">{formatBRL(analise.receita)}<span className="block text-[10px] font-normal text-slate-500">{formatBRL(analise.faturamentoGerado)} gerado · {formatBRL(analise.aReceber)} pendente</span></td><td className="text-right">{totalPessoasDia}</td><td className="text-right">{formatBRL(analise.custoPessoal)}</td><td className="text-right">{formatBRL(analise.custoAlimentacao)}</td><td className="text-right">{formatBRL(analise.outrosCustos)}</td><td className="text-right text-rose-700">{formatBRL(analise.custoTotal)}</td><td className={`text-right ${analise.saldoCaixa >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatBRL(analise.saldoCaixa)}</td><td colSpan={2}></td></tr></tfoot>}

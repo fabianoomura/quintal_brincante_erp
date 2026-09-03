@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom'
 import { CLIMA_PLAY_LABEL, CLIMAS_PLAY, type OperacaoPlayDia, type PeriodoViabilidade } from '@/lib/viabilidade'
 import {
   aplicarEscalaOperacao,
+  preencherClimaRetroativo,
   salvarOperacaoDia,
   type OperacaoActionState,
 } from './actions'
@@ -20,9 +21,9 @@ const DIAS = [
   { valor: 0, label: 'Dom' },
 ]
 
-function BotaoSalvar({ label }: { label: string }) {
+function BotaoSalvar({ label, pendingLabel = 'Salvando…' }: { label: string; pendingLabel?: string }) {
   const { pending } = useFormStatus()
-  return <button type="submit" disabled={pending} className="min-h-11 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-wait disabled:opacity-50">{pending ? 'Salvando…' : label}</button>
+  return <button type="submit" disabled={pending} className="min-h-11 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-wait disabled:opacity-50">{pending ? pendingLabel : label}</button>
 }
 
 function Mensagem({ estado }: { estado: OperacaoActionState }) {
@@ -116,5 +117,33 @@ export function OperacaoForms({
         </form>
       </details>
     </div>
+  )
+}
+
+export function ClimaRetroativoForm({
+  periodo,
+  diasPendentes,
+}: {
+  periodo: PeriodoViabilidade
+  diasPendentes: number
+}) {
+  const [estado, action] = useActionState(preencherClimaRetroativo, ESTADO_INICIAL)
+
+  return (
+    <form action={action} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-sky-50 p-4 ring-1 ring-sky-200">
+      <input type="hidden" name="de" value={periodo.de} />
+      <input type="hidden" name="ate" value={periodo.ate} />
+      <div className="min-w-[240px] flex-1">
+        <h3 className="font-display font-bold text-sky-900">🌦️ Completar clima pelo INMET</h3>
+        <p className="mt-0.5 text-xs text-sky-700">
+          Estação Londrina/Aeroporto 83768 · calcula a média diária e preenche somente campos pendentes.
+          {diasPendentes > 0 ? ` Há ${diasPendentes} dia(s) sem clima no período.` : ' O clima já está completo; a ação também confere temperaturas pendentes.'}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <BotaoSalvar label="Buscar dados retroativos" pendingLabel="Consultando o INMET…" />
+        <Mensagem estado={estado} />
+      </div>
+    </form>
   )
 }

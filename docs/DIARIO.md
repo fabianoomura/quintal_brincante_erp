@@ -340,14 +340,14 @@ Levas pontuais após acompanhar a operação real:
 
 ## Viabilidade da operação do Play (2026-08-05)
 
-- **Comparação pronta para decisão:** nova visão no Gerencial separa mês anterior, mês atual
-  (identificado como parcial quando ainda está em andamento) e os dois meses consolidados.
+- **Comparação pronta para decisão:** a visão no Gerencial separa mês anterior e mês atual
+  (identificado como parcial quando ainda está em andamento), além do período livre por datas.
 - **Dias realmente funcionando:** check-ins continuam provando que houve operação, mas agora a
   tabela `operacao_play_dia` registra também dias abertos sem nenhuma criança e dias fechados.
   Assim, a média deixa de ignorar justamente os dias de movimento zero.
 - **Semáforo relativo à média:** dias da semana, horários de 12h a 22h e o mapa dia × horário
   usam vermelho abaixo de 70% da média, cinza entre 70% e 130% e verde nos picos acima de 130%.
-  A classificação é calculada separadamente para julho, agosto e consolidado.
+  A classificação é recalculada para cada mês ou período livre selecionado.
 - **Custo e equipe externos:** o admin pode preencher quantidade de pessoas, abertura,
   fechamento, custo total da equipe, outros custos e observação por data. Uma escala pode ser
   aplicada em lote por dias da semana (por exemplo, seg.–qui. com 1 pessoa e sex.–sáb. com 2),
@@ -411,6 +411,19 @@ Levas pontuais após acompanhar a operação real:
   cards operacionais, lista e ficha da criança.
 - Administradores podem gerenciar o alerta na ficha sem apagar o histórico de ocorrências.
 - Banco: migration `20260830170000_red_flag_desacordo_play.sql`.
+
+## Período livre e clima retroativo do Play (2026-09-03)
+
+- Os cards da viabilidade mostram somente mês anterior e mês vigente.
+- Um novo filtro de data livre aplica o intervalo escolhido aos indicadores, gráficos, demonstrativo
+  diário e à exportação Excel.
+- A ação **Buscar dados retroativos** consulta a API pública oficial do INMET, usando a estação
+  Londrina/Aeroporto (83768), que possui observações também nos fins de semana.
+- Temperatura diária é a média das observações disponíveis; clima é estimado pela precipitação
+  e pela nebulosidade do dia. A execução é limitada a 366 dias.
+- A importação atua apenas nos dias em que o Play funcionou e somente nos campos vazios. Dados
+  inseridos manualmente são preservados, e datas sem observação permanecem sinalizadas.
+- Qualidade: 148 testes verdes, incluindo agrupamento por data local e classificação meteorológica.
 
 ## Fila de próximos passos
 

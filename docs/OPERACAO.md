@@ -187,16 +187,22 @@ está normalizado com DDD.
 ## Viabilidade e custos do Play
 
 1. Acesse **Gerencial → Viabilidade e operação**.
-2. Selecione mês anterior, mês atual ou consolidado. O mês em andamento aparece como parcial.
-3. Em **Aplicar escala por dia da semana**, cadastre os padrões conhecidos em lotes separados
+2. Selecione mês anterior ou mês atual. O mês em andamento aparece como parcial.
+   Para outra janela, use **Filtrar outro período**: datas, indicadores, gráficos, demonstrativo
+   diário e Excel passam a usar exatamente o intervalo escolhido, sem retirar os dois cards.
+3. Quando houver clima ou temperatura pendente, use **Buscar dados retroativos**. O sistema
+   consulta a estação oficial INMET Londrina/Aeroporto (83768), calcula as médias diárias e
+   classifica sol, nebulosidade e chuva. Campos já preenchidos manualmente nunca são substituídos.
+   A consulta aceita até 366 dias por execução; datas sem observação continuam pendentes.
+4. Em **Aplicar escala por dia da semana**, cadastre os padrões conhecidos em lotes separados
    (por exemplo, seg.–qui., sex.–sáb. e domingo).
-4. Corrija exceções em **Informar ou corrigir um dia**. Um dia aberto sem check-in precisa ser
+5. Corrija exceções em **Informar ou corrigir um dia**. Um dia aberto sem check-in precisa ser
    informado aqui para entrar corretamente na quantidade de dias funcionando. Informe também
    o clima predominante e a temperatura média aproximada para formar a análise histórica.
-5. O custo da equipe pode ficar vazio enquanto o dado externo não chegar. Nesse caso, resultado
+6. O custo da equipe pode ficar vazio enquanto o dado externo não chegar. Nesse caso, resultado
    e margem continuam visíveis, porém sinalizados como parciais; zero significa custo realmente
    igual a zero.
-6. Use **Exportar esta visão** para gerar a pasta Excel do período selecionado.
+7. Use **Exportar esta visão** para gerar a pasta Excel do período selecionado.
 
 O **Caixa e operação diária do Play** funciona como um extrato da operação: check-ins alimentam
 a quantidade de crianças e lançamentos pagos alimentam automaticamente a entrada de caixa.

@@ -3,8 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/colaborador'
 import { dataISOValida } from '@/lib/financeiro-filtros'
+import { buscarClimaHistoricoInmet } from '@/lib/inmet'
 import { createClient } from '@/lib/supabase/server'
 import { CLIMAS_PLAY, type ClimaPlay } from '@/lib/viabilidade'
+import { buscarPresencasRelatorio } from '../dados'
+import { buscarReceitasPlay } from './dados'
 
 export type OperacaoActionState = {
   ok: boolean
@@ -159,4 +162,97 @@ export async function aplicarEscalaOperacao(
   if (error) return { ok: false, mensagem: `Não foi possível aplicar a escala: ${error.message}` }
   revalidatePath('/gerencial/viabilidade')
   return { ok: true, mensagem: `Escala aplicada a ${datas.length} dia(s). Exceções podem ser ajustadas individualmente.` }
+}
+
+export async function preencherClimaRetroativo(
+  _estado: OperacaoActionState,
+  formData: FormData,
+): Promise<OperacaoActionState> {
+  const colaborador = await requireAdmin()
+  const de = String(formData.get('de') ?? '')
+  const ate = String(formData.get('ate') ?? '')
+
+  if (!dataISOValida(de) || !dataISOValida(ate) || de > ate) {
+    return { ok: false, mensagem: 'Informe um período válido.' }
+  }
+  const totalDias = Math.floor((Date.parse(`${ate}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 86400000) + 1
+  if (totalDias > 366) {
+    return { ok: false, mensagem: 'Consulte no máximo 366 dias por vez.' }
+  }
+
+  const supabase = await createClient()
+  const [presencas, receitas, operacoes] = await Promise.all([
+    buscarPresencasRelatorio(de, ate),
+    buscarReceitasPlay(de, ate),
+    supabase
+      .from('operacao_play_dia')
+      .select('data, aberto, clima, temperatura_media, criado_por')
+      .gte('data', de)
+      .lte('data', ate),
+  ])
+  const erro = presencas.erro ?? receitas.erro ?? operacoes.error?.message
+  if (erro) return { ok: false, mensagem: `Não foi possível conferir os dias do Play: ${erro}` }
+
+  const existentes = new Map((operacoes.data ?? []).map((item) => [item.data, item]))
+  const datasFuncionamento = new Set([
+    ...presencas.data.filter((item) => item.origem === 'espaco_kids').map((item) => item.data),
+    ...receitas.data.filter((item) => item.gerado > 0).map((item) => item.data),
+    ...(operacoes.data ?? []).filter((item) => item.aberto).map((item) => item.data),
+  ])
+  const pendentes = [...datasFuncionamento].filter((data) => {
+    const existente = existentes.get(data)
+    if (existente && !existente.aberto) return false
+    return !existente || existente.clima == null || existente.temperatura_media == null
+  })
+  if (!pendentes.length) {
+    return { ok: true, mensagem: 'O clima e a temperatura já estão preenchidos em todos os dias que funcionaram.' }
+  }
+
+  let historico
+  try {
+    historico = await buscarClimaHistoricoInmet(de, ate)
+  } catch (erroInmet) {
+    const detalhe = erroInmet instanceof Error ? erroInmet.message : 'falha desconhecida'
+    return { ok: false, mensagem: `Não foi possível consultar o INMET: ${detalhe}. Tente novamente mais tarde.` }
+  }
+
+  const porData = new Map(historico.map((item) => [item.data, item]))
+  let climasPreenchidos = 0
+  let temperaturasPreenchidas = 0
+  const atualizacoes = pendentes.flatMap((data) => {
+    const existente = existentes.get(data)
+    const meteo = porData.get(data)
+    const clima = existente?.clima as ClimaPlay | null | undefined
+    const temperatura = existente?.temperatura_media == null ? null : Number(existente.temperatura_media)
+    const preencheClima = clima == null && meteo?.clima != null
+    const preencheTemperatura = temperatura == null && meteo?.temperaturaMedia != null
+    if (!preencheClima && !preencheTemperatura) return []
+    const climaNovo = clima ?? meteo?.clima ?? null
+    const temperaturaNova = temperatura ?? meteo?.temperaturaMedia ?? null
+    if (preencheClima) climasPreenchidos += 1
+    if (preencheTemperatura) temperaturasPreenchidas += 1
+    return [{
+      data,
+      aberto: existente?.aberto ?? true,
+      clima: climaNovo,
+      temperatura_media: temperaturaNova,
+      criado_por: existente?.criado_por ?? colaborador.id,
+      atualizado_por: colaborador.id,
+    }]
+  })
+
+  if (!atualizacoes.length) {
+    return { ok: false, mensagem: 'O INMET não possui observações para os dias pendentes deste período.' }
+  }
+  const { error } = await supabase
+    .from('operacao_play_dia')
+    .upsert(atualizacoes, { onConflict: 'data' })
+  if (error) return { ok: false, mensagem: `Não foi possível salvar os dados meteorológicos: ${error.message}` }
+
+  revalidatePath('/gerencial/viabilidade')
+  const semObservacao = pendentes.length - atualizacoes.length
+  return {
+    ok: true,
+    mensagem: `INMET aplicado a ${atualizacoes.length} dia(s): ${climasPreenchidos} clima(s) e ${temperaturasPreenchidas} temperatura(s) preenchidos.${semObservacao ? ` ${semObservacao} dia(s) ficaram sem observação disponível.` : ''} Dados manuais foram preservados.`,
+  }
 }
