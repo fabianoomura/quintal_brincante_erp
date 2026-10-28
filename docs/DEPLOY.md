@@ -33,6 +33,15 @@ Tempo estimado: ~40 min. Pré-requisito: conta no GitHub (o repo já está lá).
 
 ## 2. App — Vercel (~10 min)
 
+### Atualização de 28/10/2026 — retenção do WhatsApp
+
+Aplicar integralmente `supabase/migrations/20261028120000_retencao_conversas_nao_identificadas.sql`
+e publicar o código correspondente. O banco agenda a limpeza diária às 03h20 BRT (7 dias
+sem atividade, com salvaguardas); o webhook passa a ignorar números não cadastrados.
+Não há nova env. Conferência de cron, auditoria, proteções e limites estão em
+[WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md#limpeza-automática-de-conversas-não-identificadas-28102026).
+Essa limpeza é do Supabase, não do banco da Evolution/Railway nem do celular.
+
 1. https://vercel.com → **Add New → Project** → importe `fabianoomura/quintal_brincante_erp`.
 2. Em **Environment Variables**, adicione:
 

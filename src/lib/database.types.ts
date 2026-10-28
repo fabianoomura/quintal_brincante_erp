@@ -1064,6 +1064,30 @@ export type Database = {
           },
         ]
       }
+      whatsapp_limpeza_execucao: {
+        Row: {
+          id: number
+          executada_em: string
+          conversas_identificadas: number
+          conversas_excluidas: number
+          mensagens_excluidas: number
+        }
+        Insert: {
+          id?: never
+          executada_em?: string
+          conversas_identificadas: number
+          conversas_excluidas: number
+          mensagens_excluidas: number
+        }
+        Update: {
+          id?: never
+          executada_em?: string
+          conversas_identificadas?: number
+          conversas_excluidas?: number
+          mensagens_excluidas?: number
+        }
+        Relationships: []
+      }
       whatsapp_mensagem: {
         Row: {
           conteudo: string | null
@@ -1157,6 +1181,8 @@ export type Database = {
       excluir_operacao_play: { Args: { p_presenca_id: string }; Returns: boolean }
       excluir_presenca_esquecida: { Args: { p_presenca_id: string }; Returns: boolean }
       is_colaborador: { Args: never; Returns: boolean }
+      whatsapp_limpar_nao_identificadas: { Args: never; Returns: Json }
+      whatsapp_telefone_chave: { Args: { p_telefone: string }; Returns: string }
     }
     Enums: {
       direcao_mensagem: "entrada" | "saida"

@@ -3,7 +3,7 @@
 Registro do que foi feito, decisão a decisão. Complementa o [ROADMAP.md](ROADMAP.md)
 (plano de evolução), o [DEPLOY.md](DEPLOY.md) (infra), o [OPERACAO.md](OPERACAO.md)
 (rotinas do dia a dia) e o [WHATSAPP-EVOLUTION.md](WHATSAPP-EVOLUTION.md) (canal de avisos).
-Última atualização: **2026-08-04**.
+Última atualização: **2026-10-28**.
 
 ---
 
@@ -426,6 +426,25 @@ Levas pontuais após acompanhar a operação real:
 - O demonstrativo diário ganhou colunas com larguras previsíveis, espaçamento financeiro,
   observações com quebra de linha, linhas alternadas e data fixa durante a rolagem horizontal.
 - Qualidade: 148 testes verdes, incluindo agrupamento por data local e classificação meteorológica.
+
+## Retenção automática e filtro de conversas (2026-10-28)
+
+- Webhook importa somente telefones cadastrados em `contato`, considerando o nono dígito.
+  Desconhecidos não geram conversa, conteúdo ou payload no ERP; consulta indisponível gera
+  erro recuperável, não descarte silencioso. Respostas de responsáveis após check-out continuam.
+- Conversas antigas com cadastro posterior passam a ser identificadas automaticamente.
+- Migration `20261028120000_retencao_conversas_nao_identificadas.sql`: cron diário às 03h20 BRT,
+  retenção de 7 dias para desconhecidos sem vínculo, lote de até 500, cascata e auditoria de
+  contagens. Preserva contatos, ambiguidades, crianças, presenças e qualquer mensagem de saída.
+- Exclusão revalidada sob lock. Privilégios restritos ao serviço; leitura da auditoria só admin.
+- Qualidade: 163 testes unitários, teste SQL local com rollback, build e typecheck aprovados;
+  lint dos arquivos alterados sem apontamentos.
+- Migration informada como aplicada pelo responsável em 28/10/2026. A limpeza roda no próximo
+  horário agendado; não foi executado expurgo manual em produção. Publicação do webhook via
+  fluxo automático GitHub/Vercel, com conferência do status após o push.
+- **Limite:** não limpa Evolution/celular e não desliga serviços. Expurgo interno da Evolution
+  depende de acesso/configuração no servidor; não usar a rota “apagar para todos”. Aproximadamente
+  97% da despesa Railway observada era RAM, não tráfego de mensagens.
 
 ## Fila de próximos passos
 

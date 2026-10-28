@@ -1,11 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { jidParaTelefone, extrairTextoMensagem } from '@/lib/whatsapp/jid'
-import { obterOuCriarConversa, registrarMensagem } from '@/lib/whatsapp/conversas'
+import { obterConversaDeContatoCadastrado, registrarMensagem } from '@/lib/whatsapp/conversas'
 import { capturarRespostaAutorizacao } from '@/lib/whatsapp/autorizacaoImagem'
 
 // Webhook da Evolution API (evento MESSAGES_UPSERT) — Central de Conversas, fase 1.
-// Toda mensagem que passa pelo chip (recebida do responsável OU enviada — fromMe)
-// é gravada no ERP: aqui é a fonte de verdade do histórico; a Evolution é só gateway.
+// Só importa conversas individuais de telefones cadastrados. Desconhecidos são
+// ignorados antes de gravar conteúdo/payload; a Evolution tem armazenamento próprio.
 //
 // Segurança: fail-closed — sem EVOLUTION_WEBHOOK_SECRET configurado, não processa.
 // O secret vai na URL configurada na instância (?secret=...).
@@ -57,13 +57,16 @@ export async function POST(request: Request) {
       continue
     }
 
-    const texto = extrairTextoMensagem(item?.message)
-    const quando = item?.messageTimestamp
-      ? new Date(Number(item.messageTimestamp) * 1000).toISOString()
-      : new Date().toISOString()
-
     try {
-      const conversa = await obterOuCriarConversa(sb, telefone)
+      const conversa = await obterConversaDeContatoCadastrado(sb, telefone)
+      if (!conversa) {
+        resultados.push('ignorada:telefone_sem_cadastro')
+        continue
+      }
+      const texto = extrairTextoMensagem(item?.message)
+      const quando = item?.messageTimestamp
+        ? new Date(Number(item.messageTimestamp) * 1000).toISOString()
+        : new Date().toISOString()
       const res = await registrarMensagem(sb, conversa.id, {
         direcao: key?.fromMe ? 'saida' : 'entrada',
         conteudo: texto,
@@ -101,5 +104,8 @@ export async function POST(request: Request) {
     }
   }
 
-  return Response.json({ ok: true, resultados })
+  const houveFalha = resultados.some((resultado) => resultado.startsWith('falha:'))
+  // Uma falha de banco não equivale a desconhecido: permitir reentrega. A chave
+  // única de provider_msg_id torna seguro repetir um lote parcialmente gravado.
+  return Response.json({ ok: !houveFalha, resultados }, { status: houveFalha ? 500 : 200 })
 }

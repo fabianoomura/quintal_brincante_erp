@@ -6,11 +6,53 @@ type Sb = SupabaseClient<Database>
 
 export type ConversaRef = { id: string; contato_id: string | null }
 
+// Webhook: só importa números presentes no cadastro. A conversa antiga, sozinha,
+// não libera um desconhecido. Erro de consulta deve gerar retry, nunca descarte.
+export async function obterConversaDeContatoCadastrado(
+  sb: Sb,
+  telefoneE164: string,
+): Promise<ConversaRef | null> {
+  const { data: contato, error } = await sb
+    .from('contato')
+    .select('id')
+    .in('telefone', variantesTelefoneBR(telefoneE164))
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!contato) return null
+  return obterOuCriarConversa(sb, telefoneE164, contato.id)
+}
+
+async function identificarConversa(sb: Sb, existente: ConversaRef, contatoId: string | null): Promise<ConversaRef> {
+  if (existente.contato_id || !contatoId) return existente
+  const { data: vinculada, error: erroVinculo } = await sb
+    .from('whatsapp_conversa')
+    .update({ contato_id: contatoId })
+    .eq('id', existente.id)
+    .is('contato_id', null)
+    .select('id, contato_id')
+    .maybeSingle()
+  if (erroVinculo) throw new Error(erroVinculo.message)
+  // Corrida com outra identificação: não sobrescrever o vínculo escolhido.
+  if (vinculada) return vinculada
+  const { data: atual, error: erroAtual } = await sb
+    .from('whatsapp_conversa')
+    .select('id, contato_id')
+    .eq('id', existente.id)
+    .single()
+  if (erroAtual) throw new Error(erroAtual.message)
+  return atual
+}
+
 // Acha (ou cria) a conversa do telefone. Identifica o contato pelo cadastro tentando
 // as variantes com/sem o nono dígito; conversa nova guarda o telefone canônico.
-// contato_id null = número que não bate com nenhum cadastro (aparece como
-// "não identificado" na caixa de entrada — a mensagem nunca é perdida).
-export async function obterOuCriarConversa(sb: Sb, telefoneE164: string): Promise<ConversaRef> {
+// Chamadas explícitas da equipe/sistema continuam permitidas. O webhook usa o
+// helper restrito acima. Repara o vínculo quando houve cadastro posterior.
+export async function obterOuCriarConversa(
+  sb: Sb,
+  telefoneE164: string,
+  contatoConfirmado?: string,
+): Promise<ConversaRef> {
   const canonico = telefoneCanonicoBR(telefoneE164)
   const variantes = variantesTelefoneBR(telefoneE164)
 
@@ -21,29 +63,38 @@ export async function obterOuCriarConversa(sb: Sb, telefoneE164: string): Promis
     .limit(1)
     .maybeSingle()
   if (errBusca) throw new Error(errBusca.message)
-  if (existente) return existente
+  if (existente?.contato_id) return existente
 
-  const { data: contato } = await sb
-    .from('contato')
-    .select('id')
-    .in('telefone', variantes)
-    .limit(1)
-    .maybeSingle()
+  let contatoId = contatoConfirmado ?? null
+  if (!contatoId) {
+    const { data: contato, error: erroContato } = await sb
+      .from('contato')
+      .select('id')
+      .in('telefone', variantes)
+      .limit(1)
+      .maybeSingle()
+    if (erroContato) throw new Error(erroContato.message)
+    contatoId = contato?.id ?? null
+  }
+  if (existente) {
+    return identificarConversa(sb, existente, contatoId)
+  }
 
   const { data: nova, error } = await sb
     .from('whatsapp_conversa')
-    .insert({ telefone: canonico, contato_id: contato?.id ?? null })
+    .insert({ telefone: canonico, contato_id: contatoId })
     .select('id, contato_id')
     .single()
   if (error) {
     // Corrida: outro processo criou primeiro (unique em telefone) → usa a dele.
     if (error.code === '23505') {
-      const { data: criada } = await sb
+      const { data: criada, error: erroCriada } = await sb
         .from('whatsapp_conversa')
         .select('id, contato_id')
         .eq('telefone', canonico)
         .maybeSingle()
-      if (criada) return criada
+      if (erroCriada) throw new Error(erroCriada.message)
+      if (criada) return identificarConversa(sb, criada, contatoId)
     }
     throw new Error(error.message)
   }
