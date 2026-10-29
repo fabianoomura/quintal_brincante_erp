@@ -11,6 +11,9 @@ dedicado** (como WhatsApp Web). O sistema chama a API REST dele e a mensagem sai
 
 ## Status atual
 
+Automação por check-in/check-out preparada em 28/10/2026, **ainda desabilitada**.
+Código, limites, persistência e ativação: [RAILWAY-PLAY.md](RAILWAY-PLAY.md).
+
 - Provider usado: `WHATSAPP_PROVIDER=evolution`
 - Instância: `quintal`
 - Uso principal: avisos operacionais aos responsáveis

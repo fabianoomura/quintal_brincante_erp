@@ -7,6 +7,7 @@ import { valorHoraPlay } from '@/lib/grade'
 import { calcularValorCheckout, pausaSegundos, validarSaidaManual } from '@/lib/playground'
 import { processarFila } from '@/lib/fila-processar'
 import { getSender } from '@/lib/whatsapp/adapter'
+import { acordarWhatsAppPlay } from '@/lib/whatsapp/play-control'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import {
   tplAgradecimentoCheckout,
@@ -255,6 +256,7 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     // Best-effort: falha de envio NÃO quebra o check-in (fica na auditoria como falha).
     if (input.origem === 'espaco_kids') {
       try {
+        await acordarWhatsAppPlay()
         await enviarBoasVindas(supabase, input.criancaId, novo.id)
       } catch {
         // silencioso por design — o check-in já foi feito

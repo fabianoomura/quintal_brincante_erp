@@ -1,6 +1,8 @@
 // Adapter de envio WhatsApp. Isola o resto do sistema do provedor:
 // fake para dev/testes, Evolution como provider operacional atual e Cloud API em stand-by.
 
+import { ManagedEvolutionSender } from './play-control'
+
 export type MensagemWhatsApp = {
   para: string // telefone E.164 do responsável
   template: string // nome do template aprovado na Meta
@@ -156,6 +158,7 @@ export function getSender(): EnviarWhatsApp {
     case 'fake':
       return new FakeSender()
     case 'evolution': {
+      if (process.env.PLAY_CONTROL_ENABLED === 'true') return new ManagedEvolutionSender()
       const url = process.env.EVOLUTION_URL
       const key = process.env.EVOLUTION_API_KEY
       const instance = process.env.EVOLUTION_INSTANCE

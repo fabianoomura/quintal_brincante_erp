@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+# Secret generated for the staged Railway controller.
+/.tmp/railway-play-control.secret
 
 # vercel
 .vercel

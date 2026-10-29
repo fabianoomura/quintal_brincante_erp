@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "test:retencao": "node --import tsx --test tests/whatsapp-retencao.local.test.mts",
+    "test:railway": "node --import tsx --test src/lib/whatsapp/play-control.test.ts src/lib/whatsapp/play-controller.test.ts tests/railway-play.local.test.mts",
     "test:it": "node --import tsx --env-file=.env.local --test \"tests/**/*.it.test.mts\"",
     "setup:users": "node --import tsx --env-file=.env.local scripts/setup-dev-users.mts",
     "seed:dev": "node --import tsx --env-file=.env.local scripts/seed-dev.mts"
