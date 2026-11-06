@@ -1177,6 +1177,7 @@ export type Database = {
         Args: { p_marcar_alerta?: boolean; p_presenca_id: string; p_relato: string }
         Returns: string
       }
+      reabrir_presenca_segura: { Args: { p_presenca_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       excluir_operacao_play: { Args: { p_presenca_id: string }; Returns: boolean }
       excluir_presenca_esquecida: { Args: { p_presenca_id: string }; Returns: boolean }

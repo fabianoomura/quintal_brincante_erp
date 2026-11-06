@@ -1,13 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { agendarPosOperacao } from '@/lib/pos-operacao'
 import { createClient } from '@/lib/supabase/server'
 import { hojeISO, agoraHora, diaDaSemana, horaParaMinutos } from '@/lib/datas'
 import { valorHoraPlay } from '@/lib/grade'
 import { calcularValorCheckout, pausaSegundos, validarSaidaManual } from '@/lib/playground'
 import { processarFila } from '@/lib/fila-processar'
 import { getSender } from '@/lib/whatsapp/adapter'
-import { acordarWhatsAppPlay } from '@/lib/whatsapp/play-control'
 import { enviarNotificacao } from '@/lib/whatsapp/notificar'
 import {
   tplAgradecimentoCheckout,
@@ -58,11 +59,7 @@ export async function encerrarPlayPorDesacordo(
 
     // O encerramento libera uma vaga. Falha ao chamar a fila não desfaz a saída;
     // o worker periódico cobre o reprocessamento.
-    try {
-      await processarFila(supabase, getSender())
-    } catch {
-      // best-effort
-    }
+    agendarPosOperacao(after, [() => processarFila(supabase, getSender())])
 
     revalidatePath('/presenca')
     revalidatePath('/playground')
@@ -169,6 +166,11 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
     let tarifaHora: number | null = null
     let filaAtiva: { id: string; status: string } | null = null
     if (input.origem === 'espaco_kids') {
+      const { data: aberta, error: errAberta } = await supabase.from('presenca')
+        .select('id').eq('crianca_id', input.criancaId).eq('origem', 'espaco_kids')
+        .is('saida', null).limit(1).maybeSingle()
+      if (errAberta) return { ok: false, erro: errAberta.message }
+      if (aberta) return { ok: false, erro: 'Essa criança já tem uma entrada aberta no Play.' }
       const horaMin = horaParaMinutos(input.entrada)
       const [{ data: precos }, { data: fer }, { data: cfgCap }, { count: noPlay }, { data: fila }] =
         await Promise.all([
@@ -240,7 +242,8 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
       })
       .select('id')
       .single()
-    if (error) return { ok: false, erro: error.message }
+    if (error) return { ok: false, erro: error.code === '23505'
+      ? 'Essa criança já tem uma entrada aberta no Play. Atualize a tela.' : error.message }
 
     // Criança que estava na fila entrou → baixa a entrada como atendida.
     if (filaAtiva) {
@@ -253,19 +256,13 @@ export async function checkIn(input: CheckInInput): Promise<Resultado> {
 
     // Boas-vindas ("combinados") em TODA entrada no play e, se o cadastro ainda
     // não tem resposta, a pergunta de autorização de imagem também em toda entrada.
-    // Best-effort: falha de envio NÃO quebra o check-in (fica na auditoria como falha).
+    // Após a resposta: WhatsApp offline não pode prender o botão nem incentivar
+    // um segundo check-in. O adapter gerenciado/trigger SQL já cuida de acordar.
     if (input.origem === 'espaco_kids') {
-      try {
-        await acordarWhatsAppPlay()
-        await enviarBoasVindas(supabase, input.criancaId, novo.id)
-      } catch {
-        // silencioso por design — o check-in já foi feito
-      }
-      try {
-        await enviarAutorizacaoImagem(supabase, input.criancaId, novo.id)
-      } catch {
-        // idem
-      }
+      agendarPosOperacao(after, [
+        () => enviarBoasVindas(supabase, input.criancaId, novo.id),
+        () => enviarAutorizacaoImagem(supabase, input.criancaId, novo.id),
+      ])
     }
 
     revalidatePath('/presenca')
@@ -532,22 +529,12 @@ export async function reabrirCheckout(
       }
     }
 
-    // Apaga a cobrança pendente do check-out (será recalculada na próxima saída).
-    if (lanc) {
-      const { error: errDel } = await supabase.from('lancamento').delete().eq('id', lanc.id)
-      if (errDel) return { ok: false, erro: errDel.message }
-    }
-
-    // Reabre mantendo a entrada; zera saída e valor. O guard `.not('saida', ...)`
-    // garante que só UMA reabertura vença se dois cliques chegarem juntos.
-    const { data: reaberta, error: errU } = await supabase
-      .from('presenca')
-      .update({ saida: null, valor: null })
-      .eq('id', presencaId)
-      .not('saida', 'is', null)
-      .select('id')
-      .maybeSingle()
-    if (errU) return { ok: false, erro: errU.message }
+    // Uma transação: conflito com outra entrada aberta não pode apagar a cobrança.
+    const { data: reaberta, error: errU } = await supabase.rpc('reabrir_presenca_segura', {
+      p_presenca_id: presencaId,
+    })
+    if (errU) return { ok: false, erro: errU.code === '23505'
+      ? 'Essa criança já tem outra entrada aberta no Play.' : errU.message }
     if (!reaberta) return { ok: false, erro: 'Essa presença já foi reaberta.' }
 
     // Some o agradecimento "já saiu" enviado pela saída errada — assim o check-out
@@ -743,17 +730,11 @@ export async function checkOut(
     // Agradecimento só no check-out do dia — encerrar um esquecido de ontem não deve
     // mandar "acabou de sair" com um dia de atraso.
     if (p.origem === 'espaco_kids' && p.data === hojeISO()) {
-      try {
-        await enviarAgradecimentoCheckout(supabase, p.crianca_id, presencaId)
-      } catch {
-        // Falha de WhatsApp nao deve travar saida nem recebimento.
-      }
       // Abriu vaga → chama a próxima da fila na hora (o cron cobre o no-show).
-      try {
-        await processarFila(supabase, getSender())
-      } catch {
-        // Falha aqui não trava o check-out; o worker reprocessa em minutos.
-      }
+      agendarPosOperacao(after, [
+        () => enviarAgradecimentoCheckout(supabase, p.crianca_id, presencaId),
+        () => processarFila(supabase, getSender()),
+      ])
     }
 
     revalidatePath('/presenca')
